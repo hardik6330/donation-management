@@ -18,19 +18,30 @@ const numCPUs = os.cpus().length;
 
 // Initialize Database
 let dbInitialized = false;
+let dbInitPromise = null;
+
 const initDB = async () => {
   if (dbInitialized) return;
-  try {
-    await connectDB();
-    // sync({ alter: true }) will create tables if they don't exist 
-    // and update them if they do exist (like adding unique constraints)
-    await sequelize.sync({ alter: true }); 
-    console.log('✅ Database synchronized (Tables created/updated)');
-    await seedAdmin();
-    dbInitialized = true;
-  } catch (error) {
-    console.error('❌ Database initialization failed:', error);
-  }
+  if (dbInitPromise) return dbInitPromise;
+
+  dbInitPromise = (async () => {
+    try {
+      await connectDB();
+      // sync({ alter: true }) will create tables if they don't exist 
+      // and update them if they do exist (like adding unique constraints)
+      await sequelize.sync({ alter: true }); 
+      console.log('✅ Database synchronized (Tables created/updated)');
+      await seedAdmin();
+      dbInitialized = true;
+      dbInitPromise = null;
+    } catch (error) {
+      console.error('❌ Database initialization failed:', error);
+      dbInitPromise = null;
+      throw error;
+    }
+  })();
+
+  return dbInitPromise;
 };
 
 const app = express();
@@ -45,8 +56,13 @@ app.use(express.urlencoded({ extended: true }));
 
 // Lazy load DB on first request for serverless
 app.use(async (req, res, next) => {
-  if (process.env.NODE_ENV === 'production' && !dbInitialized) {
-    await initDB();
+  // Only wait for DB on non-root routes to keep health checks fast
+  if (req.path !== '/' && process.env.NODE_ENV === 'production' && !dbInitialized) {
+    try {
+      await initDB();
+    } catch (error) {
+      return sendError(res, 'Database initialization failed', 500);
+    }
   }
   next();
 });
