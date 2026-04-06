@@ -10,7 +10,9 @@ import { FRONTEND_URL } from '../config/db.js';
 // 1. QR Code Generate Karo
 export const generateQRCode = async (req, res) => {
   try {
+    console.log(FRONTEND_URL);
     const frontendURL = FRONTEND_URL + '/donate';
+
     const qrCodeData = await QRCode.toDataURL(frontendURL);
     return sendSuccess(res, { qrCodeData, frontendURL }, 'QR code generated successfully');
   } catch (error) {
