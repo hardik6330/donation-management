@@ -102,6 +102,7 @@ export const seedAdmin = async () => {
   try {
     const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
     const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
+    const adminMobile = process.env.ADMIN_MOBILE || '9876543210';
 
     const adminExists = await User.findOne({ where: { email: adminEmail } });
     if (!adminExists) {
@@ -109,6 +110,7 @@ export const seedAdmin = async () => {
       await User.create({
         name: 'Super Admin',
         email: adminEmail,
+        mobileNumber: adminMobile,
         password: hashedPassword,
         isAdmin: true,
         created_by: 'System',
