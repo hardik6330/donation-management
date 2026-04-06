@@ -1,0 +1,36 @@
+{
+  "name": "donation-mange",
+  "version": "1.0.0",
+  "description": "Donation management",
+  "license": "ISC",
+  "author": "",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "bullmq": "^5.73.0",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.1",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.3.2",
+    "helmet": "^8.1.0",
+    "ioredis": "^5.10.1",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.10.1",
+    "mysql2": "^3.20.0",
+    "nodemailer": "^8.0.4",
+    "pdfkit": "^0.18.0",
+    "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
+    "razorpay": "^2.9.6",
+    "sequelize": "^6.37.8"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
