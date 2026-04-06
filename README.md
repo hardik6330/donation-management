@@ -35,7 +35,7 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 4. `npm run dev`
 
 ## 🚀 Deployment
-**Live Frontend URL**: [https://donation-management-ln4b.vercel.app/](https://donation-management-ln4b.vercel.app/)
+**Live Frontend URL** [https://donation-management-ln4b.vercel.app/](https://donation-management-ln4b.vercel.app/)
 
 Ready for deployment on **Vercel** or any VPS with MySQL support.
 
