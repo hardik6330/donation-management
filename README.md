@@ -37,5 +37,3 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 ## 🚀 Deployment
 Ready for deployment on **Vercel** or any VPS with MySQL support.
 
----
-જય શ્રી કૃષ્ણ 🤍
