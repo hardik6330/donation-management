@@ -179,24 +179,24 @@ const AdminDashboard = () => {
               />
             </div>
 
-            <div className="flex flex-row sm:flex-col lg:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
+            <div className="flex flex-row sm:flex-col lg:flex-row items-center justify-between gap-2 sm:gap-4">
+              <div className="flex items-center gap-2 shrink-0">
                 <input
                   type="checkbox"
                   name="fetchAll"
                   id="fetchAll"
                   checked={filters.fetchAll}
                   onChange={handleFilterChange}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
                 />
-                <label htmlFor="fetchAll" className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase cursor-pointer">
+                <label htmlFor="fetchAll" className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase cursor-pointer whitespace-nowrap">
                   Fetch All
                 </label>
               </div>
 
               <button
                 onClick={clearFilters}
-                className="flex-1 sm:w-full lg:flex-none px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-lg text-xs sm:text-sm transition"
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-lg text-xs sm:text-sm transition whitespace-nowrap"
               >
                 Clear
               </button>
