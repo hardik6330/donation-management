@@ -25,24 +25,31 @@ export const sendSuccess = (res, data = null, message = 'Success', statusCode = 
  * @param {any} error - Optional error details (for debugging)
  */
 export const sendError = (res, message = 'Internal Server Error', statusCode = 500, error = null) => {
-  const response = {
-    success: false,
-    message,
-  };
+  let finalMessage = message;
+  let errorDetails = null;
 
   if (error) {
     // Handle Sequelize validation errors
     if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
-      response.error = error.errors.map(err => err.message).join(', ');
+      const validationErrors = error.errors.map(err => err.message).join(', ');
+      finalMessage = validationErrors; // Set the main message to the validation error
       statusCode = 400; // Bad Request for validation errors
     } else {
-      // For other errors, show message in production, full stack in development
-      response.error = error.message || error;
-      
-      if (process.env.NODE_ENV === 'development' && error.stack) {
-        response.stack = error.stack;
-      }
+      errorDetails = error.message || error;
     }
+  }
+
+  const response = {
+    success: false,
+    message: finalMessage,
+  };
+
+  if (errorDetails) {
+    response.error = errorDetails;
+  }
+
+  if (error && process.env.NODE_ENV === 'development' && error.stack) {
+    response.stack = error.stack;
   }
 
   return res.status(statusCode).json(response);
