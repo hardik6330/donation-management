@@ -3,6 +3,8 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+export const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+
 export const sequelize = new Sequelize(
   process.env.DB_NAME,
   process.env.DB_USER,

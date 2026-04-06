@@ -5,11 +5,12 @@ import { getPaginationParams, getPaginatedResponse, processFields } from '../uti
 import { razorpay } from '../config/razorpay.js';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
+import { FRONTEND_URL } from '../config/db.js';
 
 // 1. QR Code Generate Karo
 export const generateQRCode = async (req, res) => {
   try {
-    const frontendURL = process.env.FRONTEND_URL || 'http://localhost:5173/donate';
+    const frontendURL = FRONTEND_URL + '/donate';
     const qrCodeData = await QRCode.toDataURL(frontendURL);
     return sendSuccess(res, { qrCodeData, frontendURL }, 'QR code generated successfully');
   } catch (error) {
