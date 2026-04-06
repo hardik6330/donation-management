@@ -67,13 +67,13 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// IP Whitelisting Middleware
-app.use(ipAuth);
-
-// Root route
+// Root route (Moved above ipAuth for public health check/load testing)
 app.get('/', (req, res) => {
   res.send('test complte server running');
 });
+
+// IP Whitelisting Middleware
+app.use(ipAuth);
 
 // Routes
 app.use('/api/v1', routes);
