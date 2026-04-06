@@ -37,7 +37,7 @@ const port = process.env.PORT || 5000;
 
 // Middlewares
 app.use(helmet());
-app.use(cors({ origin: '*' }));
+app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
