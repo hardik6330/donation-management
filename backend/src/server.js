@@ -54,6 +54,11 @@ app.use(async (req, res, next) => {
 // IP Whitelisting Middleware
 app.use(ipAuth);
 
+// Root route
+app.get('/', (req, res) => {
+  res.send('test complte server running');
+});
+
 // Routes
 app.use('/api/v1', routes);
 
