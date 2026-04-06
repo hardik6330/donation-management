@@ -30,8 +30,19 @@ export const sendError = (res, message = 'Internal Server Error', statusCode = 5
     message,
   };
 
-  if (error && process.env.NODE_ENV === 'development') {
-    response.error = error.message || error;
+  if (error) {
+    // Handle Sequelize validation errors
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      response.error = error.errors.map(err => err.message).join(', ');
+      statusCode = 400; // Bad Request for validation errors
+    } else {
+      // For other errors, show message in production, full stack in development
+      response.error = error.message || error;
+      
+      if (process.env.NODE_ENV === 'development' && error.stack) {
+        response.stack = error.stack;
+      }
+    }
   }
 
   return res.status(statusCode).json(response);

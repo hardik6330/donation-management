@@ -24,7 +24,8 @@ const Login = () => {
         navigate('/');
       }
     } catch (err) {
-      toast.error(err?.data?.message || 'Login failed');
+      const errorMsg = err?.data?.error ? `${err.data.message}: ${err.data.error}` : (err?.data?.message || 'Login failed');
+      toast.error(errorMsg);
     }
   };
 
