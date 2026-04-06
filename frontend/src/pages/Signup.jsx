@@ -31,8 +31,8 @@ const Signup = () => {
     e.preventDefault();
     try {
       await register(formData).unwrap();
-      toast.success('Signup Successful! Please login to continue.');
-      navigate('/login');
+      toast.success('Signup Successful!');
+      navigate('/');
     } catch (err) {
       const errorMsg = err?.data?.error ? `${err.data.message}: ${err.data.error}` : (err?.data?.message || 'Signup failed');
       toast.error(errorMsg);

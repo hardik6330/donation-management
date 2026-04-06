@@ -21,6 +21,17 @@ export const User = sequelize.define('User', {
   },
   mobileNumber: {
     type: DataTypes.STRING,
+    unique: {
+      msg: 'Mobile number already in use'
+    },
+    allowNull: false,
+    validate: {
+      notEmpty: { msg: 'Mobile number is required' },
+      len: {
+        args: [10, 10],
+        msg: 'Mobile number must be exactly 10 digits'
+      }
+    }
   },
   password: {
     type: DataTypes.STRING,

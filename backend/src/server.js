@@ -22,9 +22,10 @@ const initDB = async () => {
   if (dbInitialized) return;
   try {
     await connectDB();
-    // Don't sync in serverless to save time/resources, only seed if needed
-    // await sequelize.sync({ alter: false }); 
-    console.log('✅ Database connected');
+    // sync({ alter: true }) will create tables if they don't exist 
+    // and update them if they do exist (like adding unique constraints)
+    await sequelize.sync({ alter: true }); 
+    console.log('✅ Database synchronized (Tables created/updated)');
     await seedAdmin();
     dbInitialized = true;
   } catch (error) {
