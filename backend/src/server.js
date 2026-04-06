@@ -17,12 +17,16 @@ dotenv.config();
 const numCPUs = os.cpus().length;
 
 // Initialize Database
+let dbInitialized = false;
 const initDB = async () => {
+  if (dbInitialized) return;
   try {
     await connectDB();
-    await sequelize.sync({ alter: false });
-    console.log('✅ Database synchronized');
+    // Don't sync in serverless to save time/resources, only seed if needed
+    // await sequelize.sync({ alter: false }); 
+    console.log('✅ Database connected');
     await seedAdmin();
+    dbInitialized = true;
   } catch (error) {
     console.error('❌ Database initialization failed:', error);
   }
@@ -37,6 +41,14 @@ app.use(cors({ origin: '*' }));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Lazy load DB on first request for serverless
+app.use(async (req, res, next) => {
+  if (process.env.NODE_ENV === 'production' && !dbInitialized) {
+    await initDB();
+  }
+  next();
+});
 
 // IP Whitelisting Middleware
 app.use(ipAuth);
@@ -71,10 +83,6 @@ if (process.env.NODE_ENV !== 'production' && cluster.isPrimary) {
   });
 } else {
   // In Vercel or worker processes
-  if (process.env.NODE_ENV === 'production') {
-    initDB();
-  }
-  
   app.listen(port, () => {
     console.log(`👷 Process ${process.pid} started and running at http://localhost:${port}`);
   });
