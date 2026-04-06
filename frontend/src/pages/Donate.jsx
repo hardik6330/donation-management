@@ -57,6 +57,18 @@ const Donate = () => {
       return;
     }
 
+    // Format donation amount with commas (Indian Style)
+    if (name === 'amount') {
+      // Remove commas for calculation
+      const rawValue = value.replace(/,/g, '');
+      if (rawValue === '' || /^\d+$/.test(rawValue)) {
+        // Format with commas for display
+        const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
+        setFormData((prev) => ({ ...prev, [name]: formattedValue }));
+      }
+      return;
+    }
+
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -73,14 +85,19 @@ const Donate = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.amount || formData.amount <= 0) {
+    // Get raw amount without commas for calculation
+    const rawAmount = formData.amount.toString().replace(/,/g, '');
+    if (!rawAmount || Number(rawAmount) <= 0) {
       toast.warning('Please enter a valid donation amount');
       return;
     }
 
     try {
-      // 1. Create order on backend
-      const response = await createOrder(formData).unwrap();
+      // 1. Create order on backend with numeric amount
+      const response = await createOrder({ 
+        ...formData, 
+        amount: Number(rawAmount) 
+      }).unwrap();
       const order = response.data.order;
       const donationId = response.data.donationId;
 
@@ -253,12 +270,12 @@ const Donate = () => {
             </label>
             <input
               required
-              type="number"
+              type="text"
               name="amount"
               value={formData.amount}
               onChange={handleInputChange}
               className="w-full px-4 py-3 text-2xl font-bold border border-blue-300 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="0.00"
+              placeholder="0"
             />
           </div>
 
