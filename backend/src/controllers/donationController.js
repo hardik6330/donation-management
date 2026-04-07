@@ -11,6 +11,7 @@ import { sequelize } from '../config/db.js';
 import { FRONTEND_URL, RAZORPAY_KEY_SECRET, RAZORPAY_KEY_ID } from '../config/db.js';
 import { Op } from 'sequelize';
 import { sendEmail, getDonationEmailTemplate } from '../utils/emailService.js';
+import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/donationSlip.js';
 
 // 1. QR Code Generate Karo
 export const generateQRCode = async (req, res) => {
@@ -128,14 +129,27 @@ export const createDonationOrder = async (req, res) => {
     if (paymentMode === 'cash' || paymentMode === 'pay_later') {
       const donation = await Donation.create(donationData);
       
-      // Send Email for Cash Donation
-      if (paymentMode === 'cash' && user.email) {
-        const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
-        await sendEmail(user.email, 'Donation Received - Thank You!', emailHtml);
+      // Generate slip, upload to Cloudinary, save URL, and send email for Cash Donation
+      if (paymentMode === 'cash') {
+        try {
+          const pdfBuffer = await generateDonationSlipBuffer(user, amount, causeString, donation.id, paymentMode, donation.paymentDate);
+          const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id);
+          await donation.update({ slipUrl: cloudinaryUrl });
+          console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
+
+          if (user.email) {
+            const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
+            await sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
+              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+            ]);
+          }
+        } catch (slipError) {
+          console.error('❌ Slip generation/upload error (donation still saved):', slipError);
+        }
       }
 
-      const message = paymentMode === 'cash' 
-        ? 'Cash donation recorded successfully' 
+      const message = paymentMode === 'cash'
+        ? 'Cash donation recorded successfully'
         : 'Donation intent recorded (Pay Later)';
       return sendSuccess(res, { donationId: donation.id, paymentMode }, message);
     }
@@ -190,11 +204,24 @@ export const verifyPayment = async (req, res) => {
         paymentDate: new Date(),
       });
 
-      // Send Success Email
-       if (donor && donor.email) {
-         const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
-         await sendEmail(donor.email, 'Donation Successful - Thank You!', emailHtml);
-       }
+      // Generate slip, upload to Cloudinary, save URL, and send email
+      if (donor) {
+        try {
+          const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, 'online', new Date());
+          const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id);
+          await donation.update({ slipUrl: cloudinaryUrl });
+          console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
+
+          if (donor.email) {
+            const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
+            await sendEmail(donor.email, 'Donation Successful - Thank You!', emailHtml, [
+              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+            ]);
+          }
+        } catch (slipError) {
+          console.error('❌ Slip generation/upload error (payment still verified):', slipError);
+        }
+      }
 
       return sendSuccess(res, donation, 'Payment verified successfully');
     } else {
@@ -360,11 +387,34 @@ export const updateDonation = async (req, res) => {
     };
 
     // If status is being updated to completed and it wasn't before
-    if (status === 'completed' && donation.status !== 'completed' && !updateData.paymentDate) {
+    const wasNotCompleted = donation.status !== 'completed';
+    if (status === 'completed' && wasNotCompleted && !updateData.paymentDate) {
       updateData.paymentDate = new Date();
     }
 
     await donation.update(updateData);
+
+    // Generate slip when pay_later donation is marked as completed
+    if (status === 'completed' && wasNotCompleted) {
+      const donor = await User.findByPk(donation.donorId);
+      if (donor) {
+        try {
+          const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, donation.paymentMode, donation.paymentDate);
+          const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id);
+          await donation.update({ slipUrl: cloudinaryUrl });
+          console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
+
+          if (donor.email) {
+            const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
+            await sendEmail(donor.email, 'Donation Completed - Thank You!', emailHtml, [
+              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+            ]);
+          }
+        } catch (slipError) {
+          console.error('❌ Slip generation/upload error (donation still updated):', slipError);
+        }
+      }
+    }
 
     return sendSuccess(res, donation, 'Donation updated successfully');
   } catch (error) {

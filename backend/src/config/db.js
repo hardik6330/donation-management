@@ -26,6 +26,10 @@ export const SMTP_PORT = process.env.SMTP_PORT;
 export const SMTP_USER = process.env.SMTP_USER;
 export const SMTP_PASS = process.env.SMTP_PASS;
 export const SMTP_FROM = process.env.SMTP_FROM;
+export const VITE_CLOUDINARY_CLOUD_NAME = process.env.VITE_CLOUDINARY_CLOUD_NAME;
+export const VITE_CLOUDINARY_API_KEY = process.env.VITE_CLOUDINARY_API_KEY;
+export const VITE_CLOUDINARY_API_SECRET = process.env.VITE_CLOUDINARY_API_SECRET;
+export const VITE_CLOUDINARY_UPLOAD_PRESET = process.env.VITE_CLOUDINARY_UPLOAD_PRESET;
 
 
 

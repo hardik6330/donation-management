@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
-import { useGetAllDonationsQuery, useGetCategoriesQuery, useUpdateDonationMutation } from '../../../services/apiSlice';
-import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X, CheckCircle2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { 
+  useGetAllDonationsQuery, 
+  useGetCategoriesQuery, 
+  useUpdateDonationMutation,
+  useCreateOrderMutation,
+  useGetUserByMobileQuery,
+  useGetCitiesQuery,
+  useGetSubLocationsQuery
+} from '../../../services/apiSlice';
+import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X, CheckCircle2, Plus, Phone, User, Home as HomeIcon, MapPin, CreditCard, FileDown } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminPageHeader from '../../../components/common/AdminPageHeader';
 import AdminTable from '../../../components/common/AdminTable';
@@ -17,10 +25,11 @@ const DonationList = () => {
     page: 1,
     limit: 10,
     fetchAll: false,
-    fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName'
+    fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl'
   });
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingDonation, setEditingDonation] = useState(null);
   const [editForm, setEditForm] = useState({
     amount: '',
@@ -29,9 +38,208 @@ const DonationList = () => {
     status: ''
   });
 
+  const [addForm, setAddForm] = useState({
+    mobileNumber: '',
+    name: '',
+    email: '',
+    address: '',
+    village: '',
+    district: '',
+    cityId: '',
+    talukaId: '',
+    villageId: '',
+    categoryId: '',
+    companyName: '',
+    referenceName: '',
+    amount: '',
+    paymentMode: 'cash',
+  });
+
+  const [addDropdownLabels, setAddDropdownLabels] = useState({
+    cityName: '',
+    talukaName: '',
+    villageName: '',
+    categoryName: '',
+    paymentModeName: 'Cash',
+  });
+  const [activeAddDropdown, setActiveAddDropdown] = useState(null);
+
   const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(filters);
   const { data: categoriesData } = useGetCategoriesQuery();
   const [updateDonation, { isLoading: isUpdating }] = useUpdateDonationMutation();
+  const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
+
+  // Location and User Data for Add Modal
+  const { data: citiesData } = useGetCitiesQuery();
+  const { data: talukasData } = useGetSubLocationsQuery(addForm.cityId, { skip: !addForm.cityId });
+  const { data: villagesData } = useGetSubLocationsQuery(addForm.talukaId, { skip: !addForm.talukaId });
+  
+  const cities = citiesData?.data || [];
+  const talukas = talukasData?.data || [];
+  const villages = villagesData?.data || [];
+
+  const { data: existingUser } = useGetUserByMobileQuery(addForm.mobileNumber, {
+    skip: addForm.mobileNumber.length !== 10 || !isAddModalOpen,
+  });
+
+  // Close add dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setActiveAddDropdown(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  // Auto-fill form when user is found
+   useEffect(() => {
+     if (existingUser?.success && existingUser.data) {
+       const user = existingUser.data;
+       const timer = setTimeout(() => {
+         setAddForm(prev => ({
+           ...prev,
+           name: user.name || '',
+           email: user.email || '',
+           address: user.address || '',
+           village: user.village || '',
+           district: user.district || '',
+           cityId: user.cityId || '',
+           talukaId: user.talukaId || '',
+           villageId: user.villageId || '',
+           companyName: user.companyName || '',
+         }));
+       }, 0);
+       toast.info('User found! Details auto-filled.');
+       return () => clearTimeout(timer);
+     }
+   }, [existingUser]);
+
+  const handleAddInputChange = (e) => {
+    const { name, value } = e.target;
+    
+    if (name === 'mobileNumber') {
+      const cleaned = value.replace(/\D/g, '').slice(0, 10);
+      setAddForm(prev => ({ ...prev, [name]: cleaned }));
+      return;
+    }
+
+    if (name === 'cityName') {
+      setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
+      setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
+      setActiveAddDropdown('cityName');
+      return;
+    }
+    if (name === 'talukaName') {
+      setAddDropdownLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
+      setAddForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
+      setActiveAddDropdown('talukaName');
+      return;
+    }
+    if (name === 'villageName') {
+      setAddDropdownLabels(prev => ({ ...prev, villageName: value }));
+      setAddForm(prev => ({ ...prev, villageId: '' }));
+      setActiveAddDropdown('villageName');
+      return;
+    }
+    if (name === 'categoryName') {
+      setAddDropdownLabels(prev => ({ ...prev, categoryName: value }));
+      setAddForm(prev => ({ ...prev, categoryId: '' }));
+      setActiveAddDropdown('categoryName');
+      return;
+    }
+    if (name === 'paymentModeName') {
+      setAddDropdownLabels(prev => ({ ...prev, paymentModeName: value }));
+      setActiveAddDropdown('paymentModeName');
+      return;
+    }
+
+    if (name === 'amount') {
+      const rawValue = value.replace(/,/g, '');
+      if (rawValue === '' || /^\d+$/.test(rawValue)) {
+        const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
+        setAddForm(prev => ({ ...prev, [name]: formattedValue }));
+      }
+      return;
+    }
+
+    setAddForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddDropdownSelect = (field, id, name) => {
+    if (field === 'cityId') {
+      setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
+      setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
+    } else if (field === 'talukaId') {
+      setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
+      setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
+    } else if (field === 'villageId') {
+      setAddForm(prev => ({ ...prev, villageId: id }));
+      setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
+    } else if (field === 'categoryId') {
+      setAddForm(prev => ({ ...prev, categoryId: id }));
+      setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
+    } else if (field === 'paymentMode') {
+      setAddForm(prev => ({ ...prev, paymentMode: id }));
+      setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
+    }
+    setActiveAddDropdown(null);
+  };
+
+  const renderAddDropdown = (dropdownKey, items, formField) => {
+    const searchText = addDropdownLabels[dropdownKey] || '';
+    const filtered = items.filter(item =>
+      item.name.toLowerCase().includes(searchText.toLowerCase())
+    );
+    if (activeAddDropdown !== dropdownKey || filtered.length === 0) return null;
+    return (
+      <div
+        className="absolute z-[110] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {filtered.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => handleAddDropdownSelect(formField, item.id, item.name)}
+            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+          >
+            {item.name}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  const handleAddSubmit = async (e) => {
+    e.preventDefault();
+    const rawAmount = addForm.amount.toString().replace(/,/g, '');
+    
+    try {
+      await createDonation({
+        ...addForm,
+        amount: rawAmount
+      }).unwrap();
+      toast.success('Donation added successfully');
+      setIsAddModalOpen(false);
+      setAddForm({
+        mobileNumber: '',
+        name: '',
+        email: '',
+        address: '',
+        village: '',
+        district: '',
+        cityId: '',
+        talukaId: '',
+        villageId: '',
+        categoryId: '',
+        companyName: '',
+        referenceName: '',
+        amount: '',
+        paymentMode: 'cash',
+      });
+      setAddDropdownLabels({ cityName: '', talukaName: '', villageName: '', categoryName: '', paymentModeName: 'Cash' });
+    } catch (error) {
+      toast.error(error?.data?.message || 'Failed to add donation');
+    }
+  };
 
   const donations = donationsData?.data?.donations || [];
   const categories = categoriesData?.data || [];
@@ -66,7 +274,7 @@ const DonationList = () => {
       page: 1, 
       limit: 10, 
       fetchAll: false, 
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName' 
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl' 
     });
   };
 
@@ -106,6 +314,7 @@ const DonationList = () => {
     { label: 'Amount' },
     { label: 'Status' },
     { label: 'Payment Date' },
+    { label: 'Slip' },
     { label: 'Action' },
   ];
 
@@ -114,6 +323,8 @@ const DonationList = () => {
       <AdminPageHeader 
         title="Donation Records" 
         subtitle="View and filter all your donation transactions"
+        buttonText="Add Donation"
+        onButtonClick={() => setIsAddModalOpen(true)}
       />
 
       {/* Filters Section */}
@@ -268,6 +479,21 @@ const DonationList = () => {
               {donation.paymentDate ? new Date(donation.paymentDate).toLocaleDateString() : '-'}
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
+              {donation.slipUrl ? (
+                <a
+                  href={donation.slipUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition inline-flex"
+                  title="Download Slip"
+                >
+                  <FileDown className="w-4 h-4" />
+                </a>
+              ) : (
+                <span className="text-gray-300 text-[10px]">-</span>
+              )}
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
               {donation.paymentMode === 'pay_later' && (
                 <button
                   onClick={() => handleEditClick(donation)}
@@ -415,6 +641,265 @@ const DonationList = () => {
             >
               {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
               Update Donation
+            </button>
+          </div>
+        </form>
+      </AdminModal>
+      {/* Add Donation Modal */}
+      <AdminModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        title="Add New Donation"
+        icon={<Plus />}
+        maxWidth="max-w-4xl"
+      >
+        <form onSubmit={handleAddSubmit} className="space-y-8">
+          {/* User Details Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
+              <User className="w-4 h-4" /> User Details
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <Phone className="w-3 h-3" /> Mobile Number
+                </label>
+                <input
+                  required
+                  name="mobileNumber"
+                  value={addForm.mobileNumber}
+                  onChange={handleAddInputChange}
+                  placeholder="10 digit mobile"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  Full Name
+                </label>
+                <input
+                  required
+                  name="name"
+                  value={addForm.name}
+                  onChange={handleAddInputChange}
+                  placeholder="Donor's full name"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={addForm.email}
+                  onChange={handleAddInputChange}
+                  placeholder="Email (optional)"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <HomeIcon className="w-3 h-3" /> Address
+                </label>
+                <input
+                  name="address"
+                  value={addForm.address}
+                  onChange={handleAddInputChange}
+                  placeholder="Street / House No."
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  Village
+                </label>
+                <input
+                  name="village"
+                  value={addForm.village}
+                  onChange={handleAddInputChange}
+                  placeholder="Enter Village Name"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  District
+                </label>
+                <input
+                  name="district"
+                  value={addForm.district}
+                  onChange={handleAddInputChange}
+                  placeholder="Enter District Name"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  Company Name
+                </label>
+                <input
+                  name="companyName"
+                  value={addForm.companyName}
+                  onChange={handleAddInputChange}
+                  placeholder="Business/Org name"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Donation Details Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
+              <IndianRupee className="w-4 h-4" /> Donation Details
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <MapPin className="w-3 h-3" /> City
+                </label>
+                <input
+                  required
+                  name="cityName"
+                  autoComplete="off"
+                  value={addDropdownLabels.cityName}
+                  onChange={handleAddInputChange}
+                  onFocus={() => setActiveAddDropdown('cityName')}
+                  onClick={(e) => { e.stopPropagation(); setActiveAddDropdown('cityName'); }}
+                  placeholder="Search City..."
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+                {renderAddDropdown('cityName', cities, 'cityId')}
+              </div>
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <MapPin className="w-3 h-3" /> Taluka
+                </label>
+                <input
+                  name="talukaName"
+                  autoComplete="off"
+                  value={addDropdownLabels.talukaName}
+                  onChange={handleAddInputChange}
+                  onFocus={() => setActiveAddDropdown('talukaName')}
+                  onClick={(e) => { e.stopPropagation(); setActiveAddDropdown('talukaName'); }}
+                  disabled={!addForm.cityId}
+                  placeholder="Search Taluka..."
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
+                />
+                {renderAddDropdown('talukaName', talukas, 'talukaId')}
+              </div>
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <MapPin className="w-3 h-3" /> Village
+                </label>
+                <input
+                  name="villageName"
+                  autoComplete="off"
+                  value={addDropdownLabels.villageName}
+                  onChange={handleAddInputChange}
+                  onFocus={() => setActiveAddDropdown('villageName')}
+                  onClick={(e) => { e.stopPropagation(); setActiveAddDropdown('villageName'); }}
+                  disabled={!addForm.talukaId}
+                  placeholder="Search Village..."
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
+                />
+                {renderAddDropdown('villageName', villages, 'villageId')}
+              </div>
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <Tag className="w-3 h-3" /> Category
+                </label>
+                <input
+                  required
+                  name="categoryName"
+                  autoComplete="off"
+                  value={addDropdownLabels.categoryName}
+                  onChange={handleAddInputChange}
+                  onFocus={() => setActiveAddDropdown('categoryName')}
+                  onClick={(e) => { e.stopPropagation(); setActiveAddDropdown('categoryName'); }}
+                  placeholder="Search Category..."
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+                {renderAddDropdown('categoryName', categories, 'categoryId')}
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  Reference Name
+                </label>
+                <input
+                  name="referenceName"
+                  value={addForm.referenceName}
+                  onChange={handleAddInputChange}
+                  placeholder="Enter reference person name"
+                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+              <div className="space-y-2 relative">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <CreditCard className="w-3 h-3" /> Mode
+                </label>
+                <input
+                  name="paymentModeName"
+                  autoComplete="off"
+                  value={addDropdownLabels.paymentModeName}
+                  onChange={handleAddInputChange}
+                  onFocus={() => setActiveAddDropdown('paymentModeName')}
+                  onClick={(e) => { e.stopPropagation(); setActiveAddDropdown('paymentModeName'); }}
+                  placeholder="Select Mode..."
+                  readOnly
+                  className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition cursor-pointer"
+                />
+                {activeAddDropdown === 'paymentModeName' && (
+                  <div
+                    className="absolute z-[110] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {[{ id: 'cash', name: 'Cash' }, { id: 'pay_later', name: 'Pay Later' }].map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => handleAddDropdownSelect('paymentMode', mode.id, mode.name)}
+                        className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+                      >
+                        {mode.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2 lg:col-span-2">
+                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                  <IndianRupee className="w-3 h-3" /> Amount
+                </label>
+                <input
+                  required
+                  name="amount"
+                  value={addForm.amount}
+                  onChange={handleAddInputChange}
+                  placeholder="0"
+                  className="w-full px-4 py-2 bg-blue-50 border border-blue-100 rounded-lg text-lg font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex gap-4 pt-4 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={() => setIsAddModalOpen(false)}
+              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isAdding}
+              className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-200"
+            >
+              {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+              Save Donation
             </button>
           </div>
         </form>

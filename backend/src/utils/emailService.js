@@ -13,13 +13,14 @@ const transporter = nodemailer.createTransport({
 });
 
 // 2. Function to send email directly (Serverless compatible)
-export const sendEmail = async (to, subject, html) => {
+export const sendEmail = async (to, subject, html, attachments = []) => {
   try {
     await transporter.sendMail({
       from: SMTP_FROM || SMTP_USER,
       to,
       subject,
       html,
+      attachments,
     });
     console.log(`✅ Email sent directly to ${to}`);
     return { success: true };

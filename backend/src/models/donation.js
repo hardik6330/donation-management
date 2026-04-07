@@ -60,6 +60,10 @@ export const Donation = sequelize.define('Donation', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  slipUrl: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
 });
