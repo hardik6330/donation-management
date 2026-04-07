@@ -2,31 +2,29 @@
 
 A full-stack donation management application built with Node.js, Express, MySQL, and React.
 
-## 🚀 Features
+## 🚀 Recent Updates & Features
 
-- **Frontend**: Built with React, Vite, Redux Toolkit, and Tailwind CSS.
-- **Backend**: Node.js & Express with Sequelize ORM (MySQL).
-- **Payment Integration**: Razorpay for secure transactions.
-- **Performance**: 
-  - Node.js Clustering for multi-core support.
-  - Database Connection Pooling for high traffic.
-  - Optimized for handling 100,000+ requests.
-- **Security**: IP Whitelisting and JWT-based authentication.
-- **Responsive Design**: Fully mobile-friendly UI.
+- **Improved Admin Dashboard**: Sticky header, footer, and sidebar with scrollable content area.
+- **Enhanced Donation Tracking**: Added `paymentDate` field to track actual payment receipt date.
+- **Advanced Filtering**: Support for Min/Max amount range and category-wise filtering in admin records.
+- **Instant Category Management**: Toggle category status (Active/Inactive) directly from the list.
+- **Email Notifications**: Automated donation confirmation emails using Nodemailer (BullMQ/Redis ready).
+- **Modern UI Components**: Custom searchable dropdowns and interactive toggles in master data management.
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React, Vite, Redux Toolkit, Lucide React, Tailwind CSS.
-- **Backend**: Node.js, Express, MySQL (Sequelize), Redis (ioredis), BullMQ.
-- **Tools**: JWT, Bcrypt, Helmet, Morgan, Autocannon (Load Testing).
+- **Frontend**: React 19, Vite, Redux Toolkit (RTK Query), Lucide React, Tailwind CSS.
+- **Backend**: Node.js, Express, MySQL (Sequelize ORM), Redis (ioredis), BullMQ (Queueing).
+- **Payment Integration**: Razorpay for secure online transactions.
+- **Tools**: JWT, Bcrypt, Helmet, Morgan, PDFKit (Receipt Generation).
 
 ## 📦 Installation
 
 ### Backend Setup
 1. `cd backend`
 2. `npm install`
-3. Configure `.env` with your MySQL and Razorpay credentials.
-4. `npm run dev`
+3. Configure `.env` with your MySQL, Razorpay, and SMTP (Email) credentials.
+4. `npm start` or `npm run dev`
 
 ### Frontend Setup
 1. `cd frontend`
@@ -35,7 +33,6 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 4. `npm run dev`
 
 ## 🚀 Deployment
-**Live Frontend URL** [https://donation-management-ln4b.vercel.app/](https://donation-management-ln4b.vercel.app/)
+**Live Frontend URL**: [https://donation-management-ln4b.vercel.app/](https://donation-management-ln4b.vercel.app/)
 
 Ready for deployment on **Vercel** or any VPS with MySQL support.
-
