@@ -25,9 +25,10 @@ const initDB = async () => {
   dbInitPromise = (async () => {
     try {
       await connectDB();
-      // sync({ alter: true }) will create tables if they don't exist 
-      // and update them if they do exist (like adding unique constraints)
-      await sequelize.sync({ alter: true }); 
+      // In production, only create missing tables (no ALTER to avoid deadlocks on serverless)
+      // In development, alter: true to auto-apply model changes
+      const syncOptions = NODE_ENV === 'production' ? {} : { alter: true };
+      await sequelize.sync(syncOptions);
       console.log('✅ Database synchronized (Tables created/updated)');
       await seedAdmin();
       dbInitialized = true;
