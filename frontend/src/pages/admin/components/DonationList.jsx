@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGetAllDonationsQuery, useGetCategoriesQuery, useUpdateDonationMutation } from '../../../services/apiSlice';
-import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X } from 'lucide-react';
+import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X, CheckCircle2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminPageHeader from '../../../components/common/AdminPageHeader';
 import AdminTable from '../../../components/common/AdminTable';
@@ -332,81 +332,85 @@ const DonationList = () => {
         isOpen={isEditModalOpen}
         onClose={() => setIsEditModalOpen(false)}
         title="Update Donation"
-        maxWidth="max-w-md"
+        icon={<Edit />}
+        maxWidth="max-w-2xl"
       >
-        <form onSubmit={handleUpdate} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <IndianRupee className="w-3 h-3" /> Amount
-            </label>
-            <input
-              type="number"
-              required
-              value={editForm.amount}
-              onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            />
+        <form onSubmit={handleUpdate} className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <IndianRupee className="w-3 h-3" /> Amount
+              </label>
+              <input
+                type="number"
+                required
+                value={editForm.amount}
+                onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                Payment Mode
+              </label>
+              <select
+                required
+                value={editForm.paymentMode}
+                onChange={(e) => setEditForm(prev => ({ ...prev, paymentMode: e.target.value }))}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              >
+                <option value="online">Online</option>
+                <option value="cash">Cash</option>
+                <option value="pay_later">Pay Later</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <Calendar className="w-3 h-3" /> Payment Date
+              </label>
+              <input
+                type="date"
+                required
+                value={editForm.paymentDate}
+                onChange={(e) => setEditForm(prev => ({ ...prev, paymentDate: e.target.value }))}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                Status
+              </label>
+              <select
+                required
+                value={editForm.status}
+                onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              >
+                <option value="pending">Pending</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+              </select>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              Payment Mode
-            </label>
-            <select
-              required
-              value={editForm.paymentMode}
-              onChange={(e) => setEditForm(prev => ({ ...prev, paymentMode: e.target.value }))}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            >
-              <option value="online">Online</option>
-              <option value="cash">Cash</option>
-              <option value="pay_later">Pay Later</option>
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <Calendar className="w-3 h-3" /> Payment Date
-            </label>
-            <input
-              type="date"
-              required
-              value={editForm.paymentDate}
-              onChange={(e) => setEditForm(prev => ({ ...prev, paymentDate: e.target.value }))}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              Status
-            </label>
-            <select
-              required
-              value={editForm.status}
-              onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            >
-              <option value="pending">Pending</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-            </select>
-          </div>
-
-          <div className="pt-4 flex gap-3">
+          <div className="flex gap-4 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={() => setIsEditModalOpen(false)}
-              className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-lg text-sm transition"
+              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isUpdating}
-              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
+              className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-200"
             >
-              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update'}
+              {isUpdating ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
+              Update Donation
             </button>
           </div>
         </form>

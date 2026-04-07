@@ -1,7 +1,7 @@
 import React from 'react';
 import { X } from 'lucide-react';
 
-const AdminModal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }) => {
+const AdminModal = ({ isOpen, onClose, title, icon, children, maxWidth = "max-w-2xl" }) => {
   if (!isOpen) return null;
 
   return (
@@ -14,7 +14,18 @@ const AdminModal = ({ isOpen, onClose, title, children, maxWidth = "max-w-2xl" }
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
-          <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <div className="flex items-center gap-3 flex-1">
+            {icon && (
+              <div className="p-2 bg-blue-50 rounded-xl text-blue-600 shrink-0">
+                {React.cloneElement(icon, { className: 'w-5 h-5' })}
+              </div>
+            )}
+            {typeof title === 'string' ? (
+              <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+            ) : (
+              title
+            )}
+          </div>
           <button 
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400 hover:text-gray-600"
