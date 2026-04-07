@@ -47,6 +47,7 @@ const Donate = () => {
     villageId: '',
     categoryId: '',
     companyName: '',
+    referenceName: '',
     amount: '',
     paymentMode: 'online',
   });
@@ -427,6 +428,20 @@ const Donate = () => {
                     <option key={cat.id} value={cat.id}>{cat.name}</option>
                   ))}
                 </select>
+              </div>
+
+              {/* Reference Name */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <User className="w-4 h-4" /> Reference Name
+                </label>
+                <input
+                  name="referenceName"
+                  value={formData.referenceName}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="Enter reference person name"
+                />
               </div>
             </div>
 

@@ -56,6 +56,10 @@ export const Donation = sequelize.define('Donation', {
     type: DataTypes.DATE,
     allowNull: true,
   },
+  referenceName: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
 });

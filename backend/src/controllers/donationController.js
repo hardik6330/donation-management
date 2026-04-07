@@ -41,7 +41,8 @@ export const createDonationOrder = async (req, res) => {
       categoryId, 
       companyName, 
       mobileNumber, 
-      paymentMode 
+      paymentMode,
+      referenceName
     } = req.body;
 
     // 1. Generate Cause String based on Category and Location IDs
@@ -119,6 +120,7 @@ export const createDonationOrder = async (req, res) => {
       categoryId,
       locationId: targetLocationId,
       paymentMode,
+      referenceName,
       status: paymentMode === 'cash' ? 'completed' : 'pending',
       paymentDate: paymentMode === 'cash' ? new Date() : null,
     };
