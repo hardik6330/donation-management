@@ -653,13 +653,13 @@ const DonationList = () => {
         icon={<Plus />}
         maxWidth="max-w-4xl"
       >
-        <form onSubmit={handleAddSubmit} className="space-y-8">
+        <form onSubmit={handleAddSubmit} className="space-y-6 sm:space-y-8">
           {/* User Details Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 font-bold text-xs sm:text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
               <User className="w-4 h-4" /> User Details
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
                   <Phone className="w-3 h-3" /> Mobile Number
@@ -751,11 +751,11 @@ const DonationList = () => {
           </div>
 
           {/* Donation Details Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 font-bold text-xs sm:text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
               <IndianRupee className="w-4 h-4" /> Donation Details
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="space-y-2 relative">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
                   <MapPin className="w-3 h-3" /> City
@@ -869,7 +869,7 @@ const DonationList = () => {
                   </div>
                 )}
               </div>
-              <div className="space-y-2 lg:col-span-2">
+              <div className="space-y-2 sm:col-span-2 lg:col-span-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
                   <IndianRupee className="w-3 h-3" /> Amount
                 </label>
@@ -879,24 +879,24 @@ const DonationList = () => {
                   value={addForm.amount}
                   onChange={handleAddInputChange}
                   placeholder="0"
-                  className="w-full px-4 py-2 bg-blue-50 border border-blue-100 rounded-lg text-lg font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  className="w-full px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-xl text-lg font-bold text-blue-700 focus:ring-2 focus:ring-blue-500 outline-none transition"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4 pt-4 border-t border-gray-100">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 border-t border-gray-100">
             <button
               type="button"
               onClick={() => setIsAddModalOpen(false)}
-              className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition"
+              className="flex-1 px-6 py-2.5 sm:py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition order-2 sm:order-1"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isAdding}
-              className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-200"
+              className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 sm:py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-200 order-1 sm:order-2"
             >
               {isAdding ? <Loader2 className="w-5 h-5 animate-spin" /> : <CheckCircle2 className="w-5 h-5" />}
               Save Donation
