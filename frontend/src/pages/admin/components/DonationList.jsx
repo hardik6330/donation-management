@@ -8,7 +8,7 @@ import {
   useGetCitiesQuery,
   useGetSubLocationsQuery
 } from '../../../services/apiSlice';
-import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X, CheckCircle2, Plus, Phone, User, Home as HomeIcon, MapPin, CreditCard, FileDown } from 'lucide-react';
+import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X, CheckCircle2, Plus, Phone, User, Home as HomeIcon, MapPin, CreditCard, FileDown, Mail, Building2, MapPinHouse, UserCheck } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminPageHeader from '../../../components/common/AdminPageHeader';
 import AdminTable from '../../../components/common/AdminTable';
@@ -675,7 +675,7 @@ const DonationList = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  Full Name
+                  <User className="w-3 h-3" /> Full Name
                 </label>
                 <input
                   required
@@ -688,7 +688,7 @@ const DonationList = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  Email Address
+                  <Mail className="w-3 h-3" /> Email Address
                 </label>
                 <input
                   type="email"
@@ -713,7 +713,7 @@ const DonationList = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  Village
+                  <MapPinHouse className="w-3 h-3" /> Village
                 </label>
                 <input
                   name="village"
@@ -725,7 +725,7 @@ const DonationList = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  District
+                  <MapPin className="w-3 h-3" /> District
                 </label>
                 <input
                   name="district"
@@ -737,7 +737,7 @@ const DonationList = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  Company Name
+                  <Building2 className="w-3 h-3" /> Company Name
                 </label>
                 <input
                   name="companyName"
@@ -826,7 +826,7 @@ const DonationList = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  Reference Name
+                  <UserCheck className="w-3 h-3" /> Reference Name
                 </label>
                 <input
                   name="referenceName"
