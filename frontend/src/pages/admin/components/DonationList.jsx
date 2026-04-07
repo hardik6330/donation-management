@@ -314,8 +314,7 @@ const DonationList = () => {
     { label: 'Amount' },
     { label: 'Status' },
     { label: 'Payment Date' },
-    { label: 'Slip' },
-    { label: 'Action' },
+    { label: 'Actions' },
   ];
 
   return (
@@ -479,30 +478,28 @@ const DonationList = () => {
               {donation.paymentDate ? new Date(donation.paymentDate).toLocaleDateString() : '-'}
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
-              {donation.slipUrl ? (
-                <a
-                  href={donation.slipUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition inline-flex"
-                  title="Download Slip"
-                >
-                  <FileDown className="w-4 h-4" />
-                </a>
-              ) : (
-                <span className="text-gray-300 text-[10px]">-</span>
-              )}
-            </td>
-            <td className="p-3 sm:p-4 px-4 sm:px-6">
-              {donation.paymentMode === 'pay_later' && (
-                <button
-                  onClick={() => handleEditClick(donation)}
-                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition"
-                  title="Edit Donation"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-              )}
+              <div className="flex items-center gap-1">
+                {donation.slipUrl && (
+                  <a
+                    href={donation.slipUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 hover:bg-red-50 text-red-500 rounded-lg transition inline-flex"
+                    title="Download Slip"
+                  >
+                    <FileDown className="w-4 h-4" />
+                  </a>
+                )}
+                {donation.paymentMode === 'pay_later' && donation.status !== 'completed' && (
+                  <button
+                    onClick={() => handleEditClick(donation)}
+                    className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition"
+                    title="Edit Donation"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </td>
           </tr>
         ))}
