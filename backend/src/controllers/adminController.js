@@ -64,19 +64,20 @@ export const getAdminStats = async (req, res) => {
 
 export const getAllDonationsAdmin = async (req, res) => {
   try {
-    const { search, startDate, endDate, amount } = req.query;
+    const { search, startDate, endDate, amount, categoryId } = req.query;
     const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
     const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
 
     let whereClause = {};
     let userWhereClause = {};
 
-    // 1. Search Filter (by donor name or email)
+    // 1. Search Filter (by donor name, email or mobileNumber)
     if (search) {
       userWhereClause = {
         [Op.or]: [
           { name: { [Op.like]: `%${search}%` } },
-          { email: { [Op.like]: `%${search}%` } }
+          { email: { [Op.like]: `%${search}%` } },
+          { mobileNumber: { [Op.like]: `%${search}%` } }
         ]
       };
     }
@@ -94,9 +95,14 @@ export const getAllDonationsAdmin = async (req, res) => {
       }
     }
 
-    // 3. Amount Filter (Exact Match)
+    // 3. Amount Filter (Exact or Minimum match - using exact for now as per previous logic, but can be GTE)
     if (amount) {
-      whereClause.amount = Number(amount);
+      whereClause.amount = { [Op.gte]: Number(amount) };
+    }
+
+    // 4. Category Filter
+    if (categoryId) {
+      whereClause.categoryId = categoryId;
     }
 
     const { count, rows: donations } = await Donation.findAndCountAll({
@@ -105,12 +111,13 @@ export const getAllDonationsAdmin = async (req, res) => {
       include: [{
         model: User,
         as: 'donor',
-        where: userWhereClause,
-        attributes: includeAttributes || ['name', 'email', 'village', 'district'] // Default fields if not specified
+        where: Object.keys(userWhereClause).length > 0 ? userWhereClause : null,
+        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'village', 'district'] // Default fields if not specified
       }],
       order: [['createdAt', 'DESC']],
       limit: queryLimit,
       offset: offset,
+      distinct: true,
     });
 
     const responseData = getPaginatedResponse({

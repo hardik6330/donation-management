@@ -24,6 +24,7 @@ export const ALLOWED_IPS = process.env.ALLOWED_IPS;
 
 
 
+
 export const sequelize = new Sequelize(
   DB_NAME,
   DB_USER,

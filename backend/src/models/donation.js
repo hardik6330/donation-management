@@ -1,6 +1,8 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
 import { User } from './user.js';
+import { Location } from './location.js';
+import { Category } from './category.js';
 
 export const Donation = sequelize.define('Donation', {
   id: {
@@ -20,6 +22,11 @@ export const Donation = sequelize.define('Donation', {
     type: DataTypes.ENUM('pending', 'completed', 'failed'),
     defaultValue: 'pending',
   },
+  paymentMode: {
+    type: DataTypes.ENUM('online', 'cash', 'pay_later'),
+    defaultValue: 'online',
+    allowNull: false,
+  },
   razorpay_order_id: {
     type: DataTypes.STRING,
   },
@@ -29,6 +36,26 @@ export const Donation = sequelize.define('Donation', {
   razorpay_signature: {
     type: DataTypes.STRING,
   },
+  locationId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Locations',
+      key: 'id',
+    },
+  },
+  categoryId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Categories',
+      key: 'id',
+    },
+  },
+  paymentDate: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
 });
@@ -36,3 +63,9 @@ export const Donation = sequelize.define('Donation', {
 // Associations
 User.hasMany(Donation, { foreignKey: 'donorId' });
 Donation.belongsTo(User, { as: 'donor', foreignKey: 'donorId' });
+
+Location.hasMany(Donation, { foreignKey: 'locationId' });
+Donation.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
+
+Category.hasMany(Donation, { foreignKey: 'categoryId' });
+Donation.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });

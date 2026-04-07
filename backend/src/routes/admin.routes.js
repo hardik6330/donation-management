@@ -1,11 +1,13 @@
 import express from 'express';
 import { getAdminStats, getAllDonationsAdmin } from '../controllers/adminController.js';
-import { protect } from '../middlewares/auth.middleware.js';
+import { getDonors } from '../controllers/donationController.js';
+import { protect, adminOnly } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-// Only protected admin routes (we should ideally add an isAdmin middleware too)
-router.get('/stats', protect, getAdminStats);
-router.get('/donations', protect, getAllDonationsAdmin);
+// Protected admin routes
+router.get('/stats', protect, adminOnly, getAdminStats);
+router.get('/donations', protect, adminOnly, getAllDonationsAdmin);
+router.get('/donors', protect, adminOnly, getDonors);
 
 export default router;

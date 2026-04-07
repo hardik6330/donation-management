@@ -34,6 +34,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
+  tagTypes: ['Donations', 'Donors', 'Categories', 'Cities'],
   endpoints: (builder) => ({
     getQRCode: builder.query({
       query: () => '/donations/qr',
@@ -61,6 +62,7 @@ export const apiSlice = createApi({
         method: 'POST',
         body: data,
       }),
+      invalidatesTags: ['Donations'],
     }),
     verifyPayment: builder.mutation({
       query: (data) => ({
@@ -68,6 +70,7 @@ export const apiSlice = createApi({
         method: 'POST',
         body: data,
       }),
+      invalidatesTags: ['Donations'],
     }),
     getAdminStats: builder.query({
       query: () => '/admin/stats',
@@ -77,8 +80,88 @@ export const apiSlice = createApi({
         url: '/admin/donations',
         params,
       }),
+      providesTags: ['Donations'],
+    }),
+    getDonors: builder.query({
+      query: (params) => ({
+        url: '/admin/donors',
+        params,
+      }),
+      providesTags: ['Donors'],
+    }),
+    // Master Data Endpoints
+    getCities: builder.query({
+      query: () => '/master/cities',
+    }),
+    getSubLocations: builder.query({
+      query: (parentId) => `/master/sub-locations/${parentId}`,
+    }),
+    getCategories: builder.query({
+      query: (params) => ({
+        url: '/master/categories',
+        params,
+      }),
+      providesTags: ['Categories'],
+    }),
+    addLocationMaster: builder.mutation({
+      query: (data) => ({
+        url: '/master/location',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Cities'],
+    }),
+    addCategoryMaster: builder.mutation({
+      query: (newCategory) => ({
+        url: '/master/category',
+        method: 'POST',
+        body: newCategory,
+      }),
+      invalidatesTags: ['Categories'],
+    }),
+    updateCategory: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/master/category/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Categories'],
+    }),
+    addCombinedMasterData: builder.mutation({
+      query: (data) => ({
+        url: '/master/combined',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Cities', 'Categories'],
+    }),
+    updateDonation: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/donations/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Donations'],
     }),
   }),
 });
 
-export const { useGetQRCodeQuery, useLoginMutation, useRegisterMutation, useGetUserByMobileQuery, useCreateOrderMutation, useVerifyPaymentMutation, useGetAdminStatsQuery, useGetAllDonationsQuery } = apiSlice;
+export const { 
+  useGetQRCodeQuery, 
+  useLoginMutation, 
+  useRegisterMutation, 
+  useGetUserByMobileQuery, 
+  useCreateOrderMutation, 
+  useVerifyPaymentMutation, 
+  useGetAdminStatsQuery, 
+  useGetAllDonationsQuery,
+  useGetDonorsQuery,
+  useGetCitiesQuery,
+  useGetSubLocationsQuery,
+  useGetCategoriesQuery,
+  useAddLocationMasterMutation,
+  useAddCategoryMasterMutation,
+  useUpdateCategoryMutation,
+  useAddCombinedMasterDataMutation,
+  useUpdateDonationMutation,
+} = apiSlice;

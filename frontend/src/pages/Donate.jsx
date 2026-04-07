@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { useCreateOrderMutation, useVerifyPaymentMutation, useGetUserByMobileQuery } from '../services/apiSlice';
-import { IndianRupee, User, Mail, Home as HomeIcon, Building, MapPin, Loader2, Phone } from 'lucide-react';
+import { 
+  useCreateOrderMutation, 
+  useVerifyPaymentMutation, 
+  useGetUserByMobileQuery,
+  useGetCitiesQuery,
+  useGetSubLocationsQuery,
+  useGetCategoriesQuery
+} from '../services/apiSlice';
+import { IndianRupee, User, Mail, Home as HomeIcon, Building, MapPin, Loader2, Phone, CreditCard, Tag } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import confetti from 'canvas-confetti';
@@ -35,10 +42,25 @@ const Donate = () => {
     address: '',
     village: '',
     district: '',
+    cityId: '',
+    talukaId: '',
+    villageId: '',
+    categoryId: '',
     companyName: '',
     amount: '',
-    cause: 'General Community Support',
+    paymentMode: 'online',
   });
+
+  // Fetch Master Data
+  const { data: citiesData } = useGetCitiesQuery();
+  const { data: talukasData } = useGetSubLocationsQuery(formData.cityId, { skip: !formData.cityId });
+  const { data: villagesData } = useGetSubLocationsQuery(formData.talukaId, { skip: !formData.talukaId });
+  const { data: categoriesData } = useGetCategoriesQuery();
+
+  const cities = citiesData?.data || [];
+  const talukas = talukasData?.data || [];
+  const villages = villagesData?.data || [];
+  const categories = categoriesData?.data || [];
 
   // Fetch user data if mobile number is 10 digits
   const { data: existingUser, isFetching: isCheckingUser } = useGetUserByMobileQuery(formData.mobileNumber, {
@@ -57,6 +79,9 @@ const Donate = () => {
           address: user.address || '',
           village: user.village || '',
           district: user.district || '',
+          cityId: user.cityId || '',
+          talukaId: user.talukaId || '',
+          villageId: user.villageId || '',
           companyName: user.companyName || '',
         }));
       }, 0);
@@ -76,6 +101,16 @@ const Donate = () => {
       const cleaned = value.replace(/\D/g, ''); // Remove non-digits
       if (cleaned.length > 10) return; // Prevent more than 10 digits
       setFormData((prev) => ({ ...prev, [name]: cleaned }));
+      return;
+    }
+
+    // Handle dependent location selects
+    if (name === 'cityId') {
+      setFormData(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '' }));
+      return;
+    }
+    if (name === 'talukaId') {
+      setFormData(prev => ({ ...prev, talukaId: value, villageId: '' }));
       return;
     }
 
@@ -120,8 +155,22 @@ const Donate = () => {
         ...formData, 
         amount: Number(rawAmount) 
       }).unwrap();
+
+      if (formData.paymentMode === 'cash' || formData.paymentMode === 'pay_later') {
+        const msg = formData.paymentMode === 'cash' 
+          ? 'Donation Recorded Successfully!' 
+          : 'Donation Intent Recorded! We will contact you for payment.';
+        toast.success(msg);
+        fireFireworks();
+        setTimeout(() => {
+          navigate('/');
+        }, 5000);
+        return;
+      }
+
       const order = response.data.order;
       const donationId = response.data.donationId;
+      const razorpay_key_id = response.data.razorpay_key_id;
 
       // 2. Load Razorpay script
       const res = await loadRazorpayScript();
@@ -132,7 +181,7 @@ const Donate = () => {
 
       // 3. Configure Razorpay
       const options = {
-        key: 'rzp_test_Sa5VQ3LEmqXl4t', // Hardcoding for now, should ideally come from backend or env
+        key: razorpay_key_id,
         amount: order.amount,
         currency: order.currency,
         name: 'Donation Management System',
@@ -185,131 +234,269 @@ const Donate = () => {
           <p className="text-sm opacity-90">Your contribution makes a difference in our community</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-4 sm:space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <Phone className="w-4 h-4" /> Mobile Number
-              </label>
-              <div className="relative">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+          {/* User Details Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
+              <User className="w-4 h-4" /> User Details
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Phone className="w-4 h-4" /> Mobile Number
+                </label>
+                <div className="relative">
+                  <input
+                    required
+                    type="tel"
+                    name="mobileNumber"
+                    value={formData.mobileNumber}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                    placeholder="9876543210"
+                  />
+                  {isCheckingUser && (
+                    <div className="absolute right-3 top-3">
+                      <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <User className="w-4 h-4" /> Full Name
+                </label>
                 <input
                   required
-                  type="tel"
-                  name="mobileNumber"
-                  value={formData.mobileNumber}
+                  name="name"
+                  value={formData.name}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="9876543210"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="John Doe"
                 />
-                {isCheckingUser && (
-                  <div className="absolute right-3 top-2.5">
-                    <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                  </div>
-                )}
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Mail className="w-4 h-4" /> Email Address
+                </label>
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="john@example.com"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <HomeIcon className="w-4 h-4" /> Address
+                </label>
+                <input
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="Street name, house no."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Village
+                </label>
+                <input
+                  name="village"
+                  value={formData.village}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="Enter Village Name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> District
+                </label>
+                <input
+                  name="district"
+                  value={formData.district}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="Enter District Name"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Building className="w-4 h-4" /> Company Name (Optional)
+                </label>
+                <input
+                  name="companyName"
+                  value={formData.companyName}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                  placeholder="Business/Org name"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Donation Details Section */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
+              <IndianRupee className="w-4 h-4" /> Donation Details
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {/* City Select */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> City
+                </label>
+                <select
+                  required
+                  name="cityId"
+                  value={formData.cityId}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white transition"
+                >
+                  <option value="">Select City</option>
+                  {cities.map(city => (
+                    <option key={city.id} value={city.id}>{city.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Taluka Select */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Taluka
+                </label>
+                <select
+                  name="talukaId"
+                  value={formData.talukaId}
+                  onChange={handleInputChange}
+                  disabled={!formData.cityId}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white transition disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  <option value="">Select Taluka</option>
+                  {talukas.map(taluka => (
+                    <option key={taluka.id} value={taluka.id}>{taluka.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Village Select */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Village
+                </label>
+                <select
+                  name="villageId"
+                  value={formData.villageId}
+                  onChange={handleInputChange}
+                  disabled={!formData.talukaId}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white transition disabled:bg-gray-50 disabled:text-gray-400"
+                >
+                  <option value="">Select Village</option>
+                  {villages.map(village => (
+                    <option key={village.id} value={village.id}>{village.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Category Select */}
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Tag className="w-4 h-4" /> Category
+                </label>
+                <select
+                  required
+                  name="categoryId"
+                  value={formData.categoryId}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white transition"
+                >
+                  <option value="">Select Category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="space-y-3 pt-2">
+              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                <CreditCard className="w-4 h-4" /> Payment Mode
+              </label>
+              <div className="flex flex-wrap gap-4">
+                <label className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                  formData.paymentMode === 'online' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
+                }`}>
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="online"
+                    checked={formData.paymentMode === 'online'}
+                    onChange={handleInputChange}
+                    className="hidden"
+                  />
+                  <span className={`font-bold text-xs sm:text-sm ${formData.paymentMode === 'online' ? 'text-blue-700' : 'text-gray-500'}`}>Online</span>
+                </label>
+                <label className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                  formData.paymentMode === 'cash' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
+                }`}>
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="cash"
+                    checked={formData.paymentMode === 'cash'}
+                    onChange={handleInputChange}
+                    className="hidden"
+                  />
+                  <span className={`font-bold text-xs sm:text-sm ${formData.paymentMode === 'cash' ? 'text-blue-700' : 'text-gray-500'}`}>Cash</span>
+                </label>
+                <label className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                  formData.paymentMode === 'pay_later' ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
+                }`}>
+                  <input
+                    type="radio"
+                    name="paymentMode"
+                    value="pay_later"
+                    checked={formData.paymentMode === 'pay_later'}
+                    onChange={handleInputChange}
+                    className="hidden"
+                  />
+                  <span className={`font-bold text-xs sm:text-sm ${formData.paymentMode === 'pay_later' ? 'text-blue-700' : 'text-gray-500'}`}>Pay Later</span>
+                </label>
               </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <User className="w-4 h-4" /> Full Name
+                <IndianRupee className="w-4 h-4" /> Donation Amount (INR)
               </label>
               <input
                 required
-                name="name"
-                value={formData.name}
+                type="text"
+                name="amount"
+                value={formData.amount}
                 onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="John Doe"
+                className="w-full px-4 py-3 text-2xl font-bold border border-blue-300 bg-blue-50 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
+                placeholder="0"
               />
             </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <Mail className="w-4 h-4" /> Email Address
-              </label>
-              <input
-                required
-                type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="john@example.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <HomeIcon className="w-4 h-4" /> Address
-              </label>
-              <input
-                name="address"
-                value={formData.address}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Street name, house no."
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> Village
-              </label>
-              <input
-                name="village"
-                value={formData.village}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Your village"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <MapPin className="w-4 h-4" /> District
-              </label>
-              <input
-                name="district"
-                value={formData.district}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Your district"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <Building className="w-4 h-4" /> Company Name (Optional)
-              </label>
-              <input
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Business/Org name"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2 pt-4 border-t border-gray-100">
-            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-              <IndianRupee className="w-4 h-4" /> Donation Amount (INR)
-            </label>
-            <input
-              required
-              type="text"
-              name="amount"
-              value={formData.amount}
-              onChange={handleInputChange}
-              className="w-full px-4 py-3 text-2xl font-bold border border-blue-300 bg-blue-50 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="0"
-            />
           </div>
 
           <button
             type="submit"
             disabled={isCreatingOrder || isVerifying}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg transition duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-200 transition duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {(isCreatingOrder || isVerifying) ? (
               <>

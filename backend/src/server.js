@@ -10,7 +10,6 @@ import { ipAuth } from './middlewares/ipAuth.middleware.js';
 import { sendError } from './utils/apiResponse.js';
 import { seedAdmin } from './controllers/userController.js';
 import { NODE_ENV, FRONTEND_URL,PORT } from './config/db.js';
-
 // Load env vars
 
 const numCPUs = os.cpus().length;
