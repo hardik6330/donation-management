@@ -129,7 +129,7 @@ export const createDonationOrder = async (req, res) => {
       // Send Email for Cash Donation
       if (paymentMode === 'cash' && user.email) {
         const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
-        sendEmail(user.email, 'Donation Received - Thank You!', emailHtml);
+        await sendEmail(user.email, 'Donation Received - Thank You!', emailHtml);
       }
 
       const message = paymentMode === 'cash' 
@@ -189,10 +189,10 @@ export const verifyPayment = async (req, res) => {
       });
 
       // Send Success Email
-      if (donor && donor.email) {
-        const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
-        sendEmail(donor.email, 'Donation Successful - Thank You!', emailHtml);
-      }
+       if (donor && donor.email) {
+         const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
+         await sendEmail(donor.email, 'Donation Successful - Thank You!', emailHtml);
+       }
 
       return sendSuccess(res, donation, 'Payment verified successfully');
     } else {
