@@ -2,9 +2,9 @@ import { User } from '../models/user.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
+import { JWT_SECRET, REFRESH_TOKEN_SECRET,ADMIN_EMAIL,ADMIN_PASSWORD,ADMIN_MOBILE, } from '../config/db.js';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET;
+
 
 // Helper methods for tokens
 const generateAccessToken = (userId) => {
@@ -100,9 +100,9 @@ export const getUserByMobile = async (req, res) => {
 // Initial Admin Creation (Seed)
 export const seedAdmin = async () => {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin@123';
-    const adminMobile = process.env.ADMIN_MOBILE || '9876543210';
+    const adminEmail = ADMIN_EMAIL || 'admin@example.com';
+    const adminPassword = ADMIN_PASSWORD || 'Admin@123';
+    const adminMobile = ADMIN_MOBILE || '9876543210';
 
     const adminExists = await User.findOne({ where: { email: adminEmail } });
     if (!adminExists) {

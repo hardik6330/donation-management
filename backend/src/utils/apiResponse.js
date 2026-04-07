@@ -1,3 +1,4 @@
+import { NODE_ENV } from '../config/db.js';
 /**
  * @description Universal response handler for consistent API responses
  */
@@ -48,7 +49,7 @@ export const sendError = (res, message = 'Internal Server Error', statusCode = 5
     response.error = errorDetails;
   }
 
-  if (error && process.env.NODE_ENV === 'development' && error.stack) {
+  if (error && NODE_ENV === 'development' && error.stack) {
     response.stack = error.stack;
   }
 

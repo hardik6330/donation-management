@@ -14,16 +14,14 @@ export const User = sequelize.define('User', {
   email: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true,
+    unique: 'users_email_unique',
     validate: {
       isEmail: true,
     },
   },
   mobileNumber: {
     type: DataTypes.STRING,
-    unique: {
-      msg: 'Mobile number already in use'
-    },
+    unique: 'users_mobile_unique',
     allowNull: false,
     validate: {
       notEmpty: { msg: 'Mobile number is required' },

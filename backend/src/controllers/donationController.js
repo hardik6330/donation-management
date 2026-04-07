@@ -5,7 +5,7 @@ import { getPaginationParams, getPaginatedResponse, processFields } from '../uti
 import { razorpay } from '../config/razorpay.js';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
-import { FRONTEND_URL } from '../config/db.js';
+import { FRONTEND_URL,RAZORPAY_KEY_SECRET } from '../config/db.js';
 
 // 1. QR Code Generate Karo
 export const generateQRCode = async (req, res) => {
@@ -61,7 +61,7 @@ export const verifyPayment = async (req, res) => {
 
     const body = razorpay_order_id + "|" + razorpay_payment_id;
     const expectedSignature = crypto
-      .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+      .createHmac('sha256', RAZORPAY_KEY_SECRET)
       .update(body.toString())
       .digest('hex');
 

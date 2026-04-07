@@ -4,15 +4,14 @@ import os from 'os';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
 import { connectDB, sequelize } from './config/db.js';
 import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.middleware.js';
 import { sendError } from './utils/apiResponse.js';
 import { seedAdmin } from './controllers/userController.js';
+import { NODE_ENV, FRONTEND_URL,PORT } from './config/db.js';
 
 // Load env vars
-dotenv.config();
 
 const numCPUs = os.cpus().length;
 
@@ -45,11 +44,11 @@ const initDB = async () => {
 };
 
 const app = express();
-const port = process.env.PORT || 5000;
+const port = PORT || 5000;
 
 // Middlewares
 app.use(helmet());
-app.use(cors({ origin: process.env.FRONTEND_URL || '*' }));
+app.use(cors({ origin: FRONTEND_URL || '*' }));
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -57,7 +56,7 @@ app.use(express.urlencoded({ extended: true }));
 // Lazy load DB on first request for serverless
 app.use(async (req, res, next) => {
   // Only wait for DB on non-root routes to keep health checks fast
-  if (req.path !== '/' && process.env.NODE_ENV === 'production' && !dbInitialized) {
+  if (req.path !== '/' && NODE_ENV === 'production' && !dbInitialized) {
     try {
       await initDB();
     } catch (error) {
@@ -90,7 +89,7 @@ app.use((err, req, res, next) => {
 });
 
 // Only use clustering in local/non-serverless environments
-if (process.env.NODE_ENV !== 'production' && cluster.isPrimary) {
+if (NODE_ENV !== 'production' && cluster.isPrimary) {
   console.log(`🚀 Primary process ${process.pid} is running`);
   
   initDB().then(() => {

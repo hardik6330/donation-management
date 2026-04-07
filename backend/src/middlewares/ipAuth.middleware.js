@@ -1,4 +1,5 @@
 import { sendError } from '../utils/apiResponse.js';
+import { NODE_ENV,ALLOWED_IPS } from '../config/db.js';
 
 /**
  * Middleware to allow requests only from specific IPs
@@ -8,11 +9,11 @@ export const ipAuth = (req, res, next) => {
   console.log(`🌐 [Incoming Request] Method: ${req.method} | Path: ${req.path} | IP: ${clientIp}`);
 
   // Allow all in development mode to avoid dynamic IP issues
-  if (process.env.NODE_ENV === 'development') {
+  if (NODE_ENV === 'development') {
     return next();
   }
 
-  const allowedIps = process.env.ALLOWED_IPS ? process.env.ALLOWED_IPS.split(',') : [];
+  const allowedIps = ALLOWED_IPS ? ALLOWED_IPS.split(',') : [];
 
   // If no IPs are configured, allow all (optional, or block all)
   if (allowedIps.length === 0) {

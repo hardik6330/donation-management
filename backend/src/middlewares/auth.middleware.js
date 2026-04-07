@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { sendError } from '../utils/apiResponse.js';
+import { JWT_SECRET } from '../config/db.js';
 
 export const protect = async (req, res, next) => {
   let token;
@@ -7,7 +8,8 @@ export const protect = async (req, res, next) => {
   if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
     try {
       token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      // Verify token
+      const decoded = jwt.verify(token, JWT_SECRET);
       req.user = decoded;
       next();
     } catch (error) {
