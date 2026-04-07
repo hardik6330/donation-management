@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useGetAllDonationsQuery, useGetCategoriesQuery, useUpdateDonationMutation } from '../../../services/apiSlice';
 import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X } from 'lucide-react';
 import { toast } from 'react-toastify';
+import AdminPageHeader from '../../../components/common/AdminPageHeader';
+import AdminTable from '../../../components/common/AdminTable';
+import AdminModal from '../../../components/common/AdminModal';
 
 const DonationList = () => {
   const [filters, setFilters] = useState({
@@ -94,14 +97,23 @@ const DonationList = () => {
     }
   };
 
+  const tableHeaders = [
+    { label: 'Donor Name' },
+    { label: 'Cause / Purpose' },
+    { label: 'Village / District' },
+    { label: 'Mode' },
+    { label: 'Amount' },
+    { label: 'Status' },
+    { label: 'Payment Date' },
+    { label: 'Action' },
+  ];
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">Donation Records</h1>
-          <p className="text-sm text-gray-500 font-medium">View and filter all your donation transactions</p>
-        </div>
-      </div>
+      <AdminPageHeader 
+        title="Donation Records" 
+        subtitle="View and filter all your donation transactions"
+      />
 
       {/* Filters Section */}
       <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -212,223 +224,193 @@ const DonationList = () => {
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center">
-          <h2 className="text-base sm:text-lg font-bold text-gray-800">Donation Records</h2>
-          {loading && <Loader2 className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[600px] sm:min-w-0">
-            <thead>
-              <tr className="bg-gray-50 text-gray-600 text-[10px] sm:text-xs uppercase">
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Donor Name</th>
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Cause / Purpose</th>
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Village / District</th>
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Mode</th>
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Amount</th>
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Status</th>
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Payment Date</th>
-                <th className="p-3 sm:p-4 px-4 sm:px-6 font-semibold">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {Array.isArray(donations) && donations.map((donation) => (
-                <tr key={donation.id} className="hover:bg-gray-50 transition">
-                  <td className="p-3 sm:p-4 px-4 sm:px-6">
-                    <div className="font-medium text-gray-800 text-sm">{donation.donor?.name}</div>
-                    <div className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[120px] sm:max-w-none">{donation.donor?.email}</div>
-                  </td>
-                  <td className="p-3 sm:p-4 px-4 sm:px-6">
-                    <div className="text-gray-800 text-sm font-medium line-clamp-2 max-w-[200px]" title={donation.cause}>
-                      {donation.cause || 'General Donation'}
-                    </div>
-                  </td>
-                  <td className="p-3 sm:p-4 px-4 sm:px-6 text-gray-600 text-[10px] sm:text-sm">
-                    {donation.donor?.village || '-'} / {donation.donor?.district || '-'}
-                  </td>
-                  <td className="p-3 sm:p-4 px-4 sm:px-6">
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                      donation.paymentMode === 'cash' ? 'bg-orange-100 text-orange-700' : 
-                      donation.paymentMode === 'pay_later' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
-                    }`}>
-                      {donation.paymentMode?.replace('_', ' ') || 'online'}
-                    </span>
-                  </td>
-                  <td className="p-3 sm:p-4 px-4 sm:px-6 font-bold text-gray-800 text-sm">₹{donation.amount}</td>
-                  <td className="p-3 sm:p-4 px-4 sm:px-6">
-                    <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-[10px] font-semibold ${
-                      donation.status === 'completed' ? 'bg-green-100 text-green-700' : 
-                      donation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {donation.status}
-                    </span>
-                  </td>
-                  <td className="p-3 sm:p-4 px-4 sm:px-6 text-gray-500 text-[10px] sm:text-sm whitespace-nowrap">
-                    {donation.paymentDate ? new Date(donation.paymentDate).toLocaleDateString() : '-'}
-                  </td>
-                  <td className="p-3 sm:p-4 px-4 sm:px-6">
-                    {donation.paymentMode === 'pay_later' && (
-                      <button
-                        onClick={() => handleEditClick(donation)}
-                        className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition"
-                        title="Edit Donation"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {(!donations || donations.length === 0) && !loading && (
-            <div className="p-8 text-center text-gray-500 text-sm">No donations found with current filters.</div>
-          )}
-        </div>
+      <AdminTable 
+        headers={tableHeaders} 
+        isLoading={loading}
+        emptyMessage="No donations found with current filters."
+      >
+        {donations.map((donation) => (
+          <tr key={donation.id} className="hover:bg-gray-50 transition">
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
+              <div className="font-medium text-gray-800 text-sm">{donation.donor?.name}</div>
+              <div className="text-[10px] sm:text-xs text-gray-500 truncate max-w-[120px] sm:max-w-none">{donation.donor?.email}</div>
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
+              <div className="text-gray-800 text-sm font-medium line-clamp-2 max-w-[200px]" title={donation.cause}>
+                {donation.cause || 'General Donation'}
+              </div>
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6 text-gray-600 text-[10px] sm:text-sm">
+              {donation.donor?.village || '-'} / {donation.donor?.district || '-'}
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
+              <span className={`text-[10px] font-bold uppercase ${
+                donation.paymentMode === 'cash' ? 'text-orange-600' : 
+                donation.paymentMode === 'pay_later' ? 'text-purple-600' : 'text-blue-600'
+              }`}>
+                {donation.paymentMode?.replace('_', ' ') || 'online'}
+              </span>
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6 font-bold text-gray-800 text-sm">₹{donation.amount}</td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
+              <span className={`text-[10px] font-bold uppercase ${
+                donation.status === 'completed' ? 'text-green-600' : 
+                donation.status === 'pending' ? 'text-yellow-600' : 'text-red-600'
+              }`}>
+                {donation.status}
+              </span>
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6 text-gray-500 text-[10px] sm:text-sm whitespace-nowrap">
+              {donation.paymentDate ? new Date(donation.paymentDate).toLocaleDateString() : '-'}
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
+              {donation.paymentMode === 'pay_later' && (
+                <button
+                  onClick={() => handleEditClick(donation)}
+                  className="p-1.5 hover:bg-blue-50 text-blue-600 rounded-lg transition"
+                  title="Edit Donation"
+                >
+                  <Edit className="w-4 h-4" />
+                </button>
+              )}
+            </td>
+          </tr>
+        ))}
+      </AdminTable>
 
-        {/* Pagination UI */}
-        {pagination.totalPages > 1 && (
-          <div className="p-4 sm:p-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between bg-gray-50 gap-4">
-            <p className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
-              Showing <span className="font-bold">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
-            </p>
-            <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
-              <button
-                disabled={pagination.currentPage === 1}
-                onClick={() => handlePageChange(pagination.currentPage - 1)}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
-              >
-                Prev
-              </button>
-              <div className="flex items-center gap-1">
-                {[...Array(pagination.totalPages)].map((_, i) => {
-                  const pageNum = i + 1;
-                  if (pagination.totalPages > 5 && (pageNum < pagination.currentPage - 1 || pageNum > pagination.currentPage + 1) && pageNum !== 1 && pageNum !== pagination.totalPages) {
-                    if (pageNum === pagination.currentPage - 2 || pageNum === pagination.currentPage + 2) {
-                      return <span key={pageNum} className="text-gray-400">...</span>;
-                    }
-                    return null;
+      {/* Pagination UI */}
+      {pagination.totalPages > 1 && (
+        <div className="p-4 sm:p-6 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between bg-gray-50 gap-4 rounded-2xl shadow-sm border border-gray-100">
+          <p className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
+            Showing <span className="font-bold">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
+          </p>
+          <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
+            <button
+              disabled={pagination.currentPage === 1}
+              onClick={() => handlePageChange(pagination.currentPage - 1)}
+              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+            >
+              Prev
+            </button>
+            <div className="flex items-center gap-1">
+              {[...Array(pagination.totalPages)].map((_, i) => {
+                const pageNum = i + 1;
+                if (pagination.totalPages > 5 && (pageNum < pagination.currentPage - 1 || pageNum > pagination.currentPage + 1) && pageNum !== 1 && pageNum !== pagination.totalPages) {
+                  if (pageNum === pagination.currentPage - 2 || pageNum === pagination.currentPage + 2) {
+                    return <span key={pageNum} className="text-gray-400">...</span>;
                   }
-                  return (
-                    <button
-                      key={pageNum}
-                      onClick={() => handlePageChange(pageNum)}
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm font-bold transition ${
-                        pagination.currentPage === pageNum 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      {pageNum}
-                    </button>
-                  );
-                })}
-              </div>
-              <button
-                disabled={pagination.currentPage === pagination.totalPages}
-                onClick={() => handlePageChange(pagination.currentPage + 1)}
-                className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
-              >
-                Next
-              </button>
+                  return null;
+                }
+                return (
+                  <button
+                    key={pageNum}
+                    onClick={() => handlePageChange(pageNum)}
+                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm font-bold transition ${
+                      pagination.currentPage === pageNum 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {pageNum}
+                  </button>
+                );
+              })}
             </div>
-          </div>
-        )}
-      </div>
-
-      {/* Edit Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-xl border border-gray-100 w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
-            <div className="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h2 className="text-lg font-bold text-gray-800">Update Donation</h2>
-              <button 
-                onClick={() => setIsEditModalOpen(false)}
-                className="p-2 hover:bg-gray-200 text-gray-500 rounded-full transition"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={handleUpdate} className="p-4 sm:p-6 space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  <IndianRupee className="w-3 h-3" /> Amount
-                </label>
-                <input
-                  type="number"
-                  required
-                  value={editForm.amount}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  Payment Mode
-                </label>
-                <select
-                  required
-                  value={editForm.paymentMode}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, paymentMode: e.target.value }))}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-                >
-                  <option value="online">Online</option>
-                  <option value="cash">Cash</option>
-                  <option value="pay_later">Pay Later</option>
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  <Calendar className="w-3 h-3" /> Payment Date
-                </label>
-                <input
-                  type="date"
-                  required
-                  value={editForm.paymentDate}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, paymentDate: e.target.value }))}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-                  Status
-                </label>
-                <select
-                  required
-                  value={editForm.status}
-                  onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
-                  className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-                >
-                  <option value="pending">Pending</option>
-                  <option value="completed">Completed</option>
-                  <option value="failed">Failed</option>
-                </select>
-              </div>
-
-              <div className="pt-4 flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-lg text-sm transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUpdating}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update'}
-                </button>
-              </div>
-            </form>
+            <button
+              disabled={pagination.currentPage === pagination.totalPages}
+              onClick={() => handlePageChange(pagination.currentPage + 1)}
+              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+            >
+              Next
+            </button>
           </div>
         </div>
       )}
+
+      {/* Edit Modal */}
+      <AdminModal
+        isOpen={isEditModalOpen}
+        onClose={() => setIsEditModalOpen(false)}
+        title="Update Donation"
+        maxWidth="max-w-md"
+      >
+        <form onSubmit={handleUpdate} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+              <IndianRupee className="w-3 h-3" /> Amount
+            </label>
+            <input
+              type="number"
+              required
+              value={editForm.amount}
+              onChange={(e) => setEditForm(prev => ({ ...prev, amount: e.target.value }))}
+              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+              Payment Mode
+            </label>
+            <select
+              required
+              value={editForm.paymentMode}
+              onChange={(e) => setEditForm(prev => ({ ...prev, paymentMode: e.target.value }))}
+              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+            >
+              <option value="online">Online</option>
+              <option value="cash">Cash</option>
+              <option value="pay_later">Pay Later</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+              <Calendar className="w-3 h-3" /> Payment Date
+            </label>
+            <input
+              type="date"
+              required
+              value={editForm.paymentDate}
+              onChange={(e) => setEditForm(prev => ({ ...prev, paymentDate: e.target.value }))}
+              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+              Status
+            </label>
+            <select
+              required
+              value={editForm.status}
+              onChange={(e) => setEditForm(prev => ({ ...prev, status: e.target.value }))}
+              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+            >
+              <option value="pending">Pending</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+            </select>
+          </div>
+
+          <div className="pt-4 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(false)}
+              className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-lg text-sm transition"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isUpdating ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update'}
+            </button>
+          </div>
+        </form>
+      </AdminModal>
     </div>
   );
 };
