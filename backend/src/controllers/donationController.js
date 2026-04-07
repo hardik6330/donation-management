@@ -209,7 +209,7 @@ export const getDonations = async (req, res) => {
   try {
     const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
     const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
-    const { search, startDate, endDate, status } = req.query;
+    const { search, startDate, endDate, status, minAmount, maxAmount } = req.query;
 
     const where = {};
     const donorWhere = {};
@@ -234,7 +234,16 @@ export const getDonations = async (req, res) => {
       where.createdAt = { [Op.lte]: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
     }
 
-    // 3. Status Filtering
+    // 3. Amount Filtering
+    if (minAmount && maxAmount) {
+      where.amount = { [Op.between]: [Number(minAmount), Number(maxAmount)] };
+    } else if (minAmount) {
+      where.amount = { [Op.gte]: Number(minAmount) };
+    } else if (maxAmount) {
+      where.amount = { [Op.lte]: Number(maxAmount) };
+    }
+
+    // 4. Status Filtering
     if (status) {
       where.status = status;
     }

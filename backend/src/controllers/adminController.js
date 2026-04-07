@@ -64,60 +64,64 @@ export const getAdminStats = async (req, res) => {
 
 export const getAllDonationsAdmin = async (req, res) => {
   try {
-    const { search, startDate, endDate, amount, categoryId } = req.query;
+    const { search, startDate, endDate, minAmount, maxAmount, categoryId, status } = req.query;
     const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
     const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
 
     let whereClause = {};
-    let userWhereClause = {};
 
     // 1. Search Filter (by donor name, email or mobileNumber)
     if (search) {
-      userWhereClause = {
-        [Op.or]: [
-          { name: { [Op.like]: `%${search}%` } },
-          { email: { [Op.like]: `%${search}%` } },
-          { mobileNumber: { [Op.like]: `%${search}%` } }
-        ]
-      };
+      whereClause[Op.or] = [
+        { '$donor.name$': { [Op.like]: `%${search}%` } },
+        { '$donor.email$': { [Op.like]: `%${search}%` } },
+        { '$donor.mobileNumber$': { [Op.like]: `%${search}%` } }
+      ];
     }
 
     // 2. Date Filter
-    if (startDate || endDate) {
-      whereClause.createdAt = {};
-      if (startDate) {
-        whereClause.createdAt[Op.gte] = new Date(startDate);
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        whereClause.createdAt[Op.lte] = end;
-      }
+    if (startDate && endDate) {
+      whereClause.createdAt = {
+        [Op.between]: [new Date(startDate), new Date(new Date(endDate).setHours(23, 59, 59, 999))]
+      };
+    } else if (startDate) {
+      whereClause.createdAt = { [Op.gte]: new Date(startDate) };
+    } else if (endDate) {
+      whereClause.createdAt = { [Op.lte]: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
     }
 
-    // 3. Amount Filter (Exact or Minimum match - using exact for now as per previous logic, but can be GTE)
-    if (amount) {
-      whereClause.amount = { [Op.gte]: Number(amount) };
+    // 3. Amount Filter
+    if (minAmount && maxAmount) {
+      whereClause.amount = { [Op.between]: [Number(minAmount), Number(maxAmount)] };
+    } else if (minAmount) {
+      whereClause.amount = { [Op.gte]: Number(minAmount) };
+    } else if (maxAmount) {
+      whereClause.amount = { [Op.lte]: Number(maxAmount) };
     }
 
-    // 4. Category Filter
+    // 4. Status Filter
+    if (status) {
+      whereClause.status = status;
+    }
+
+    // 5. Category Filter
     if (categoryId) {
       whereClause.categoryId = categoryId;
     }
 
     const { count, rows: donations } = await Donation.findAndCountAll({
       where: whereClause,
-      attributes: mainAttributes, // Apply dynamic fields
+      attributes: mainAttributes,
       include: [{
         model: User,
         as: 'donor',
-        where: Object.keys(userWhereClause).length > 0 ? userWhereClause : null,
-        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'village', 'district'] // Default fields if not specified
+        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'village', 'district']
       }],
       order: [['createdAt', 'DESC']],
       limit: queryLimit,
       offset: offset,
       distinct: true,
+      subQuery: false, // Essential when filtering by associated model fields
     });
 
     const responseData = getPaginatedResponse({

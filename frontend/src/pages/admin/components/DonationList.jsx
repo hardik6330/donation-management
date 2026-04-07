@@ -8,7 +8,8 @@ const DonationList = () => {
     search: '',
     startDate: '',
     endDate: '',
-    amount: '',
+    minAmount: '',
+    maxAmount: '',
     categoryId: '',
     page: 1,
     limit: 10,
@@ -56,7 +57,8 @@ const DonationList = () => {
       search: '', 
       startDate: '', 
       endDate: '', 
-      amount: '', 
+      minAmount: '', 
+      maxAmount: '',
       categoryId: '',
       page: 1, 
       limit: 10, 
@@ -103,7 +105,7 @@ const DonationList = () => {
 
       {/* Filters Section */}
       <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 items-end">
           <div className="space-y-2 lg:col-span-1">
             <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
               <Search className="w-3 h-3" /> Search Donor
@@ -117,18 +119,29 @@ const DonationList = () => {
             />
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 lg:col-span-2">
             <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <IndianRupee className="w-3 h-3" /> Amount
+              <IndianRupee className="w-3 h-3" /> Amount Range
             </label>
-            <input
-              type="number"
-              name="amount"
-              placeholder="Min Amount"
-              value={filters.amount}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                name="minAmount"
+                placeholder="Min"
+                value={filters.minAmount}
+                onChange={handleFilterChange}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
+              <span className="text-gray-400 text-xs">-</span>
+              <input
+                type="number"
+                name="maxAmount"
+                placeholder="Max"
+                value={filters.maxAmount}
+                onChange={handleFilterChange}
+                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

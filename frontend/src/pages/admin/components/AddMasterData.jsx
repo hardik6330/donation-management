@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   useAddCombinedMasterDataMutation,
   useGetCitiesQuery,
@@ -20,6 +20,8 @@ const AddMasterData = ({ isOpen, onClose }) => {
     isActive: true
   });
 
+  const [activeDropdown, setActiveDropdown] = useState(null); // 'city', 'taluka', 'village', 'category'
+
   // Fetch Master Data for suggestions
   const { data: citiesData } = useGetCitiesQuery();
   const { data: talukasData } = useGetSubLocationsQuery(formData.cityId, { skip: !formData.cityId });
@@ -32,6 +34,38 @@ const AddMasterData = ({ isOpen, onClose }) => {
   const categories = categoriesData?.data || [];
 
   const [addCombinedMaster, { isLoading }] = useAddCombinedMasterDataMutation();
+
+  // Close dropdowns on click outside
+  useEffect(() => {
+    const handleClickOutside = () => setActiveDropdown(null);
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
+  const handleSelectOption = (name, value, id = '') => {
+    if (name === 'city') {
+      setFormData(prev => ({
+        ...prev,
+        city: value,
+        cityId: id,
+        taluka: '',
+        talukaId: '',
+        village: ''
+      }));
+    } else if (name === 'taluka') {
+      setFormData(prev => ({
+        ...prev,
+        taluka: value,
+        talukaId: id,
+        village: ''
+      }));
+    } else if (name === 'village') {
+      setFormData(prev => ({ ...prev, village: value }));
+    } else if (name === 'categoryName') {
+      setFormData(prev => ({ ...prev, categoryName: value }));
+    }
+    setActiveDropdown(null);
+  };
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -46,6 +80,7 @@ const AddMasterData = ({ isOpen, onClose }) => {
         talukaId: '',
         village: ''
       }));
+      setActiveDropdown('city');
       return;
     }
 
@@ -57,6 +92,19 @@ const AddMasterData = ({ isOpen, onClose }) => {
         talukaId: selectedTaluka ? selectedTaluka.id : '',
         village: ''
       }));
+      setActiveDropdown('taluka');
+      return;
+    }
+
+    if (name === 'village') {
+      setFormData(prev => ({ ...prev, village: value }));
+      setActiveDropdown('village');
+      return;
+    }
+
+    if (name === 'categoryName') {
+      setFormData(prev => ({ ...prev, categoryName: value }));
+      setActiveDropdown('category');
       return;
     }
 
@@ -86,9 +134,35 @@ const AddMasterData = ({ isOpen, onClose }) => {
 
   if (!isOpen) return null;
 
+  const renderDropdown = (name, items, valueField = 'name', idField = 'id') => {
+    const filteredItems = items.filter(item => 
+      item[valueField].toLowerCase().includes((formData[name === 'category' ? 'categoryName' : name] || '').toLowerCase())
+    );
+
+    if (activeDropdown !== name || filteredItems.length === 0) return null;
+
+    return (
+      <div 
+        className="absolute z-[110] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {filteredItems.map((item) => (
+          <button
+            key={item[idField] || item[valueField]}
+            type="button"
+            onClick={() => handleSelectOption(name === 'category' ? 'categoryName' : name, item[valueField], item[idField])}
+            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
+          >
+            {item[valueField]}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-50 rounded-xl text-blue-600">
@@ -111,49 +185,49 @@ const AddMasterData = ({ isOpen, onClose }) => {
               <MapPin className="w-4 h-4" /> Location Details
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-xs font-bold text-gray-500 uppercase">City</label>
                 <input
                   name="city"
-                  list="city-list"
+                  autoComplete="off"
                   value={formData.city}
                   onChange={handleChange}
+                  onFocus={() => setActiveDropdown('city')}
+                  onClick={(e) => { e.stopPropagation(); setActiveDropdown('city'); }}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
                   placeholder="Ex: Bhavnagar"
                 />
-                <datalist id="city-list">
-                  {cities.map(c => <option key={c.id} value={c.name} />)}
-                </datalist>
+                {renderDropdown('city', cities)}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-xs font-bold text-gray-500 uppercase">Taluka</label>
                 <input
                   name="taluka"
-                  list="taluka-list"
+                  autoComplete="off"
                   value={formData.taluka}
                   onChange={handleChange}
+                  onFocus={() => setActiveDropdown('taluka')}
+                  onClick={(e) => { e.stopPropagation(); setActiveDropdown('taluka'); }}
                   disabled={!formData.city}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
                   placeholder="Ex: Ghogha"
                 />
-                <datalist id="taluka-list">
-                  {talukas.map(t => <option key={t.id} value={t.name} />)}
-                </datalist>
+                {renderDropdown('taluka', talukas)}
               </div>
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-xs font-bold text-gray-500 uppercase">Village</label>
                 <input
                   name="village"
-                  list="village-list"
+                  autoComplete="off"
                   value={formData.village}
                   onChange={handleChange}
+                  onFocus={() => setActiveDropdown('village')}
+                  onClick={(e) => { e.stopPropagation(); setActiveDropdown('village'); }}
                   disabled={!formData.taluka}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
                   placeholder="Ex: Rampar"
                 />
-                <datalist id="village-list">
-                  {villages.map(v => <option key={v.id} value={v.name} />)}
-                </datalist>
+                {renderDropdown('village', villages)}
               </div>
             </div>
           </div>
@@ -164,19 +238,19 @@ const AddMasterData = ({ isOpen, onClose }) => {
               <Tag className="w-4 h-4" /> Category Details
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
+              <div className="space-y-2 relative">
                 <label className="text-xs font-bold text-gray-500 uppercase">Category Name</label>
                 <input
                   name="categoryName"
-                  list="category-list"
+                  autoComplete="off"
                   value={formData.categoryName}
                   onChange={handleChange}
+                  onFocus={() => setActiveDropdown('category')}
+                  onClick={(e) => { e.stopPropagation(); setActiveDropdown('category'); }}
                   className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
                   placeholder="Ex: Gaushala"
                 />
-                <datalist id="category-list">
-                  {categories.map(cat => <option key={cat.id} value={cat.name} />)}
-                </datalist>
+                {renderDropdown('category', categories)}
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
