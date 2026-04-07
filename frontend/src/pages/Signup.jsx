@@ -34,7 +34,7 @@ const Signup = () => {
       toast.success('Signup Successful!');
       navigate('/');
     } catch (err) {
-      const errorMsg = err?.data?.error ? `${err.data.message}: ${err.data.error}` : (err?.data?.message || 'Signup failed');
+      const errorMsg = err?.data?.message || 'Signup failed';
       toast.error(errorMsg);
     }
   };

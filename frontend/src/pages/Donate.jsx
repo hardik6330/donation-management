@@ -155,7 +155,8 @@ const Donate = () => {
             }, 5000); // Redirect after fireworks
           } catch (err) {
             console.error('Verification error:', err);
-            toast.error('Payment verification failed. Please contact support.');
+            const errorMsg = err?.data?.message || 'Payment verification failed. Please contact support.';
+            toast.error(errorMsg);
           }
         },
         prefill: {
@@ -171,7 +172,8 @@ const Donate = () => {
       rzp.open();
     } catch (err) {
       console.error('Order creation error:', err);
-      toast.error('Failed to initiate payment. Please try again.');
+      const errorMsg = err?.data?.message || 'Failed to initiate payment. Please try again.';
+      toast.error(errorMsg);
     }
   };
 
