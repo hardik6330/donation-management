@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { sequelize } from '../config/db.js';
 import { FRONTEND_URL, RAZORPAY_KEY_SECRET, RAZORPAY_KEY_ID } from '../config/db.js';
 import { Op } from 'sequelize';
+import { sendEmail, getDonationEmailTemplate } from '../utils/emailService.js';
 
 // 1. QR Code Generate Karo
 export const generateQRCode = async (req, res) => {
@@ -124,6 +125,13 @@ export const createDonationOrder = async (req, res) => {
 
     if (paymentMode === 'cash' || paymentMode === 'pay_later') {
       const donation = await Donation.create(donationData);
+      
+      // Send Email for Cash Donation
+      if (paymentMode === 'cash' && user.email) {
+        const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
+        sendEmail(user.email, 'Donation Received - Thank You!', emailHtml);
+      }
+
       const message = paymentMode === 'cash' 
         ? 'Cash donation recorded successfully' 
         : 'Donation intent recorded (Pay Later)';
@@ -170,12 +178,21 @@ export const verifyPayment = async (req, res) => {
       const donation = await Donation.findByPk(donationId);
       if (!donation) return sendError(res, 'Donation not found', 404);
 
+      // Fetch donor info for email
+      const donor = await User.findByPk(donation.donorId);
+
       await donation.update({
         status: 'completed',
         razorpay_payment_id: razorpay_payment_id,
         razorpay_signature: razorpay_signature,
         paymentDate: new Date(),
       });
+
+      // Send Success Email
+      if (donor && donor.email) {
+        const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
+        sendEmail(donor.email, 'Donation Successful - Thank You!', emailHtml);
+      }
 
       return sendSuccess(res, donation, 'Payment verified successfully');
     } else {
