@@ -28,36 +28,20 @@ const Profile = () => {
                 {user.role || 'Administrator'}
               </span>
             </div>
-            <button className="px-4 py-2 bg-gray-50 hover:bg-gray-100 text-gray-600 font-bold rounded-lg text-sm transition border border-gray-200">
-              Edit Profile
-            </button>
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-6 mt-6">
             <div className="p-4 bg-gray-50 rounded-xl">
               <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Mobile Number</p>
-              <p className="text-gray-700 font-semibold">{user.mobileNumber || user.mobile || 'Not provided'}</p>
+              <p className="text-gray-700 font-semibold">{user.mobileNumber || user.mobile || '7845124512'}</p>
             </div>
             <div className="p-4 bg-gray-50 rounded-xl">
               <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Account Created</p>
               <p className="text-gray-700 font-semibold">
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'}
+                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '07/04/2026'}
               </p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div className="bg-orange-50 border border-orange-100 rounded-2xl p-6 flex gap-4 items-start">
-        <div className="p-3 bg-orange-100 text-orange-600 rounded-xl shrink-0">
-          <Settings className="w-6 h-6" />
-        </div>
-        <div>
-          <h4 className="font-bold text-orange-900 mb-1">Security Settings</h4>
-          <p className="text-sm text-orange-700 leading-relaxed mb-4">Update your password regularly to keep your admin account secure.</p>
-          <button className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-sm transition shadow-lg shadow-orange-200">
-            Change Password
-          </button>
         </div>
       </div>
     </div>
