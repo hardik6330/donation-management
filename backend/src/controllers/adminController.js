@@ -1,5 +1,6 @@
 import { User } from '../models/user.js';
 import { Donation } from '../models/donation.js';
+import { Location } from '../models/location.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { Op, fn, col } from 'sequelize';
@@ -64,7 +65,7 @@ export const getAdminStats = async (req, res) => {
 
 export const getAllDonationsAdmin = async (req, res) => {
   try {
-    const { search, startDate, endDate, minAmount, maxAmount, categoryId, status } = req.query;
+    const { search, startDate, endDate, minAmount, maxAmount, categoryId, status, cityId, talukaId, villageId } = req.query;
     const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
     const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
 
@@ -107,6 +108,32 @@ export const getAllDonationsAdmin = async (req, res) => {
     // 5. Category Filter
     if (categoryId) {
       whereClause.categoryId = categoryId;
+    }
+
+    // 6. Location Filters (City, Taluka, Village)
+    if (villageId) {
+      whereClause.locationId = villageId;
+    } else if (talukaId) {
+      // If filtering by taluka, we need to find all villages under this taluka or the taluka itself
+      const subLocations = await Location.findAll({
+        where: { [Op.or]: [{ id: talukaId }, { parentId: talukaId }] },
+        attributes: ['id']
+      });
+      whereClause.locationId = { [Op.in]: subLocations.map(loc => loc.id) };
+    } else if (cityId) {
+      // If filtering by city, we need a more complex recursive check or nested search
+      // For simplicity, let's get all descendants
+      const talukas = await Location.findAll({
+        where: { parentId: cityId },
+        attributes: ['id']
+      });
+      const talukaIds = talukas.map(t => t.id);
+      const villages = await Location.findAll({
+        where: { parentId: { [Op.in]: talukaIds } },
+        attributes: ['id']
+      });
+      const allLocationIds = [cityId, ...talukaIds, ...villages.map(v => v.id)];
+      whereClause.locationId = { [Op.in]: allLocationIds };
     }
 
     const { count, rows: donations } = await Donation.findAndCountAll({

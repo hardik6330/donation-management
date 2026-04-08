@@ -22,6 +22,9 @@ const DonationList = () => {
     minAmount: '',
     maxAmount: '',
     categoryId: '',
+    cityId: '',
+    talukaId: '',
+    villageId: '',
     page: 1,
     limit: 10,
     fetchAll: false,
@@ -69,6 +72,15 @@ const DonationList = () => {
   const { data: categoriesData } = useGetCategoriesQuery();
   const [updateDonation, { isLoading: isUpdating }] = useUpdateDonationMutation();
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
+
+  // Location Data for Filters
+  const { data: filterCitiesData } = useGetCitiesQuery();
+  const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
+  const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
+  
+  const filterCities = filterCitiesData?.data || [];
+  const filterTalukas = filterTalukasData?.data || [];
+  const filterVillages = filterVillagesData?.data || [];
 
   // Location and User Data for Add Modal
   const { data: citiesData } = useGetCitiesQuery();
@@ -253,6 +265,17 @@ const DonationList = () => {
 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    // Reset child location filters if parent changes
+    if (name === 'cityId') {
+      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
+      return;
+    }
+    if (name === 'talukaId') {
+      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
+      return;
+    }
+
     setFilters(prev => ({ 
       ...prev, 
       [name]: type === 'checkbox' ? checked : value,
@@ -272,12 +295,20 @@ const DonationList = () => {
       minAmount: '', 
       maxAmount: '',
       categoryId: '',
+      cityId: '',
+      talukaId: '',
+      villageId: '',
       page: 1, 
       limit: 10, 
       fetchAll: false, 
       fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl' 
     });
   };
+
+  const isFilterActive = filters.search || filters.startDate || filters.endDate || 
+                        filters.minAmount || filters.maxAmount || filters.categoryId || 
+                        filters.cityId || filters.talukaId || filters.villageId || 
+                        filters.fetchAll;
 
   const handleEditClick = (donation) => {
     setEditingDonation(donation);
@@ -346,113 +377,167 @@ const DonationList = () => {
         </div>
 
         <div className={`${showMobileFilters ? 'block' : 'hidden'} sm:block mt-4 sm:mt-0`}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 items-end">
-          <div className="space-y-2 lg:col-span-1">
-            <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <Search className="w-3 h-3" /> Search Donor
-            </label>
-            <input
-              name="search"
-              placeholder="Name, Email or Mobile..."
-              value={filters.search}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            />
-          </div>
-
-          <div className="space-y-2 lg:col-span-2">
-            <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <IndianRupee className="w-3 h-3" /> Amount Range
-            </label>
-            <div className="flex items-center gap-2">
-              <input
-                type="number"
-                name="minAmount"
-                placeholder="Min"
-                value={filters.minAmount}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-              />
-              <span className="text-gray-400 text-xs">-</span>
-              <input
-                type="number"
-                name="maxAmount"
-                placeholder="Max"
-                value={filters.maxAmount}
-                onChange={handleFilterChange}
-                className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <Tag className="w-3 h-3" /> Category
-            </label>
-            <select
-              name="categoryId"
-              value={filters.categoryId}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            >
-              <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <Calendar className="w-3 h-3" /> Start Date
-            </label>
-            <input
-              type="date"
-              name="startDate"
-              value={filters.startDate}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-              <Calendar className="w-3 h-3" /> End Date
-            </label>
-            <input
-              type="date"
-              name="endDate"
-              value={filters.endDate}
-              onChange={handleFilterChange}
-              className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            />
-          </div>
-
-          <div className="flex flex-row sm:flex-col lg:flex-row items-center justify-between gap-2 sm:gap-4">
-            <div className="flex items-center gap-2 shrink-0">
-              <input
-                type="checkbox"
-                name="fetchAll"
-                id="fetchAll"
-                checked={filters.fetchAll}
-                onChange={handleFilterChange}
-                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
-              />
-              <label htmlFor="fetchAll" className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase cursor-pointer whitespace-nowrap">
-                Fetch All
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-x-4 gap-y-6 items-end">
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <Search className="w-3 h-3" /> Search Donor
               </label>
+              <input
+                name="search"
+                placeholder="Name, Email or Mobile..."
+                value={filters.search}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
             </div>
 
-            <button
-              onClick={clearFilters}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-lg text-xs sm:text-sm transition whitespace-nowrap"
-            >
-              Clear
-            </button>
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <MapPin className="w-3 h-3" /> City
+              </label>
+              <select
+                name="cityId"
+                value={filters.cityId}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              >
+                <option value="">All Cities</option>
+                {filterCities.map(city => (
+                  <option key={city.id} value={city.id}>{city.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <MapPinHouse className="w-3 h-3" /> Taluka
+              </label>
+              <select
+                name="talukaId"
+                value={filters.talukaId}
+                onChange={handleFilterChange}
+                disabled={!filters.cityId}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
+              >
+                <option value="">All Talukas</option>
+                {filterTalukas.map(taluka => (
+                  <option key={taluka.id} value={taluka.id}>{taluka.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <Building2 className="w-3 h-3" /> Village
+              </label>
+              <select
+                name="villageId"
+                value={filters.villageId}
+                onChange={handleFilterChange}
+                disabled={!filters.talukaId}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
+              >
+                <option value="">All Villages</option>
+                {filterVillages.map(village => (
+                  <option key={village.id} value={village.id}>{village.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <Tag className="w-3 h-3" /> Category
+              </label>
+              <select
+                name="categoryId"
+                value={filters.categoryId}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              >
+                <option value="">All Categories</option>
+                {categories.map(cat => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <IndianRupee className="w-3 h-3" /> Amount Range
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  name="minAmount"
+                  placeholder="Min"
+                  value={filters.minAmount}
+                  onChange={handleFilterChange}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+                <span className="text-gray-400 text-xs">-</span>
+                <input
+                  type="number"
+                  name="maxAmount"
+                  placeholder="Max"
+                  value={filters.maxAmount}
+                  onChange={handleFilterChange}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <Calendar className="w-3 h-3" /> Start Date
+              </label>
+              <input
+                type="date"
+                name="startDate"
+                value={filters.startDate}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
+                <Calendar className="w-3 h-3" /> End Date
+              </label>
+              <input
+                type="date"
+                name="endDate"
+                value={filters.endDate}
+                onChange={handleFilterChange}
+                className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
+              />
+            </div>
+
+            <div className="flex items-center justify-between gap-4 sm:col-span-2 lg:col-span-1 xl:col-span-2">
+              <div className="flex items-center gap-2 shrink-0 h-10">
+                <input
+                  type="checkbox"
+                  name="fetchAll"
+                  id="fetchAll"
+                  checked={filters.fetchAll}
+                  onChange={handleFilterChange}
+                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                />
+                <label htmlFor="fetchAll" className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase cursor-pointer whitespace-nowrap">
+                  Fetch All
+                </label>
+              </div>
+
+              <button
+                onClick={clearFilters}
+                disabled={!isFilterActive}
+                className="flex-1 sm:flex-none px-8 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg text-xs sm:text-sm transition-all border border-red-100 flex items-center justify-center gap-2 h-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-100"
+              >
+                <X className="w-4 h-4" /> Clear Filters
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
       <AdminTable 
         headers={tableHeaders} 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useGetDonorsQuery } from '../../../services/apiSlice';
-import { Search, ChevronDown, Filter } from 'lucide-react';
+import { Search, ChevronDown, Filter, X } from 'lucide-react';
 import AdminPageHeader from '../../../components/common/AdminPageHeader';
 import AdminTable from '../../../components/common/AdminTable';
 
@@ -24,6 +24,8 @@ const DonorsList = () => {
   const clearFilters = () => {
     setFilters({ name: '', mobileNumber: '', city: '' });
   };
+
+  const isFilterActive = filters.name || filters.mobileNumber || filters.city;
 
   const tableHeaders = [
     { label: 'Donor Info' },
@@ -99,9 +101,10 @@ const DonorsList = () => {
 
             <button
               onClick={clearFilters}
-              className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-lg text-xs sm:text-sm transition h-[38px]"
+              disabled={!isFilterActive}
+              className="px-8 py-2 bg-red-50 hover:bg-red-100 text-red-600 font-bold rounded-lg text-xs sm:text-sm transition-all border border-red-100 flex items-center justify-center gap-2 h-10 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 disabled:border-gray-100"
             >
-              Clear Filters
+              <X className="w-4 h-4" /> Clear Filters
             </button>
           </div>
         </div>
