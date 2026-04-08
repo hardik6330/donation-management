@@ -8,7 +8,7 @@ import {
   useGetCitiesQuery,
   useGetSubLocationsQuery
 } from '../../../services/apiSlice';
-import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X, CheckCircle2, Plus, Phone, User, Home as HomeIcon, MapPin, CreditCard, FileDown, Mail, Building2, MapPinHouse, UserCheck } from 'lucide-react';
+import { Search, Calendar, Loader2, IndianRupee, Tag, Edit, X, CheckCircle2, Plus, Phone, User, Home as HomeIcon, MapPin, CreditCard, FileDown, Mail, Building2, MapPinHouse, UserCheck, ChevronDown, Filter } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminPageHeader from '../../../components/common/AdminPageHeader';
 import AdminTable from '../../../components/common/AdminTable';
@@ -31,6 +31,7 @@ const DonationList = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingDonation, setEditingDonation] = useState(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [editForm, setEditForm] = useState({
     amount: '',
     paymentMode: '',
@@ -328,7 +329,24 @@ const DonationList = () => {
 
       {/* Filters Section */}
       <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 items-end">
+        <button 
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          className="flex sm:hidden items-center justify-between w-full py-1 text-xs font-bold text-gray-500 uppercase tracking-wider"
+        >
+          <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-blue-600" />
+            <span>Filters</span>
+          </div>
+          <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showMobileFilters ? 'rotate-180' : ''}`} />
+        </button>
+
+        <div className="hidden sm:flex items-center gap-2 mb-4 text-xs font-bold text-gray-500 uppercase tracking-wider border-b border-gray-50 pb-2">
+          <Filter className="w-4 h-4 text-blue-600" />
+          <span>Filters</span>
+        </div>
+
+        <div className={`${showMobileFilters ? 'block' : 'hidden'} sm:block mt-4 sm:mt-0`}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 items-end">
           <div className="space-y-2 lg:col-span-1">
             <label className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
               <Search className="w-3 h-3" /> Search Donor
@@ -434,6 +452,7 @@ const DonationList = () => {
           </div>
         </div>
       </div>
+    </div>
 
       <AdminTable 
         headers={tableHeaders} 
