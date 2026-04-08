@@ -34,7 +34,7 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Donations', 'Donors', 'Categories', 'Cities', 'Gaushalas', 'Kathas', 'BapuSchedule', 'Expenses', 'Sevaks', 'Mandals', 'MandalMembers', 'MandalPayments', 'KartalDhun'],
+  tagTypes: ['Donations', 'Donors', 'Categories', 'Cities', 'Gaushalas', 'Kathas', 'BapuSchedule', 'Expenses', 'Sevaks', 'Mandals', 'MandalMembers', 'MandalPayments', 'KartalDhun', 'Roles', 'SystemUsers'],
   endpoints: (builder) => ({
     getQRCode: builder.query({
       query: () => '/donations/qr',
@@ -394,6 +394,65 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['KartalDhun'],
     }),
+    // Role Endpoints
+    getRoles: builder.query({
+      query: () => '/roles',
+      providesTags: ['Roles'],
+    }),
+    addRole: builder.mutation({
+      query: (data) => ({
+        url: '/roles',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Roles'],
+    }),
+    updateRole: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/roles/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Roles'],
+    }),
+    deleteRole: builder.mutation({
+      query: (id) => ({
+        url: `/roles/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Roles'],
+    }),
+    // System User Endpoints
+    getSystemUsers: builder.query({
+      query: (params) => ({
+        url: '/users/system',
+        params,
+      }),
+      providesTags: ['SystemUsers'],
+    }),
+    addSystemUser: builder.mutation({
+      query: (data) => ({
+        url: '/users/system',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['SystemUsers'],
+    }),
+    updateSystemUser: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/users/system/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['SystemUsers'],
+    }),
+    deleteSystemUser: builder.mutation({
+      query: (id) => ({
+        url: `/users/system/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['SystemUsers'],
+    }),
   }),
 });
 
@@ -448,4 +507,12 @@ export const {
   useAddKartalDhunMutation,
   useUpdateKartalDhunMutation,
   useDeleteKartalDhunMutation,
+  useGetRolesQuery,
+  useAddRoleMutation,
+  useUpdateRoleMutation,
+  useDeleteRoleMutation,
+  useGetSystemUsersQuery,
+  useAddSystemUserMutation,
+  useUpdateSystemUserMutation,
+  useDeleteSystemUserMutation,
 } = apiSlice;

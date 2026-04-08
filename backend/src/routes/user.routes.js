@@ -1,6 +1,9 @@
 import express from 'express';
-import { createUser, loginUser, logoutUser, getUsers, getUserByMobile } from '../controllers/userController.js';
-import { protect } from '../middlewares/auth.middleware.js';
+import {
+  createUser, loginUser, logoutUser, getUsers, getUserByMobile,
+  getSystemUsers, addSystemUser, updateSystemUser, deleteSystemUser
+} from '../controllers/userController.js';
+import { protect, adminOnly } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
@@ -9,5 +12,11 @@ router.post('/login', loginUser);
 router.post('/logout', logoutUser);
 router.get('/mobile/:mobileNumber', getUserByMobile);
 router.get('/', protect, getUsers);
+
+// System User Management (Admin only)
+router.get('/system', protect, adminOnly, getSystemUsers);
+router.post('/system', protect, adminOnly, addSystemUser);
+router.put('/system/:id', protect, adminOnly, updateSystemUser);
+router.delete('/system/:id', protect, adminOnly, deleteSystemUser);
 
 export default router;

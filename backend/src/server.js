@@ -9,6 +9,7 @@ import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.middleware.js';
 import { sendError } from './utils/apiResponse.js';
 import { seedAdmin } from './controllers/userController.js';
+import { seedRoles } from './controllers/roleController.js';
 import { NODE_ENV, FRONTEND_URL,PORT } from './config/db.js';
 // Load env vars
 
@@ -29,6 +30,7 @@ const initDB = async () => {
       const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
       await sequelize.sync(syncOptions);
       console.log('✅ Database synchronized (Tables created/updated)');
+      await seedRoles();
       await seedAdmin();
       dbInitialized = true;
       dbInitPromise = null;

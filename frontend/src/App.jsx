@@ -20,6 +20,8 @@ import MandalList from './pages/admin/components/mandal/MandalList';
 import MandalMemberList from './pages/admin/components/mandal/MandalMemberList';
 import MandalPaymentPage from './pages/admin/components/mandal/MandalPaymentPage';
 import KartalDhunList from './pages/admin/components/kartal-dhun/KartalDhunList';
+import RoleList from './pages/admin/components/roles/RoleList';
+import SystemUserList from './pages/admin/components/system-users/SystemUserList';
 import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -48,6 +50,8 @@ function App() {
             <Route path="mandal-members" element={<MandalMemberList />} />
             <Route path="mandal-payments" element={<MandalPaymentPage />} />
             <Route path="kartal-dhun" element={<KartalDhunList />} />
+            <Route path="roles" element={<RoleList />} />
+            <Route path="system-users" element={<SystemUserList />} />
             <Route path="profile" element={<Profile />} />
             <Route path="category" element={<CategoryList />} />
             <Route path="location" element={<LocationList />} />

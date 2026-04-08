@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
+import { Role } from './role.js';
 
 export const User = sequelize.define('User', {
   id: {
@@ -46,6 +47,14 @@ export const User = sequelize.define('User', {
   companyName: {
     type: DataTypes.STRING,
   },
+  roleId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Roles',
+      key: 'id'
+    }
+  },
   isAdmin: {
     type: DataTypes.BOOLEAN,
     defaultValue: false,
@@ -64,3 +73,5 @@ export const User = sequelize.define('User', {
   //   { fields: ['createdAt'] },
   // ]
 });
+
+User.belongsTo(Role, { as: 'role', foreignKey: 'roleId' });

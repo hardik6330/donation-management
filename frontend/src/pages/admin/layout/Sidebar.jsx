@@ -15,7 +15,8 @@ import {
   IndianRupee,
   UserCheck,
   UsersRound,
-  Music
+  Music,
+  Shield
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
@@ -32,6 +33,8 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
     { id: 'bapu-schedule', label: 'Bapu Schedule', icon: Calendar, path: '/admin/bapu-schedule' },
     { id: 'category', label: 'Category', icon: Tags, path: '/admin/category' },
     { id: 'location', label: 'Location', icon: MapPin, path: '/admin/location' },
+    { id: 'role', label: 'Role', icon: Users, path: '/admin/roles' },
+    { id: 'system-users', label: 'System Users', icon: Shield, path: '/admin/system-users' },
   ];
 
   const profileItem = { id: 'profile', label: 'Profile', icon: UserCircle, path: '/admin/profile' };

@@ -1,4 +1,5 @@
 import { User } from '../models/user.js';
+import { Role } from '../models/role.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
@@ -49,7 +50,10 @@ export const createUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ where: { email } });
+    const user = await User.findOne({
+      where: { email },
+      include: [{ model: Role, as: 'role' }]
+    });
     if (!user) {
       return sendError(res, 'User not found', 404);
     }
@@ -61,7 +65,17 @@ export const loginUser = async (req, res) => {
     const accessToken = generateAccessToken(user.id);
     const refreshToken = await generateRefreshToken(user.id);
 
-    return sendSuccess(res, { accessToken, refreshToken, user: { id: user.id, name: user.name, isAdmin: user.isAdmin } }, 'Login successful');
+    return sendSuccess(res, {
+      accessToken,
+      refreshToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        isAdmin: user.isAdmin,
+        roleId: user.roleId,
+        role: user.role
+      }
+    }, 'Login successful');
   } catch (error) {
     return sendError(res, 'Error logging in', 500, error);
   }
@@ -81,6 +95,112 @@ export const getUsers = async (req, res) => {
     return sendSuccess(res, users, 'Users fetched successfully');
   } catch (error) {
     return sendError(res, 'Error fetching users', 500, error);
+  }
+};
+
+
+// ===== SYSTEM USER MANAGEMENT (Admin) =====
+import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
+import { Op } from 'sequelize';
+
+export const getSystemUsers = async (req, res) => {
+  try {
+    const { page, limit } = getPaginationParams(req.query);
+    const { search, roleId } = req.query;
+
+    const where = {};
+    if (search && search.trim() !== '') {
+      where[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { mobileNumber: { [Op.like]: `%${search}%` } }
+      ];
+    }
+    if (roleId && roleId.trim() !== '') {
+      where.roleId = roleId;
+    }
+
+    const { count, rows } = await User.findAndCountAll({
+      where,
+      attributes: { exclude: ['password'] },
+      include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
+      order: [['createdAt', 'DESC']],
+      limit,
+      offset: (page - 1) * limit
+    });
+
+    const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
+    return sendSuccess(res, response);
+  } catch (error) {
+    return sendError(res, 'Failed to fetch system users', 500, error);
+  }
+};
+
+export const addSystemUser = async (req, res) => {
+  try {
+    const { name, email, mobileNumber, password, roleId, isAdmin } = req.body;
+    if (!name || !email || !mobileNumber || !password) {
+      return sendError(res, 'Name, Email, Mobile and Password are required', 400);
+    }
+
+    const hashedPassword = bcrypt.hashSync(password, 10);
+    const user = await User.create({
+      name,
+      email,
+      mobileNumber,
+      password: hashedPassword,
+      roleId: roleId || null,
+      isAdmin: isAdmin || false,
+      created_by: req.user?.id || 'System',
+    });
+
+    const result = user.toJSON();
+    delete result.password;
+    return sendSuccess(res, result, 'System user created successfully', 201);
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return sendError(res, 'User with this email or mobile already exists', 400);
+    }
+    return sendError(res, 'Failed to create system user', 500, error);
+  }
+};
+
+export const updateSystemUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findByPk(id);
+    if (!user) return sendError(res, 'User not found', 404);
+
+    const { name, email, mobileNumber, password, roleId, isAdmin } = req.body;
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (email) updateData.email = email;
+    if (mobileNumber) updateData.mobileNumber = mobileNumber;
+    if (password) updateData.password = bcrypt.hashSync(password, 10);
+    if (roleId !== undefined) updateData.roleId = roleId || null;
+    if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
+
+    await user.update(updateData);
+    const result = user.toJSON();
+    delete result.password;
+    return sendSuccess(res, result, 'User updated successfully');
+  } catch (error) {
+    return sendError(res, 'Failed to update user', 500, error);
+  }
+};
+
+export const deleteSystemUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (id === req.user?.id) return sendError(res, 'Cannot delete yourself', 400);
+
+    const user = await User.findByPk(id);
+    if (!user) return sendError(res, 'User not found', 404);
+
+    await user.destroy();
+    return sendSuccess(res, null, 'User deleted successfully');
+  } catch (error) {
+    return sendError(res, 'Failed to delete user', 500, error);
   }
 };
 
