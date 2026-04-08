@@ -4,6 +4,7 @@ import { Category } from '../models/category.js';
 import { Location } from '../models/location.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
+import { buildDonationFilter } from '../utils/filterHelper.js';
 import { razorpay } from '../config/razorpay.js';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
@@ -85,6 +86,9 @@ export const createDonationOrder = async (req, res) => {
     // 2. Check user (create or update if exists)
     let user = await User.findOne({ where: { mobileNumber } });
     if (!user) {
+      // Generate a secure random temporary password
+      const tempPassword = crypto.randomBytes(8).toString('hex');
+      
       user = await User.create({ 
         name, 
         email, 
@@ -93,7 +97,7 @@ export const createDonationOrder = async (req, res) => {
         district,
         companyName, 
         mobileNumber, 
-        password: 'temporary_password_123',
+        password: tempPassword,
         cityId,
         talukaId,
         villageId
@@ -238,47 +242,11 @@ export const getDonations = async (req, res) => {
   try {
     const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
     const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
-    const { search, startDate, endDate, status, minAmount, maxAmount } = req.query;
 
-    const where = {};
-    const donorWhere = {};
-
-    // 1. Search Logic (Name, Mobile, Email)
-    if (search) {
-      donorWhere[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { mobileNumber: { [Op.like]: `%${search}%` } },
-        { email: { [Op.like]: `%${search}%` } }
-      ];
-    }
-
-    // 2. Date Filtering
-    if (startDate && endDate) {
-      where.createdAt = {
-        [Op.between]: [new Date(startDate), new Date(new Date(endDate).setHours(23, 59, 59, 999))]
-      };
-    } else if (startDate) {
-      where.createdAt = { [Op.gte]: new Date(startDate) };
-    } else if (endDate) {
-      where.createdAt = { [Op.lte]: new Date(new Date(endDate).setHours(23, 59, 59, 999)) };
-    }
-
-    // 3. Amount Filtering
-    if (minAmount && maxAmount) {
-      where.amount = { [Op.between]: [Number(minAmount), Number(maxAmount)] };
-    } else if (minAmount) {
-      where.amount = { [Op.gte]: Number(minAmount) };
-    } else if (maxAmount) {
-      where.amount = { [Op.lte]: Number(maxAmount) };
-    }
-
-    // 4. Status Filtering
-    if (status) {
-      where.status = status;
-    }
+    const { whereClause, donorWhere } = await buildDonationFilter(req.query, '');
 
     const { count, rows: donations } = await Donation.findAndCountAll({
-      where,
+      where: whereClause,
       attributes: mainAttributes,
       include: [{ 
         model: User, 

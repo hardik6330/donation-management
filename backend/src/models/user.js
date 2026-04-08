@@ -56,4 +56,11 @@ export const User = sequelize.define('User', {
   },
 }, {
   timestamps: true,
+  indexes: [
+    { fields: ['name'] },
+    { fields: ['mobileNumber'] },
+    { fields: ['email'] },
+    { fields: ['isAdmin'] },
+    { fields: ['createdAt'] },
+  ]
 });
