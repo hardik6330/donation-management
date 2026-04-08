@@ -66,15 +66,15 @@ export const Donation = sequelize.define('Donation', {
   },
 }, {
   timestamps: true,
-  indexes: [
-    { fields: ['status'] },
-    { fields: ['donorId'] },
-    { fields: ['locationId'] },
-    { fields: ['categoryId'] },
-    { fields: ['createdAt'] },
-    { fields: ['paymentDate'] },
-    { fields: ['razorpay_order_id'] },
-  ]
+  // indexes: [
+  //   { fields: ['status'] },
+  //   { fields: ['donorId'] },
+  //   { fields: ['locationId'] },
+  //   { fields: ['categoryId'] },
+  //   { fields: ['createdAt'] },
+  //   { fields: ['paymentDate'] },
+  //   { fields: ['razorpay_order_id'] },
+  // ]
 });
 
 // Associations
