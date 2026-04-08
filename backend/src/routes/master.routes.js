@@ -1,21 +1,20 @@
 import express from 'express';
-import { 
-  addLocationMaster, 
-  addCategoryMaster, 
-  getCities, 
-  getSubLocations, 
+import {
+  addLocationMaster,
+  addCategoryMaster,
   getCategories,
   addCombinedMasterData,
-  updateCategoryMaster
+  updateCategoryMaster,
+  getCities,
+  getSubLocations
 } from '../controllers/masterController.js';
 import { protect, adminOnly } from '../middlewares/auth.middleware.js';
 
 const router = express.Router();
 
-// --- Public/User Routes (For Donation Form) ---
+router.get('/categories', getCategories);
 router.get('/cities', getCities);
 router.get('/sub-locations/:parentId', getSubLocations);
-router.get('/categories', getCategories);
 
 // --- Admin Only Protected Routes ---
 router.post('/location', protect, adminOnly, addLocationMaster);

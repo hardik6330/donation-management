@@ -47,6 +47,9 @@ export const sendError = (res, message = 'Internal Server Error', statusCode = 5
 
   if (errorDetails) {
     response.error = errorDetails;
+    if (error.stack && NODE_ENV !== 'production') {
+      response.stack = error.stack;
+    }
   }
 
   if (error && NODE_ENV === 'development' && error.stack) {

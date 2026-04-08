@@ -10,13 +10,23 @@ import { Location } from '../models/location.js';
 export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
   const { 
     search, startDate, endDate, minAmount, maxAmount, 
-    categoryId, status, cityId, talukaId, villageId 
+    categoryId, status, cityId, talukaId, villageId, gaushalaId, kathaId 
   } = query;
 
   let whereClause = {};
   let donorWhere = {};
 
-  // 1. Search Filter
+  // 1. Gaushala Filter
+  if (gaushalaId) {
+    whereClause.gaushalaId = gaushalaId;
+  }
+
+  // 2. Katha Filter
+  if (kathaId) {
+    whereClause.kathaId = kathaId;
+  }
+
+  // 3. Search Filter
   if (search) {
     if (searchPrefix === '$donor.') {
       // For Admin: using included model path

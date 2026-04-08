@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGetAdminStatsQuery } from '../../../services/apiSlice';
+import { useGetAdminStatsQuery } from '../../../../services/apiSlice';
 import { Users, IndianRupee, CreditCard, Trophy, Loader2, HandCoins } from 'lucide-react';
 
 const Dashboard = () => {

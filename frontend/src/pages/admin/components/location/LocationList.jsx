@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { useGetCitiesQuery } from '../../../services/apiSlice';
+import { useGetCitiesQuery } from '../../../../services/apiSlice';
 import { MapPin, Plus, Loader2 } from 'lucide-react';
 import AddMasterData from './AddMasterData';
-import AdminPageHeader from '../../../components/common/AdminPageHeader';
-import AdminTable from '../../../components/common/AdminTable';
+import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import AdminTable from '../../../../components/common/AdminTable';
 
 const LocationList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

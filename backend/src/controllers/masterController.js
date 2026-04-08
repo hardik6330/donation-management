@@ -1,51 +1,21 @@
 import { Location } from '../models/location.js';
 import { Category } from '../models/category.js';
+import { Gaushala } from '../models/gaushala.js';
+import { Katha } from '../models/katha.js';
 import { Donation } from '../models/donation.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { sequelize } from '../config/db.js';
-
-// Helper to clean and format names
-const formatName = (name) => {
-  if (!name) return '';
-  return name.trim().split(' ').map(word => 
-    word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-  ).join(' ');
-};
+import { formatName, findOrCreateLocationStructure } from '../utils/locationHelper.js';
 
 // --- MASTER DATA MANAGEMENT (ADMIN) ---
 
 // 1. Smart Save Location (City -> Taluka -> Village)
 export const addLocationMaster = async (req, res) => {
   try {
-    let { city, taluka, village } = req.body;
+    const { city, taluka, village } = req.body;
+    const lastLocation = await findOrCreateLocationStructure(city, taluka, village);
     
-    if (!city) return sendError(res, 'City name is required', 400);
-
-    // a. Handle City
-    city = formatName(city);
-    let [cityObj] = await Location.findOrCreate({
-      where: { name: city, type: 'city', parentId: null }
-    });
-
-    let lastLocation = cityObj;
-
-    // b. Handle Taluka (Optional)
-    if (taluka) {
-      taluka = formatName(taluka);
-      let [talukaObj] = await Location.findOrCreate({
-        where: { name: taluka, type: 'taluka', parentId: cityObj.id }
-      });
-      lastLocation = talukaObj;
-
-      // c. Handle Village (Optional, only if taluka exists)
-      if (village) {
-        village = formatName(village);
-        let [villageObj] = await Location.findOrCreate({
-          where: { name: village, type: 'village', parentId: talukaObj.id }
-        });
-        lastLocation = villageObj;
-      }
-    }
+    if (!lastLocation) return sendError(res, 'City name is required', 400);
 
     return sendSuccess(res, lastLocation, 'Location structure saved successfully');
   } catch (error) {
@@ -204,3 +174,4 @@ export const updateCategoryMaster = async (req, res) => {
     return sendError(res, 'Error updating category', 500, error);
   }
 };
+

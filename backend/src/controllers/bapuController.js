@@ -1,0 +1,101 @@
+import { BapuSchedule } from '../models/bapuSchedule.js';
+import { Location } from '../models/location.js';
+import { sendSuccess, sendError } from '../utils/apiResponse.js';
+import { findOrCreateLocationStructure } from '../utils/locationHelper.js';
+import { Op } from 'sequelize';
+
+// Get all schedules with filtering
+export const getBapuSchedules = async (req, res) => {
+  try {
+    const { startDate, endDate, eventType, status, locationId } = req.query;
+    let where = {};
+
+    if (startDate && endDate) {
+      where.date = { [Op.between]: [startDate, endDate] };
+    } else if (startDate) {
+      where.date = { [Op.gte]: startDate };
+    }
+
+    if (eventType) where.eventType = eventType;
+    if (status) where.status = status;
+    if (locationId) where.locationId = locationId;
+
+    const schedules = await BapuSchedule.findAll({
+      where,
+      include: [{ model: Location, as: 'location' }],
+      order: [['date', 'ASC'], ['time', 'ASC']]
+    });
+
+    return sendSuccess(res, schedules, 'Schedules fetched successfully');
+  } catch (error) {
+    console.error('❌ [getBapuSchedules] Error:', error);
+    return sendError(res, 'Error fetching Bapu schedules', 500, error);
+  }
+};
+
+// Add new schedule
+export const addBapuSchedule = async (req, res) => {
+  try {
+    const { date, time, city, taluka, village, locationId, eventType, contactPerson, mobileNumber, description } = req.body;
+    
+    let finalLocationId = locationId;
+    
+    // If location names are provided, use findOrCreate logic
+    if (city) {
+      const location = await findOrCreateLocationStructure(city, taluka, village);
+      if (location) finalLocationId = location.id;
+    }
+
+    const schedule = await BapuSchedule.create({
+      date,
+      time,
+      locationId: finalLocationId,
+      eventType,
+      contactPerson,
+      mobileNumber,
+      description,
+      status: 'scheduled'
+    });
+
+    return sendSuccess(res, schedule, 'Bapu schedule added successfully', 201);
+  } catch (error) {
+    console.error('❌ [addBapuSchedule] Error:', error);
+    return sendError(res, 'Error adding Bapu schedule', 500, error);
+  }
+};
+
+// Update schedule
+export const updateBapuSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const schedule = await BapuSchedule.findByPk(id);
+    if (!schedule) {
+      return sendError(res, 'Schedule not found', 404);
+    }
+
+    await schedule.update(updateData);
+    return sendSuccess(res, schedule, 'Schedule updated successfully');
+  } catch (error) {
+    console.error('❌ [updateBapuSchedule] Error:', error);
+    return sendError(res, 'Error updating schedule', 500, error);
+  }
+};
+
+// Delete schedule
+export const deleteBapuSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const schedule = await BapuSchedule.findByPk(id);
+    if (!schedule) {
+      return sendError(res, 'Schedule not found', 404);
+    }
+
+    await schedule.destroy();
+    return sendSuccess(res, null, 'Schedule deleted successfully');
+  } catch (error) {
+    console.error('❌ [deleteBapuSchedule] Error:', error);
+    return sendError(res, 'Error deleting schedule', 500, error);
+  }
+};

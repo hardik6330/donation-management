@@ -1,6 +1,8 @@
 import { User } from '../models/user.js';
 import { Donation } from '../models/donation.js';
 import { Location } from '../models/location.js';
+import { Gaushala } from '../models/gaushala.js';
+import { Katha } from '../models/katha.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
@@ -78,11 +80,23 @@ export const getAllDonationsAdmin = async (req, res) => {
     const { count, rows: donations } = await Donation.findAndCountAll({
       where: whereClause,
       attributes: mainAttributes,
-      include: [{
-        model: User,
-        as: 'donor',
-        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'village', 'district']
-      }],
+      include: [
+        {
+          model: User,
+          as: 'donor',
+          attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'village', 'district']
+        },
+        {
+          model: Gaushala,
+          as: 'gaushala',
+          attributes: ['name']
+        },
+        {
+          model: Katha,
+          as: 'katha',
+          attributes: ['name']
+        }
+      ],
       order: [['createdAt', 'DESC']],
       limit: queryLimit,
       offset: offset,

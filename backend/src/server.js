@@ -25,8 +25,7 @@ const initDB = async () => {
   dbInitPromise = (async () => {
     try {
       await connectDB();
-      // In production, only create missing tables (no ALTER to avoid deadlocks on serverless)
-      // In development, alter: true to auto-apply model changes
+      // In development, alter: false initially to avoid constraint errors, then use migration or manual fixes
       const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
       await sequelize.sync(syncOptions);
       console.log('✅ Database synchronized (Tables created/updated)');

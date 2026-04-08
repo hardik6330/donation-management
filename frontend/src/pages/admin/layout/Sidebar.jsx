@@ -8,7 +8,14 @@ import {
   MapPin, 
   LogOut,
   X,
-  UserCircle
+  UserCircle,
+  Building2,
+  Mic2,
+  Calendar,
+  IndianRupee,
+  UserCheck,
+  UsersRound,
+  Music
 } from 'lucide-react';
 
 const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
@@ -16,6 +23,13 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
     { id: 'donations', label: 'Donation List', icon: HandCoins, path: '/admin/donations' },
     { id: 'donors', label: 'Donors', icon: Users, path: '/admin/donors' },
+    { id: 'expenses', label: 'Expenses', icon: IndianRupee, path: '/admin/expenses' },
+    { id: 'sevaks', label: 'Sevaks', icon: UserCheck, path: '/admin/sevaks' },
+    { id: 'gaushala', label: 'Gaushala', icon: Building2, path: '/admin/gaushala' },
+    { id: 'katha', label: 'Katha', icon: Mic2, path: '/admin/katha' },
+    { id: 'mandal', label: 'Mandal', icon: UsersRound, path: '/admin/mandal' },
+    { id: 'kartal-dhun', label: 'Kartal Dhun', icon: Music, path: '/admin/kartal-dhun' },
+    { id: 'bapu-schedule', label: 'Bapu Schedule', icon: Calendar, path: '/admin/bapu-schedule' },
     { id: 'category', label: 'Category', icon: Tags, path: '/admin/category' },
     { id: 'location', label: 'Location', icon: MapPin, path: '/admin/location' },
   ];
@@ -34,7 +48,7 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
 
       {/* Sidebar Container */}
       <aside className={`
-        fixed top-0 left-0 h-full bg-white border-r border-gray-100 z-50 transition-transform duration-300 w-64 flex flex-col shrink-0
+        fixed top-0 left-0 h-full bg-white border-r border-gray-100 z-50 transition-transform duration-300 w-64 flex flex-col shrink-0 overflow-hidden
         ${isOpen ? 'translate-x-0' : '-translate-x-full'}
         lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-30
       `}>
@@ -50,7 +64,7 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
           </button>
         </div>
 
-        <nav className="p-4 space-y-2 overflow-y-auto flex-1 custom-scrollbar">
+        <nav className="p-4 space-y-2 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide">
           {menuItems.map((item) => (
             <NavLink
               key={item.id}

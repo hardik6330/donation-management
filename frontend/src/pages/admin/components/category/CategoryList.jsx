@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { useGetCategoriesQuery, useUpdateCategoryMutation } from '../../../services/apiSlice';
+import { useGetCategoriesQuery, useUpdateCategoryMutation } from '../../../../services/apiSlice';
 import { Tag, Plus, Loader2 } from 'lucide-react';
-import AddMasterData from './AddMasterData';
+import AddMasterData from '../location/AddMasterData';
 import { toast } from 'react-toastify';
-import AdminPageHeader from '../../../components/common/AdminPageHeader';
-import AdminTable from '../../../components/common/AdminTable';
+import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import AdminTable from '../../../../components/common/AdminTable';
 
 const CategoryList = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);

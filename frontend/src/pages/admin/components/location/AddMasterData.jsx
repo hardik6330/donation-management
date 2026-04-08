@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { 
+import React, { useState, useEffect, useRef } from 'react';
+import {
   useAddCombinedMasterDataMutation,
   useGetCitiesQuery,
   useGetSubLocationsQuery,
   useGetCategoriesQuery
-} from '../../../services/apiSlice';
+} from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
 import { MapPin, Tag, Plus, Loader2, CheckCircle2 } from 'lucide-react';
-import AdminModal from '../../../components/common/AdminModal';
+import AdminModal from '../../../../components/common/AdminModal';
 
 const AddMasterData = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -21,7 +21,15 @@ const AddMasterData = ({ isOpen, onClose }) => {
     isActive: true
   });
 
-  const [activeDropdown, setActiveDropdown] = useState(null); // 'city', 'taluka', 'village', 'category'
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  // Refs for Fast Entry
+  const cityRef = useRef(null);
+  const talukaRef = useRef(null);
+  const villageRef = useRef(null);
+  const categoryRef = useRef(null);
+  const descriptionRef = useRef(null);
+  const submitRef = useRef(null);
 
   // Fetch Master Data for suggestions
   const { data: citiesData } = useGetCitiesQuery();
@@ -42,6 +50,20 @@ const AddMasterData = ({ isOpen, onClose }) => {
     window.addEventListener('click', handleClickOutside);
     return () => window.removeEventListener('click', handleClickOutside);
   }, []);
+
+  // Fast Entry: Focus first field
+  useEffect(() => {
+    if (isOpen && cityRef.current) {
+      cityRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = (e, nextRef) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (nextRef?.current) nextRef.current.focus();
+    }
+  };
 
   const handleSelectOption = (name, value, id = '') => {
     if (name === 'city') {
@@ -70,7 +92,7 @@ const AddMasterData = ({ isOpen, onClose }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
+
     if (name === 'city') {
       const selectedCity = cities.find(c => c.name === value);
       setFormData(prev => ({
@@ -136,14 +158,14 @@ const AddMasterData = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const renderDropdown = (name, items, valueField = 'name', idField = 'id') => {
-    const filteredItems = items.filter(item => 
+    const filteredItems = items.filter(item =>
       item[valueField].toLowerCase().includes((formData[name === 'category' ? 'categoryName' : name] || '').toLowerCase())
     );
 
     if (activeDropdown !== name || filteredItems.length === 0) return null;
 
     return (
-      <div 
+      <div
         className="absolute z-[110] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
@@ -179,12 +201,14 @@ const AddMasterData = ({ isOpen, onClose }) => {
             <div className="space-y-2 relative">
               <label className="text-xs font-bold text-gray-500 uppercase">City</label>
               <input
+                ref={cityRef}
                 name="city"
                 autoComplete="off"
                 value={formData.city}
                 onChange={handleChange}
                 onFocus={() => setActiveDropdown('city')}
                 onClick={(e) => { e.stopPropagation(); setActiveDropdown('city'); }}
+                onKeyDown={(e) => handleKeyDown(e, talukaRef)}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
                 placeholder="Ex: Bhavnagar"
               />
@@ -193,12 +217,14 @@ const AddMasterData = ({ isOpen, onClose }) => {
             <div className="space-y-2 relative">
               <label className="text-xs font-bold text-gray-500 uppercase">Taluka</label>
               <input
+                ref={talukaRef}
                 name="taluka"
                 autoComplete="off"
                 value={formData.taluka}
                 onChange={handleChange}
                 onFocus={() => setActiveDropdown('taluka')}
                 onClick={(e) => { e.stopPropagation(); setActiveDropdown('taluka'); }}
+                onKeyDown={(e) => handleKeyDown(e, villageRef)}
                 disabled={!formData.city}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
                 placeholder="Ex: Ghogha"
@@ -208,12 +234,14 @@ const AddMasterData = ({ isOpen, onClose }) => {
             <div className="space-y-2 relative">
               <label className="text-xs font-bold text-gray-500 uppercase">Village</label>
               <input
+                ref={villageRef}
                 name="village"
                 autoComplete="off"
                 value={formData.village}
                 onChange={handleChange}
                 onFocus={() => setActiveDropdown('village')}
                 onClick={(e) => { e.stopPropagation(); setActiveDropdown('village'); }}
+                onKeyDown={(e) => handleKeyDown(e, categoryRef)}
                 disabled={!formData.taluka}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
                 placeholder="Ex: Rampar"
@@ -232,12 +260,14 @@ const AddMasterData = ({ isOpen, onClose }) => {
             <div className="space-y-2 relative">
               <label className="text-xs font-bold text-gray-500 uppercase">Category Name</label>
               <input
+                ref={categoryRef}
                 name="categoryName"
                 autoComplete="off"
                 value={formData.categoryName}
                 onChange={handleChange}
                 onFocus={() => setActiveDropdown('category')}
                 onClick={(e) => { e.stopPropagation(); setActiveDropdown('category'); }}
+                onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
                 placeholder="Ex: Gaushala"
               />
@@ -264,9 +294,11 @@ const AddMasterData = ({ isOpen, onClose }) => {
             <div className="sm:col-span-2 space-y-2">
               <label className="text-xs font-bold text-gray-500 uppercase">Description</label>
               <textarea
+                ref={descriptionRef}
                 name="categoryDescription"
                 value={formData.categoryDescription}
                 onChange={handleChange}
+                onKeyDown={(e) => handleKeyDown(e, submitRef)}
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none h-24"
                 placeholder="About this category..."
               />
@@ -283,6 +315,7 @@ const AddMasterData = ({ isOpen, onClose }) => {
             Cancel
           </button>
           <button
+            ref={submitRef}
             type="submit"
             disabled={isLoading}
             className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-200"

@@ -34,10 +34,107 @@ const baseQueryWithReauth = async (args, api, extraOptions) => {
 export const apiSlice = createApi({
   reducerPath: 'api',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Donations', 'Donors', 'Categories', 'Cities'],
+  tagTypes: ['Donations', 'Donors', 'Categories', 'Cities', 'Gaushalas', 'Kathas', 'BapuSchedule', 'Expenses', 'Sevaks', 'Mandals', 'MandalMembers', 'MandalPayments', 'KartalDhun'],
   endpoints: (builder) => ({
     getQRCode: builder.query({
       query: () => '/donations/qr',
+    }),
+    // Sevak Endpoints
+    getSevaks: builder.query({
+      query: (params) => ({
+        url: '/sevak',
+        params,
+      }),
+      providesTags: ['Sevaks'],
+    }),
+    addSevak: builder.mutation({
+      query: (data) => ({
+        url: '/sevak',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Sevaks'],
+    }),
+    updateSevak: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/sevak/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Sevaks'],
+    }),
+    deleteSevak: builder.mutation({
+      query: (id) => ({
+        url: `/sevak/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Sevaks'],
+    }),
+    // Expense Endpoints
+    getExpenses: builder.query({
+      query: (params) => ({
+        url: '/expenses',
+        params,
+      }),
+      providesTags: ['Expenses'],
+    }),
+    addExpense: builder.mutation({
+      query: (data) => ({
+        url: '/expenses',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Expenses'],
+    }),
+    updateExpense: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/expenses/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Expenses'],
+    }),
+    deleteExpense: builder.mutation({
+      query: (id) => ({
+        url: `/expenses/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Expenses'],
+    }),
+    getExpenseStats: builder.query({
+      query: () => '/expenses/stats',
+      providesTags: ['Expenses'],
+    }),
+    // ... other endpoints ...
+    getBapuSchedules: builder.query({
+      query: (params) => ({
+        url: '/bapu/all',
+        params,
+      }),
+      providesTags: ['BapuSchedule'],
+    }),
+    addBapuSchedule: builder.mutation({
+      query: (data) => ({
+        url: '/bapu/add',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['BapuSchedule'],
+    }),
+    updateBapuSchedule: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/bapu/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['BapuSchedule'],
+    }),
+    deleteBapuSchedule: builder.mutation({
+      query: (id) => ({
+        url: `/bapu/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['BapuSchedule'],
     }),
     login: builder.mutation({
       query: (credentials) => ({
@@ -103,6 +200,20 @@ export const apiSlice = createApi({
       }),
       providesTags: ['Categories'],
     }),
+    getGaushalas: builder.query({
+      query: (params) => ({
+        url: '/gaushala/all',
+        params,
+      }),
+      providesTags: ['Gaushalas'],
+    }),
+    getKathas: builder.query({
+      query: (params) => ({
+        url: '/katha/all',
+        params,
+      }),
+      providesTags: ['Kathas'],
+    }),
     addLocationMaster: builder.mutation({
       query: (data) => ({
         url: '/master/location',
@@ -127,6 +238,22 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Categories'],
     }),
+    addGaushala: builder.mutation({
+      query: (data) => ({
+        url: '/gaushala/add',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Gaushalas'],
+    }),
+    addKatha: builder.mutation({
+      query: (data) => ({
+        url: '/katha/add',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Kathas'],
+    }),
     addCombinedMasterData: builder.mutation({
       query: (data) => ({
         url: '/master/combined',
@@ -142,6 +269,130 @@ export const apiSlice = createApi({
         body: data,
       }),
       invalidatesTags: ['Donations'],
+    }),
+    // Mandal (Group) Endpoints
+    getMandals: builder.query({
+      query: (params) => ({
+        url: '/mandal',
+        params,
+      }),
+      providesTags: ['Mandals'],
+    }),
+    addMandal: builder.mutation({
+      query: (data) => ({
+        url: '/mandal',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['Mandals'],
+    }),
+    updateMandal: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/mandal/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Mandals'],
+    }),
+    deleteMandal: builder.mutation({
+      query: (id) => ({
+        url: `/mandal/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Mandals'],
+    }),
+    // Mandal Member Endpoints
+    getMandalMembers: builder.query({
+      query: (params) => ({
+        url: '/mandal/members',
+        params,
+      }),
+      providesTags: ['MandalMembers'],
+    }),
+    addMandalMember: builder.mutation({
+      query: (data) => ({
+        url: '/mandal/members',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['MandalMembers', 'Mandals'],
+    }),
+    updateMandalMember: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/mandal/members/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['MandalMembers'],
+    }),
+    deleteMandalMember: builder.mutation({
+      query: (id) => ({
+        url: `/mandal/members/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['MandalMembers', 'Mandals'],
+    }),
+    // Mandal Payment Endpoints
+    getMandalPayments: builder.query({
+      query: (params) => ({
+        url: '/mandal/payments',
+        params,
+      }),
+      providesTags: ['MandalPayments'],
+    }),
+    generateMandalPayments: builder.mutation({
+      query: (data) => ({
+        url: '/mandal/payments/generate',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['MandalPayments'],
+    }),
+    updateMandalPayment: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/mandal/payments/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['MandalPayments'],
+    }),
+    getMandalReport: builder.query({
+      query: (params) => ({
+        url: '/mandal/payments/report',
+        params,
+      }),
+      providesTags: ['MandalPayments'],
+    }),
+    // Kartal Dhun Endpoints
+    getKartalDhun: builder.query({
+      query: (params) => ({
+        url: '/kartal-dhun',
+        params,
+      }),
+      providesTags: ['KartalDhun'],
+    }),
+    addKartalDhun: builder.mutation({
+      query: (data) => ({
+        url: '/kartal-dhun',
+        method: 'POST',
+        body: data,
+      }),
+      invalidatesTags: ['KartalDhun'],
+    }),
+    updateKartalDhun: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/kartal-dhun/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['KartalDhun'],
+    }),
+    deleteKartalDhun: builder.mutation({
+      query: (id) => ({
+        url: `/kartal-dhun/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['KartalDhun'],
     }),
   }),
 });
@@ -159,9 +410,42 @@ export const {
   useGetCitiesQuery,
   useGetSubLocationsQuery,
   useGetCategoriesQuery,
+  useGetGaushalasQuery,
+  useGetKathasQuery,
   useAddLocationMasterMutation,
   useAddCategoryMasterMutation,
   useUpdateCategoryMutation,
+  useAddGaushalaMutation,
+  useAddKathaMutation,
   useAddCombinedMasterDataMutation,
   useUpdateDonationMutation,
+  useGetBapuSchedulesQuery,
+  useAddBapuScheduleMutation,
+  useUpdateBapuScheduleMutation,
+  useDeleteBapuScheduleMutation,
+  useGetExpensesQuery,
+  useAddExpenseMutation,
+  useUpdateExpenseMutation,
+  useDeleteExpenseMutation,
+  useGetExpenseStatsQuery,
+  useGetSevaksQuery,
+  useAddSevakMutation,
+  useUpdateSevakMutation,
+  useDeleteSevakMutation,
+  useGetMandalsQuery,
+  useAddMandalMutation,
+  useUpdateMandalMutation,
+  useDeleteMandalMutation,
+  useGetMandalMembersQuery,
+  useAddMandalMemberMutation,
+  useUpdateMandalMemberMutation,
+  useDeleteMandalMemberMutation,
+  useGetMandalPaymentsQuery,
+  useGenerateMandalPaymentsMutation,
+  useUpdateMandalPaymentMutation,
+  useGetMandalReportQuery,
+  useGetKartalDhunQuery,
+  useAddKartalDhunMutation,
+  useUpdateKartalDhunMutation,
+  useDeleteKartalDhunMutation,
 } = apiSlice;

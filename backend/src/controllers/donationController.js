@@ -1,6 +1,8 @@
 import { Donation } from '../models/donation.js';
 import { User } from '../models/user.js';
 import { Category } from '../models/category.js';
+import { Gaushala } from '../models/gaushala.js';
+import { Katha } from '../models/katha.js';
 import { Location } from '../models/location.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
@@ -41,20 +43,28 @@ export const createDonationOrder = async (req, res) => {
       talukaId, 
       cityId, 
       categoryId, 
+      gaushalaId,
+      kathaId,
       companyName, 
       mobileNumber, 
       paymentMode,
       referenceName
     } = req.body;
 
-    // 1. Generate Cause String based on Category and Location IDs
+    // 1. Generate Cause String based on Category, Location, and Katha
     let causeString = '';
     let categoryName = 'General Donation';
     let locationName = '';
+    let kathaName = '';
 
     if (categoryId) {
       const category = await Category.findByPk(categoryId);
       if (category) categoryName = category.name;
+    }
+
+    if (kathaId) {
+      const katha = await Katha.findByPk(kathaId);
+      if (katha) kathaName = katha.name;
     }
 
     // Determine the most specific location provided (Village > Taluka > City)
@@ -80,8 +90,8 @@ export const createDonationOrder = async (req, res) => {
       }
     }
 
-    // Example Cause: "Education Donation for Village, Taluka, City"
-    causeString = `${categoryName}${locationName ? ` for ${locationName}` : ''}`;
+    // Example Cause: "Bhagvat Katha (Surat) - Education Donation for Village, Taluka, City"
+    causeString = `${kathaName ? `${kathaName} - ` : ''}${categoryName}${locationName ? ` for ${locationName}` : ''}`;
 
     // 2. Check user (create or update if exists)
     let user = await User.findOne({ where: { mobileNumber } });
@@ -122,8 +132,10 @@ export const createDonationOrder = async (req, res) => {
       donorId: user.id,
       amount,
       cause: causeString,
-      categoryId,
-      locationId: targetLocationId,
+      categoryId: categoryId || null,
+      gaushalaId: gaushalaId || null,
+      kathaId: kathaId || null,
+      locationId: targetLocationId || null,
       paymentMode,
       referenceName,
       status: paymentMode === 'cash' ? 'completed' : 'pending',
