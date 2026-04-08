@@ -12,12 +12,23 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-// 2. Function to send email directly (Serverless compatible)
+// 2. Validate email format
+const isValidEmail = (email) => {
+  if (!email || typeof email !== 'string') return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+};
+
+// 3. Function to send email directly (Serverless compatible)
 export const sendEmail = async (to, subject, html, attachments = []) => {
+  if (!isValidEmail(to)) {
+    console.log(`⏭️ Skipping email — invalid or missing address: ${to}`);
+    return { success: false, skipped: true };
+  }
+
   try {
     await transporter.sendMail({
       from: SMTP_FROM || SMTP_USER,
-      to,
+      to: to.trim(),
       subject,
       html,
       attachments,
@@ -25,7 +36,7 @@ export const sendEmail = async (to, subject, html, attachments = []) => {
     console.log(`✅ Email sent directly to ${to}`);
     return { success: true };
   } catch (error) {
-    console.error(`❌ Error sending email to ${to}:`, error);
+    console.error(`❌ Error sending email to ${to}:`, error.message);
     return { success: false, error };
   }
 };
