@@ -46,6 +46,9 @@ const initDB = async () => {
 const app = express();
 const port = PORT || 5000;
 
+// Start DB Initialization in background immediately on cold start
+initDB().catch(err => console.error('Background DB Init Error:', err));
+
 // Middlewares
 app.use(helmet());
 app.use(cors({ origin: FRONTEND_URL || '*' }));
@@ -53,10 +56,10 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Lazy load DB on first request for serverless
+// Lazy load DB on first request for serverless (Only if background init hasn't finished)
 app.use(async (req, res, next) => {
   // Only wait for DB on non-root routes to keep health checks fast
-  if (req.path !== '/' && NODE_ENV === 'production' && !dbInitialized) {
+  if (req.path !== '/' && !dbInitialized) {
     try {
       await initDB();
     } catch (error) {
