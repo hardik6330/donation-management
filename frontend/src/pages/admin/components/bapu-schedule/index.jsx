@@ -3,7 +3,12 @@ import BapuScheduleList from './BapuScheduleList';
 import AddBapuScheduleModal from './AddBapuScheduleModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetBapuSchedulesQuery, useDeleteBapuScheduleMutation } from '../../../../services/apiSlice';
+import { 
+  useGetBapuSchedulesQuery, 
+  useDeleteBapuScheduleMutation,
+  useGetCitiesQuery,
+  useGetSubLocationsQuery 
+} from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
 
 const BapuSchedule = () => {
@@ -16,6 +21,9 @@ const BapuSchedule = () => {
     endDate: '',
     eventType: '',
     status: '',
+    cityId: '',
+    talukaId: '',
+    villageId: '',
     locationId: '',
     search: '',
     page: 1,
@@ -26,7 +34,22 @@ const BapuSchedule = () => {
   const { data: schedulesData, isLoading: loading } = useGetBapuSchedulesQuery(filters);
   const [deleteSchedule, { isLoading: isDeleting }] = useDeleteBapuScheduleMutation();
 
-  const schedules = schedulesData?.data?.rows || schedulesData?.data || [];
+  // Location Data for Filters
+  const { data: filterCitiesData } = useGetCitiesQuery();
+  const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
+  const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
+
+  const filterCities = filterCitiesData?.data || [];
+  const filterTalukas = filterTalukasData?.data || [];
+  const filterVillages = filterVillagesData?.data || [];
+
+  const schedules = schedulesData?.data?.data || [];
+  const pagination = {
+    totalData: schedulesData?.data?.totalData || 0,
+    totalPages: schedulesData?.data?.totalPages || 0,
+    currentPage: schedulesData?.data?.currentPage || 1,
+    limit: schedulesData?.data?.limit || 10
+  };
 
   const handleAdd = () => {
     setEditingSchedule(null);
@@ -51,7 +74,25 @@ const BapuSchedule = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
+    
+    if (name === 'cityId') {
+      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
+      return;
+    }
+    if (name === 'talukaId') {
+      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
+      return;
+    }
+    if (name === 'villageId') {
+      setFilters(prev => ({ ...prev, villageId: value, page: 1 }));
+      return;
+    }
+
+    setFilters(prev => ({ ...prev, [name]: value, page: 1 })); // Reset to page 1 on filter change
+  };
+
+  const handlePageChange = (page) => {
+    setFilters(prev => ({ ...prev, page }));
   };
 
   const clearFilters = () => setFilters({
@@ -59,6 +100,9 @@ const BapuSchedule = () => {
     endDate: '',
     eventType: '',
     status: '',
+    cityId: '',
+    talukaId: '',
+    villageId: '',
     locationId: '',
     search: '',
     page: 1,
@@ -78,11 +122,18 @@ const BapuSchedule = () => {
         schedules={schedules}
         isLoading={loading}
         isDeleting={isDeleting}
+        pagination={pagination}
         filters={filters}
+        filterData={{
+          cities: filterCities,
+          talukas: filterTalukas,
+          villages: filterVillages
+        }}
         onEdit={handleEdit} 
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
+        onPageChange={handlePageChange}
         hasPermission={hasPermission} 
       />
 

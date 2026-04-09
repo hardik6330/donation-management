@@ -7,13 +7,18 @@ const BapuScheduleList = ({
   schedules, 
   isLoading, 
   isDeleting, 
+  pagination,
   filters, 
+  filterData,
   onEdit, 
   onDelete, 
   onFilterChange, 
   onClearFilters, 
+  onPageChange,
   hasPermission 
 }) => {
+  const { cities = [], talukas = [], villages = [] } = filterData || {};
+
   const tableHeaders = [
     { label: 'Date & Time' },
     { label: 'Event Details' },
@@ -25,6 +30,27 @@ const BapuScheduleList = ({
 
   const filterFields = [
     { name: 'startDate', label: 'Start Date', type: 'date', icon: Calendar },
+    { 
+      name: 'cityId', 
+      label: 'City', 
+      type: 'select', 
+      icon: MapPin,
+      options: cities.map(c => ({ value: c.id, label: c.name }))
+    },
+    { 
+      name: 'talukaId', 
+      label: 'Taluka', 
+      type: 'select', 
+      icon: MapPin,
+      options: talukas.map(t => ({ value: t.id, label: t.name }))
+    },
+    { 
+      name: 'villageId', 
+      label: 'Village', 
+      type: 'select', 
+      icon: MapPin,
+      options: villages.map(v => ({ value: v.id, label: v.name }))
+    },
     { 
       name: 'eventType', 
       label: 'Event Type', 
@@ -103,7 +129,7 @@ const BapuScheduleList = ({
                 <div className="text-sm font-medium text-gray-800">{schedule.contactPerson}</div>
                 <div className="flex items-center gap-1.5 text-xs text-gray-500">
                   <Phone className="w-3.5 h-3.5" />
-                  {schedule.contactNumber}
+                  {schedule.mobileNumber}
                 </div>
               </div>
             </td>
@@ -142,6 +168,43 @@ const BapuScheduleList = ({
           </tr>
         ))}
       </AdminTable>
+
+      {pagination?.totalPages > 1 && (
+        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-sm text-gray-500">
+            Showing <span className="font-bold text-blue-600">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={filters.page === 1}
+              onClick={() => onPageChange(filters.page - 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Prev
+            </button>
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => onPageChange(page)}
+                className={`w-9 h-9 text-sm font-bold rounded-lg transition ${
+                  filters.page === page
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              disabled={filters.page === pagination.totalPages}
+              onClick={() => onPageChange(filters.page + 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

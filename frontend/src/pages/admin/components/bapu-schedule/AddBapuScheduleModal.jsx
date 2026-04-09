@@ -5,12 +5,19 @@ import {
   useGetCitiesQuery,
   useGetSubLocationsQuery
 } from '../../../../services/apiSlice';
-import { Calendar, X, ChevronDown, Loader2, Clock, MapPin, User, Phone, Edit } from 'lucide-react';
+import { Calendar, X, ChevronDown, Loader2, Clock, MapPin, User, Phone, Edit, Tag } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
+
+const eventTypeOptions = [
+  { id: 'Padhramani', name: 'Padhramani' },
+  { id: 'Katha', name: 'Katha' },
+  { id: 'Event', name: 'Event' },
+  { id: 'Personal', name: 'Personal' }
+];
 
 const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
   const [addSchedule, { isLoading: isAdding }] = useAddBapuScheduleMutation();
@@ -71,12 +78,14 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
         cityName: editingSchedule.city || '',
         talukaName: editingSchedule.taluka || '',
         villageName: editingSchedule.village || '',
+        eventTypeName: editingSchedule.eventType || 'Padhramani',
       };
     }
     return {
       cityName: '',
       talukaName: '',
       villageName: '',
+      eventTypeName: 'Padhramani',
     };
   };
 
@@ -119,6 +128,12 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
   const handleAddInputChange = (e) => {
     const { name, value } = e.target;
 
+    if (name === 'eventTypeName') {
+      setAddDropdownLabels(prev => ({ ...prev, eventTypeName: value }));
+      setAddForm(prev => ({ ...prev, eventType: '' }));
+      setActiveAddDropdown('eventTypeName');
+      return;
+    }
     if (name === 'cityName') {
       setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
       setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
@@ -142,7 +157,10 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
   };
 
   const handleAddDropdownSelect = (field, id, name) => {
-    if (field === 'cityId') {
+    if (field === 'eventType') {
+      setAddForm(prev => ({ ...prev, eventType: id }));
+      setAddDropdownLabels(prev => ({ ...prev, eventTypeName: name }));
+    } else if (field === 'cityId') {
       setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
     } else if (field === 'talukaId') {
@@ -157,6 +175,14 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+
+    // Validate eventType
+    const isValidEventType = eventTypeOptions.some(opt => opt.id === addForm.eventType);
+    if (!isValidEventType) {
+      toast.error('Please select an Event Type from the dropdown');
+      return;
+    }
+
     try {
       const payload = {
         ...addForm,
@@ -209,21 +235,21 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
             icon={Clock}
           />
 
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Event Type</label>
-            <select
-              ref={eventTypeRef}
-              value={addForm.eventType}
-              onChange={(e) => setAddForm(prev => ({ ...prev, eventType: e.target.value }))}
-              onKeyDown={(e) => handleKeyDown(e, cityRef)}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
-            >
-              <option value="Padhramani">Padhramani</option>
-              <option value="Katha">Katha</option>
-              <option value="Event">Event</option>
-              <option value="Personal">Personal</option>
-            </select>
-          </div>
+          <SearchableDropdown
+            label="Event Type"
+            name="eventTypeName"
+            placeholder="Select Event Type"
+            value={addDropdownLabels.eventTypeName}
+            items={eventTypeOptions}
+            onChange={handleAddInputChange}
+            onSelect={(id, name) => handleAddDropdownSelect('eventType', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, cityRef)}
+            isActive={activeAddDropdown === 'eventTypeName'}
+            setActive={setActiveAddDropdown}
+            required
+            inputRef={eventTypeRef}
+            icon={Tag}
+          />
 
           <SearchableDropdown
             label="City"

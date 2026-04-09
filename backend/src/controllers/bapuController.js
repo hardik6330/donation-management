@@ -2,12 +2,14 @@ import { BapuSchedule } from '../models/bapuSchedule.js';
 import { Location } from '../models/location.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { findOrCreateLocationStructure } from '../utils/locationHelper.js';
+import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
 
 // Get all schedules with filtering
 export const getBapuSchedules = async (req, res) => {
   try {
-    const { startDate, endDate, eventType, status, locationId } = req.query;
+    const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
+    const { startDate, endDate, eventType, status, locationId, cityId, talukaId, villageId } = req.query;
     let where = {};
 
     if (startDate && endDate) {
@@ -18,9 +20,33 @@ export const getBapuSchedules = async (req, res) => {
 
     if (eventType) where.eventType = eventType;
     if (status) where.status = status;
-    if (locationId) where.locationId = locationId;
+    
+    // Hierarchical Location Filter
+    if (locationId) {
+      where.locationId = locationId;
+    } else if (villageId) {
+      where.locationId = villageId;
+    } else if (talukaId) {
+      const subLocations = await Location.findAll({
+        where: { [Op.or]: [{ id: talukaId }, { parentId: talukaId }] },
+        attributes: ['id']
+      });
+      where.locationId = { [Op.in]: subLocations.map(loc => loc.id) };
+    } else if (cityId) {
+      const talukas = await Location.findAll({
+        where: { parentId: cityId },
+        attributes: ['id']
+      });
+      const talukaIds = talukas.map(t => t.id);
+      const villages = await Location.findAll({
+        where: { parentId: { [Op.in]: talukaIds } },
+        attributes: ['id']
+      });
+      const allLocationIds = [cityId, ...talukaIds, ...villages.map(v => v.id)];
+      where.locationId = { [Op.in]: allLocationIds };
+    }
 
-    const schedules = await BapuSchedule.findAll({
+    const { count, rows: schedules } = await BapuSchedule.findAndCountAll({
       where,
       include: [
         { 
@@ -35,7 +61,10 @@ export const getBapuSchedules = async (req, res) => {
           ]
         }
       ],
-      order: [['date', 'ASC'], ['time', 'ASC']]
+      order: [['date', 'ASC'], ['time', 'ASC']],
+      limit: queryLimit,
+      offset: offset,
+      distinct: true,
     });
 
     // Format the response to include city, taluka, village names
@@ -70,7 +99,16 @@ export const getBapuSchedules = async (req, res) => {
       };
     });
 
-    return sendSuccess(res, formattedSchedules, 'Schedules fetched successfully');
+    const responseData = getPaginatedResponse({
+      rows: formattedSchedules,
+      count,
+      limit,
+      page,
+      isFetchAll,
+      dataKey: 'data'
+    });
+
+    return sendSuccess(res, responseData, 'Schedules fetched successfully');
   } catch (error) {
     console.error('❌ [getBapuSchedules] Error:', error);
     return sendError(res, 'Error fetching Bapu schedules', 500, error);
