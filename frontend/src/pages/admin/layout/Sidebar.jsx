@@ -16,26 +16,30 @@ import {
   UserCheck,
   UsersRound,
   Music,
-  Shield
+  Shield,
+  FileText
 } from 'lucide-react';
+import usePermissions from '../../../hooks/usePermissions';
 
 const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
+  const { hasPermission } = usePermissions();
+
   const menuItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-    { id: 'donations', label: 'Donation List', icon: HandCoins, path: '/admin/donations' },
-    { id: 'donors', label: 'Donors', icon: Users, path: '/admin/donors' },
-    { id: 'expenses', label: 'Expenses', icon: IndianRupee, path: '/admin/expenses' },
-    { id: 'sevaks', label: 'Sevaks', icon: UserCheck, path: '/admin/sevaks' },
-    { id: 'gaushala', label: 'Gaushala', icon: Building2, path: '/admin/gaushala' },
-    { id: 'katha', label: 'Katha', icon: Mic2, path: '/admin/katha' },
-    { id: 'mandal', label: 'Mandal', icon: UsersRound, path: '/admin/mandal' },
-    { id: 'kartal-dhun', label: 'Kartal Dhun', icon: Music, path: '/admin/kartal-dhun' },
-    { id: 'bapu-schedule', label: 'Bapu Schedule', icon: Calendar, path: '/admin/bapu-schedule' },
-    { id: 'category', label: 'Category', icon: Tags, path: '/admin/category' },
-    { id: 'location', label: 'Location', icon: MapPin, path: '/admin/location' },
-    { id: 'role', label: 'Role', icon: Users, path: '/admin/roles' },
-    { id: 'system-users', label: 'System Users', icon: Shield, path: '/admin/system-users' },
-  ];
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', show: hasPermission('dashboard') },
+    { id: 'donations', label: 'Donation List', icon: HandCoins, path: '/admin/donations', show: hasPermission('donations') },
+    { id: 'donors', label: 'Donors', icon: Users, path: '/admin/donors', show: hasPermission('donors') },
+    { id: 'expenses', label: 'Expenses', icon: IndianRupee, path: '/admin/expenses', show: hasPermission('expenses') },
+    { id: 'sevaks', label: 'Sevaks', icon: UserCheck, path: '/admin/sevaks', show: hasPermission('sevaks') },
+    { id: 'gaushala', label: 'Gaushala', icon: Building2, path: '/admin/gaushala', show: hasPermission('gaushala') },
+    { id: 'katha', label: 'Katha', icon: Mic2, path: '/admin/katha', show: hasPermission('katha') },
+    { id: 'mandal', label: 'Mandal', icon: UsersRound, path: '/admin/mandal', show: hasPermission('mandal') },
+    { id: 'kartal-dhun', label: 'Kartal Dhun', icon: Music, path: '/admin/kartal-dhun', show: hasPermission('kartalDhun') },
+    { id: 'bapu-schedule', label: 'Bapu Schedule', icon: Calendar, path: '/admin/bapu-schedule', show: hasPermission('bapuSchedule') },
+    { id: 'category', label: 'Category', icon: Tags, path: '/admin/category', show: hasPermission('category') },
+    { id: 'location', label: 'Location', icon: MapPin, path: '/admin/location', show: hasPermission('location') },
+    { id: 'role', label: 'Role', icon: Users, path: '/admin/roles', show: hasPermission('users') },
+    { id: 'system-users', label: 'System Users', icon: Shield, path: '/admin/system-users', show: hasPermission('users') },
+  ].filter(item => item.show);
 
   const profileItem = { id: 'profile', label: 'Profile', icon: UserCircle, path: '/admin/profile' };
 

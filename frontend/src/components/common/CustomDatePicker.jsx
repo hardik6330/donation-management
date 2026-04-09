@@ -4,13 +4,15 @@ import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', label, icon: Icon, disabled = false }) => {
+const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', label, required = false, icon: Icon, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => {
     if (value) return new Date(value + 'T00:00:00');
     return new Date();
   });
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const ref = useRef(null);
+  const triggerRef = useRef(null);
 
   useEffect(() => {
     if (value) setViewDate(new Date(value + 'T00:00:00'));
@@ -78,10 +80,28 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
   };
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative space-y-1.5" ref={ref}>
+      {label && (
+        <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 flex items-center gap-2">
+          {Icon && <Icon className="w-3 h-3" />} {label} {required && '*'}
+        </label>
+      )}
       <div
-        onClick={() => !disabled && setIsOpen(!isOpen)}
-        className={`w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm cursor-pointer flex items-center justify-between transition ${isOpen ? 'ring-2 ring-blue-500' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+        ref={triggerRef}
+        onClick={() => {
+          if (disabled) return;
+          if (!isOpen && triggerRef.current) {
+            const rect = triggerRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const calendarHeight = 360;
+            setDropdownPos({
+              top: spaceBelow < calendarHeight ? rect.top - calendarHeight : rect.bottom + 4,
+              left: rect.left
+            });
+          }
+          setIsOpen(!isOpen);
+        }}
+        className={`w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm cursor-pointer flex items-center justify-between transition ${isOpen ? 'ring-2 ring-blue-500' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
       >
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-gray-400" />
@@ -106,7 +126,10 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
       </div>
 
       {isOpen && (
-        <div className="absolute z-[130] mt-1 bg-white border border-gray-100 rounded-2xl shadow-xl p-3 w-[280px] animate-in fade-in slide-in-from-top-2 duration-200">
+        <div
+          className="fixed z-[200] bg-white border border-gray-100 rounded-2xl shadow-xl p-3 w-[280px] animate-in fade-in slide-in-from-top-2 duration-200"
+          style={{ top: dropdownPos.top, left: dropdownPos.left }}
+        >
           {/* Header */}
           <div className="flex items-center justify-between mb-3">
             <button type="button" onClick={prevMonth} className="p-1.5 hover:bg-gray-100 rounded-lg transition">

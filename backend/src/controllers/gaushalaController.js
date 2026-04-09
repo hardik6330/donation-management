@@ -99,3 +99,45 @@ export const addGaushala = async (req, res) => {
     return sendError(res, 'Error adding gaushala', 500, error);
   }
 };
+
+export const updateGaushala = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, city, taluka, village, locationId, isActive } = req.body;
+    
+    const gaushala = await Gaushala.findByPk(id);
+    if (!gaushala) {
+      return sendError(res, 'Gaushala not found', 404);
+    }
+
+    let finalLocationId = locationId || gaushala.locationId;
+    if (city) {
+      const location = await findOrCreateLocationStructure(city, taluka, village);
+      if (location) finalLocationId = location.id;
+    }
+
+    await gaushala.update({ 
+      name: name || gaushala.name, 
+      locationId: finalLocationId,
+      isActive: isActive !== undefined ? isActive : gaushala.isActive
+    });
+    
+    return sendSuccess(res, gaushala, 'Gaushala updated successfully');
+  } catch (error) {
+    return sendError(res, 'Error updating gaushala', 500, error);
+  }
+};
+
+export const deleteGaushala = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const gaushala = await Gaushala.findByPk(id);
+    if (!gaushala) {
+      return sendError(res, 'Gaushala not found', 404);
+    }
+    await gaushala.destroy();
+    return sendSuccess(res, null, 'Gaushala deleted successfully');
+  } catch (error) {
+    return sendError(res, 'Error deleting gaushala', 500, error);
+  }
+};

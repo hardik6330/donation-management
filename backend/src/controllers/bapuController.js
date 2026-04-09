@@ -22,11 +22,55 @@ export const getBapuSchedules = async (req, res) => {
 
     const schedules = await BapuSchedule.findAll({
       where,
-      include: [{ model: Location, as: 'location' }],
+      include: [
+        { 
+          model: Location, 
+          as: 'location',
+          include: [
+            { 
+              model: Location, 
+              as: 'parent',
+              include: [{ model: Location, as: 'parent' }]
+            }
+          ]
+        }
+      ],
       order: [['date', 'ASC'], ['time', 'ASC']]
     });
 
-    return sendSuccess(res, schedules, 'Schedules fetched successfully');
+    // Format the response to include city, taluka, village names
+    const formattedSchedules = schedules.map(schedule => {
+      const s = schedule.toJSON();
+      let city = '', taluka = '', village = '';
+
+      if (s.location) {
+        if (s.location.type === 'village') {
+          village = s.location.name;
+          if (s.location.parent) {
+            taluka = s.location.parent.name;
+            if (s.location.parent.parent) {
+              city = s.location.parent.parent.name;
+            }
+          }
+        } else if (s.location.type === 'taluka') {
+          taluka = s.location.name;
+          if (s.location.parent) {
+            city = s.location.parent.name;
+          }
+        } else if (s.location.type === 'city') {
+          city = s.location.name;
+        }
+      }
+
+      return {
+        ...s,
+        city,
+        taluka,
+        village
+      };
+    });
+
+    return sendSuccess(res, formattedSchedules, 'Schedules fetched successfully');
   } catch (error) {
     console.error('❌ [getBapuSchedules] Error:', error);
     return sendError(res, 'Error fetching Bapu schedules', 500, error);

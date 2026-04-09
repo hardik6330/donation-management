@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddKathaMutation,
+  useUpdateKathaMutation,
   useGetCitiesQuery,
   useGetSubLocationsQuery
 } from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
-import { MapPin, Mic2, Plus, Loader2, CheckCircle2, Calendar, Tag, CheckCircle } from 'lucide-react';
+import { MapPin, Mic2, Plus, Loader2, CheckCircle2, Calendar, Tag, CheckCircle, Edit, Mic2Icon } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
+import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 
-const AddKathaModal = ({ isOpen, onClose }) => {
+const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
   const [formData, setFormData] = useState({
     name: '',
     cityId: '',
@@ -34,8 +36,6 @@ const AddKathaModal = ({ isOpen, onClose }) => {
   const talukaRef = useRef(null);
   const villageRef = useRef(null);
   const statusRef = useRef(null);
-  const startDateRef = useRef(null);
-  const endDateRef = useRef(null);
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
@@ -47,14 +47,37 @@ const AddKathaModal = ({ isOpen, onClose }) => {
   const talukas = talukasData?.data || [];
   const villages = villagesData?.data || [];
 
-  const [addKatha, { isLoading }] = useAddKathaMutation();
+  const [addKatha, { isLoading: isAdding }] = useAddKathaMutation();
+  const [updateKatha, { isLoading: isUpdating }] = useUpdateKathaMutation();
+  const isLoading = isAdding || isUpdating;
 
-  // Fast Entry: Focus first field
   useEffect(() => {
+    if (editingKatha) {
+      setFormData({
+        name: editingKatha.name || '',
+        cityId: editingKatha.locationId || '',
+        cityName: editingKatha.city || '',
+        talukaId: '',
+        talukaName: editingKatha.taluka || '',
+        villageId: '',
+        villageName: editingKatha.village || '',
+        startDate: editingKatha.startDate ? new Date(editingKatha.startDate).toISOString().split('T')[0] : '',
+        endDate: editingKatha.endDate ? new Date(editingKatha.endDate).toISOString().split('T')[0] : '',
+        status: editingKatha.status || 'upcoming',
+        statusName: editingKatha.status ? editingKatha.status.charAt(0).toUpperCase() + editingKatha.status.slice(1) : 'Upcoming',
+        description: editingKatha.description || ''
+      });
+    } else {
+      setFormData({
+        name: '', cityId: '', cityName: '', talukaId: '', talukaName: '', villageId: '', villageName: '',
+        startDate: '', endDate: '', status: 'upcoming', statusName: 'Upcoming', description: ''
+      });
+    }
+
     if (isOpen && nameRef.current) {
       nameRef.current.focus();
     }
-  }, [isOpen]);
+  }, [editingKatha, isOpen]);
 
   const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
@@ -102,13 +125,13 @@ const AddKathaModal = ({ isOpen, onClose }) => {
     }
     if (name === 'cityName') {
       setFormData(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', villageId: '' }));
-      setActiveDropdown('city');
+      setActiveDropdown('cityName');
     } else if (name === 'talukaName') {
       setFormData(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '' }));
-      setActiveDropdown('taluka');
+      setActiveDropdown('talukaName');
     } else if (name === 'villageName') {
       setFormData(prev => ({ ...prev, villageName: value, villageId: '' }));
-      setActiveDropdown('village');
+      setActiveDropdown('villageName');
     } else {
       setFormData(prev => ({
         ...prev,
@@ -124,7 +147,7 @@ const AddKathaModal = ({ isOpen, onClose }) => {
     if (!formData.cityName) return toast.error('Please select or enter a city');
 
     try {
-      await addKatha({
+      const payload = {
         name: formData.name,
         city: formData.cityName,
         taluka: formData.talukaName,
@@ -134,11 +157,18 @@ const AddKathaModal = ({ isOpen, onClose }) => {
         endDate: formData.endDate,
         status: formData.status,
         description: formData.description
-      }).unwrap();
-      toast.success('Katha added successfully!');
+      };
+
+      if (editingKatha) {
+        await updateKatha({ id: editingKatha.id, ...payload }).unwrap();
+        toast.success('Katha updated successfully!');
+      } else {
+        await addKatha(payload).unwrap();
+        toast.success('Katha added successfully!');
+      }
       onClose();
     } catch (err) {
-      toast.error(err?.data?.message || 'Failed to add katha');
+      toast.error(err?.data?.message || `Failed to ${editingKatha ? 'update' : 'add'} katha`);
     }
   };
 
@@ -146,8 +176,8 @@ const AddKathaModal = ({ isOpen, onClose }) => {
     <AdminModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Add New Katha"
-      icon={<Mic2 />}
+      title={editingKatha ? "Edit Katha" : "Add New Katha"}
+      icon={editingKatha ? <Edit /> : <Mic2Icon />}
       maxWidth="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -174,7 +204,7 @@ const AddKathaModal = ({ isOpen, onClose }) => {
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('city', name, id)}
             onKeyDown={(e) => handleKeyDown(e, talukaRef)}
-            isActive={activeDropdown === 'city'}
+            isActive={activeDropdown === 'cityName'}
             setActive={setActiveDropdown}
             inputRef={cityRef}
             icon={MapPin}
@@ -189,7 +219,7 @@ const AddKathaModal = ({ isOpen, onClose }) => {
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('taluka', name, id)}
             onKeyDown={(e) => handleKeyDown(e, villageRef)}
-            isActive={activeDropdown === 'taluka'}
+            isActive={activeDropdown === 'talukaName'}
             setActive={setActiveDropdown}
             disabled={!formData.cityName}
             inputRef={talukaRef}
@@ -205,7 +235,7 @@ const AddKathaModal = ({ isOpen, onClose }) => {
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('village', name, id)}
             onKeyDown={(e) => handleKeyDown(e, statusRef)}
-            isActive={activeDropdown === 'village'}
+            isActive={activeDropdown === 'villageName'}
             setActive={setActiveDropdown}
             disabled={!formData.talukaName}
             inputRef={villageRef}
@@ -227,32 +257,26 @@ const AddKathaModal = ({ isOpen, onClose }) => {
               setFormData(prev => ({ ...prev, status: id, statusName: name }));
               setActiveDropdown(null);
             }}
-            onKeyDown={(e) => handleKeyDown(e, startDateRef)}
+            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
             isActive={activeDropdown === 'statusName'}
             setActive={setActiveDropdown}
             inputRef={statusRef}
             icon={CheckCircle}
           />
 
-          <FormInput
+          <CustomDatePicker
             label="Start Date"
-            type="date"
             name="startDate"
             value={formData.startDate}
             onChange={handleChange}
-            onKeyDown={(e) => handleKeyDown(e, endDateRef)}
-            inputRef={startDateRef}
             icon={Calendar}
           />
 
-          <FormInput
+          <CustomDatePicker
             label="End Date"
-            type="date"
             name="endDate"
             value={formData.endDate}
             onChange={handleChange}
-            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
-            inputRef={endDateRef}
             icon={Calendar}
           />
 

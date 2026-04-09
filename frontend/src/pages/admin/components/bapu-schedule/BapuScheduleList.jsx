@@ -1,61 +1,25 @@
-import React, { useState } from 'react';
-import { 
-  useGetBapuSchedulesQuery, 
-  useUpdateBapuScheduleMutation, 
-  useDeleteBapuScheduleMutation
-} from '../../../../services/apiSlice';
-import { Calendar, Phone, Clock, CheckCircle2, X, Loader2, Trash2, ChevronDown, Filter, Search, Tag, MapPin } from 'lucide-react';
-import { toast } from 'react-toastify';
-import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import React from 'react';
+import { Calendar, Phone, Clock, CheckCircle2, Trash2, Tag, MapPin, Edit } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
-import AddBapuScheduleModal from './AddBapuScheduleModal';
 
-const BapuScheduleList = () => {
-  const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
-    eventType: '',
-    status: '',
-    locationId: ''
-  });
-
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  const { data: schedulesData, isLoading: loading } = useGetBapuSchedulesQuery(filters);
-  const [updateSchedule] = useUpdateBapuScheduleMutation();
-  const [deleteSchedule] = useDeleteBapuScheduleMutation();
-
-  const schedules = schedulesData?.data || [];
-
-  const handleUpdateStatus = async (id, status) => {
-    try {
-      await updateSchedule({ id, status }).unwrap();
-      toast.success(`Schedule marked as ${status}`);
-    } catch (err) {
-      console.error(err);
-      toast.error('Failed to update status');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this schedule?')) {
-      try {
-        await deleteSchedule(id).unwrap();
-        toast.success('Schedule deleted successfully');
-      } catch (err) {
-        console.error(err);
-        toast.error('Failed to delete schedule');
-      }
-    }
-  };
-
+const BapuScheduleList = ({ 
+  schedules, 
+  isLoading, 
+  isDeleting, 
+  filters, 
+  onEdit, 
+  onDelete, 
+  onFilterChange, 
+  onClearFilters, 
+  hasPermission 
+}) => {
   const tableHeaders = [
     { label: 'Date & Time' },
-    { label: 'Event Type' },
+    { label: 'Event Details' },
     { label: 'Location' },
-    { label: 'Contact Person' },
-    { label: 'Status' },
+    { label: 'Contact' },
+    { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
   ];
 
@@ -88,88 +52,96 @@ const BapuScheduleList = () => {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader 
-        title="Bapu's Schedule" 
-        subtitle="Manage and track all upcoming events and padhramani"
-        buttonText="Add Schedule"
-        onButtonClick={() => setIsAddModalOpen(true)}
+      <FilterSection 
+        fields={filterFields} 
+        filters={filters} 
+        onFilterChange={onFilterChange} 
+        onClearFilters={onClearFilters} 
       />
 
-      <FilterSection
-        filters={filters}
-        onFilterChange={(e) => {
-          const { name, value } = e.target;
-          setFilters(prev => ({ ...prev, [name]: value }));
-        }}
-        onClearFilters={() => setFilters({ startDate: '', endDate: '', eventType: '', status: '', locationId: '' })}
-        fields={filterFields}
-      />
-
-      <AdminTable headers={tableHeaders} isLoading={loading}>
-        {schedules.map((item) => (
-          <tr key={item.id} className="hover:bg-gray-50 transition">
-            <td className="p-4">
-              <div className="font-bold text-gray-800">{new Date(item.date).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Clock className="w-3 h-3" /> {item.time || 'Time TBD'}
+      <AdminTable 
+        headers={tableHeaders} 
+        isLoading={isLoading}
+        emptyMessage="No schedules found."
+      >
+        {schedules.map((schedule) => (
+          <tr key={schedule.id} className="hover:bg-gray-50 transition">
+            <td className="p-4 px-6">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1.5 text-sm font-bold text-gray-800">
+                  <Calendar className="w-3.5 h-3.5 text-blue-600" />
+                  {new Date(schedule.date).toLocaleDateString('en-IN')}
+                </div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Clock className="w-3.5 h-3.5" />
+                  {schedule.time}
+                </div>
               </div>
             </td>
-            <td className="p-4">
-              <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${
-                item.eventType === 'Padhramani' ? 'bg-purple-100 text-purple-600' :
-                item.eventType === 'Katha' ? 'bg-orange-100 text-orange-600' :
-                'bg-blue-100 text-blue-600'
-              }`}>
-                {item.eventType}
-              </span>
-            </td>
-            <td className="p-4">
-              <div className="text-sm font-medium text-gray-800">{item.location?.name || 'Multiple Locations'}</div>
-              <div className="text-xs text-gray-500">{item.description}</div>
-            </td>
-            <td className="p-4">
-              <div className="text-sm font-medium">{item.contactPerson || '-'}</div>
-              <div className="text-xs text-gray-500 flex items-center gap-1">
-                <Phone className="w-3 h-3" /> {item.mobileNumber || '-'}
+            <td className="p-4 px-6">
+              <div className="flex flex-col gap-1">
+                <span className={`w-fit text-xs font-bold uppercase ${
+                  schedule.eventType === 'Padhramani' ? 'text-purple-600' :
+                  schedule.eventType === 'Katha' ? 'text-orange-600' :
+                  'text-blue-600'
+                }`}>
+                  {schedule.eventType}
+                </span>
+                <span className="text-sm font-medium text-gray-700 line-clamp-1">
+                  {schedule.eventDescription || 'No description'}
+                </span>
               </div>
             </td>
-            <td className="p-4">
-              <span className={`text-[10px] font-bold uppercase ${
-                item.status === 'completed' ? 'text-green-600' :
-                item.status === 'cancelled' ? 'text-red-600' :
-                'text-yellow-600'
+            <td className="p-4 px-6">
+              <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <MapPin className="w-3.5 h-3.5 text-red-500" />
+                {schedule.city}{schedule.village ? `, ${schedule.village}` : ''}
+              </div>
+            </td>
+            <td className="p-4 px-6">
+              <div className="flex flex-col gap-1">
+                <div className="text-sm font-medium text-gray-800">{schedule.contactPerson}</div>
+                <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                  <Phone className="w-3.5 h-3.5" />
+                  {schedule.contactNumber}
+                </div>
+              </div>
+            </td>
+            <td className="p-4 px-6 text-center">
+              <span className={`text-xs font-bold uppercase ${
+                schedule.status === 'scheduled' ? 'text-blue-600' :
+                schedule.status === 'completed' ? 'text-green-600' :
+                'text-red-600'
               }`}>
-                {item.status}
+                {schedule.status}
               </span>
             </td>
-            <td className="p-4">
+            <td className="p-4 px-6">
               <div className="flex items-center gap-2">
-                {item.status === 'scheduled' && (
+                {hasPermission('bapuSchedule', 'entry') && (
                   <button
-                    onClick={() => handleUpdateStatus(item.id, 'completed')}
-                    className="p-1.5 hover:bg-green-50 text-green-600 rounded-lg transition"
-                    title="Mark Completed"
+                    onClick={() => onEdit(schedule)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Edit"
                   >
-                    <CheckCircle2 className="w-4 h-4" />
+                    <Edit className="w-4 h-4" />
                   </button>
                 )}
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  className="p-1.5 hover:bg-red-50 text-red-600 rounded-lg transition"
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {hasPermission('bapuSchedule', 'full') && (
+                  <button
+                    onClick={() => onDelete(schedule.id)}
+                    disabled={isDeleting}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </td>
           </tr>
         ))}
       </AdminTable>
-
-      <AddBapuScheduleModal 
-        isOpen={isAddModalOpen} 
-        onClose={() => setIsAddModalOpen(false)} 
-      />
     </div>
   );
 };

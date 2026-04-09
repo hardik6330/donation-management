@@ -95,3 +95,48 @@ export const addKatha = async (req, res) => {
     return sendError(res, 'Error adding katha', 500, error);
   }
 };
+
+export const updateKatha = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, city, taluka, village, locationId, startDate, endDate, status, description } = req.body;
+    
+    const katha = await Katha.findByPk(id);
+    if (!katha) {
+      return sendError(res, 'Katha not found', 404);
+    }
+
+    let finalLocationId = locationId || katha.locationId;
+    if (city) {
+      const location = await findOrCreateLocationStructure(city, taluka, village);
+      if (location) finalLocationId = location.id;
+    }
+
+    await katha.update({ 
+      name: name || katha.name, 
+      locationId: finalLocationId, 
+      startDate: startDate || katha.startDate, 
+      endDate: endDate || katha.endDate, 
+      status: status || katha.status, 
+      description: description || katha.description 
+    });
+    
+    return sendSuccess(res, katha, 'Katha updated successfully');
+  } catch (error) {
+    return sendError(res, 'Error updating katha', 500, error);
+  }
+};
+
+export const deleteKatha = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const katha = await Katha.findByPk(id);
+    if (!katha) {
+      return sendError(res, 'Katha not found', 404);
+    }
+    await katha.destroy();
+    return sendSuccess(res, null, 'Katha deleted successfully');
+  } catch (error) {
+    return sendError(res, 'Error deleting katha', 500, error);
+  }
+};

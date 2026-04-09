@@ -1,5 +1,6 @@
 import { Expense } from '../models/expense.js';
 import { Gaushala } from '../models/gaushala.js';
+import { Katha } from '../models/katha.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
@@ -8,7 +9,7 @@ import { sequelize } from '../config/db.js';
 // 1. Add New Expense
 export const addExpense = async (req, res) => {
   try {
-    const { date, amount, category, description, gaushalaId, paymentMode } = req.body;
+    const { date, amount, category, description, gaushalaId, kathaId, paymentMode } = req.body;
 
     const expense = await Expense.create({
       date: date || new Date(),
@@ -16,6 +17,7 @@ export const addExpense = async (req, res) => {
       category,
       description,
       gaushalaId: gaushalaId || null,
+      kathaId: kathaId || null,
       paymentMode: paymentMode || 'cash'
     });
 
@@ -29,7 +31,7 @@ export const addExpense = async (req, res) => {
 export const getAllExpenses = async (req, res) => {
   try {
     const { page, limit } = getPaginationParams(req.query);
-    const { startDate, endDate, category, gaushalaId, minAmount, maxAmount } = req.query;
+    const { startDate, endDate, category, gaushalaId, kathaId, minAmount, maxAmount, paymentMode } = req.query;
 
     const where = {};
 
@@ -49,6 +51,14 @@ export const getAllExpenses = async (req, res) => {
       where.gaushalaId = gaushalaId;
     }
 
+    if (kathaId) {
+      where.kathaId = kathaId;
+    }
+
+    if (paymentMode) {
+      where.paymentMode = paymentMode;
+    }
+
     if (minAmount || maxAmount) {
       where.amount = {};
       if (minAmount) where.amount[Op.gte] = minAmount;
@@ -58,7 +68,8 @@ export const getAllExpenses = async (req, res) => {
     const { count, rows } = await Expense.findAndCountAll({
       where,
       include: [
-        { model: Gaushala, as: 'gaushala', attributes: ['id', 'name'] }
+        { model: Gaushala, as: 'gaushala', attributes: ['id', 'name'] },
+        { model: Katha, as: 'katha', attributes: ['id', 'name'] }
       ],
       order: [['date', 'DESC'], ['createdAt', 'DESC']],
       limit,

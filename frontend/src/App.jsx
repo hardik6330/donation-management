@@ -5,23 +5,23 @@ import Donate from './pages/Donate';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import AdminLayout from './pages/admin/layout/AdminLayout';
-import Dashboard from './pages/admin/components/dashboard/Dashboard';
-import DonationList from './pages/admin/components/donations/DonationList';
-import DonorsList from './pages/admin/components/donors/DonorsList';
-import GaushalaList from './pages/admin/components/gaushala/GaushalaList';
-import KathaList from './pages/admin/components/katha/KathaList';
-import CategoryList from './pages/admin/components/category/CategoryList';
-import LocationList from './pages/admin/components/location/LocationList';
+import Dashboard from './pages/admin/components/dashboard';
+import DonationList from './pages/admin/components/donations';
+import DonorsList from './pages/admin/components/donors';
+import GaushalaList from './pages/admin/components/gaushala';
+import KathaList from './pages/admin/components/katha';
+import CategoryList from './pages/admin/components/category';
+import LocationList from './pages/admin/components/location';
 import Profile from './pages/admin/components/profile/Profile';
-import BapuScheduleList from './pages/admin/components/bapu-schedule/BapuScheduleList';
-import ExpenseList from './pages/admin/components/expense/ExpenseList';
-import SevakList from './pages/admin/components/sevak/SevakList';
-import MandalList from './pages/admin/components/mandal/MandalList';
+import BapuScheduleList from './pages/admin/components/bapu-schedule';
+import ExpenseList from './pages/admin/components/expense';
+import SevakList from './pages/admin/components/sevak';
+import KartalDhunList from './pages/admin/components/kartal-dhun';
+import MandalList from './pages/admin/components/mandal';
 import MandalMemberList from './pages/admin/components/mandal/MandalMemberList';
 import MandalPaymentPage from './pages/admin/components/mandal/MandalPaymentPage';
-import KartalDhunList from './pages/admin/components/kartal-dhun/KartalDhunList';
-import RoleList from './pages/admin/components/roles/RoleList';
-import SystemUserList from './pages/admin/components/system-users/SystemUserList';
+import RoleList from './pages/admin/components/roles';
+import SystemUserList from './pages/admin/components/system-users';
 import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -60,7 +60,7 @@ function App() {
         <ToastContainer 
           position="top-center" 
           autoClose={3000} 
-          transition={Slide}
+          transition={Slide}  
           hideProgressBar={false}
           newestOnTop={false}
           closeOnClick

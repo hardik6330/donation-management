@@ -4,7 +4,7 @@ import {
   useUpdateSevakMutation
 } from '../../../../services/apiSlice';
 import {
-  Loader2, Plus, User, Phone, Mail, MapPin, Globe, Landmark
+  Loader2, Plus, User, Phone, Mail, MapPin, Globe, Landmark, Edit
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -113,6 +113,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
       isOpen={isOpen}
       onClose={onClose}
       title={editingSevak ? "Edit Sevak" : "Add New Sevak"}
+      icon={editingSevak ? <Edit /> : <User />}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

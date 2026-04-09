@@ -5,11 +5,12 @@ import {
   useGetCitiesQuery,
   useGetSubLocationsQuery
 } from '../../../../services/apiSlice';
-import { Loader2, Plus, Tag, Calendar, IndianRupee, MapPin, AlignLeft, Music } from 'lucide-react';
+import { Loader2, Plus, Tag, Calendar, IndianRupee, MapPin, AlignLeft, Music, Edit, MusicIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
+import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 
 const AddKartalDhunModal = ({ isOpen, onClose, editingRecord = null }) => {
   const [addRecord, { isLoading: isAdding }] = useAddKartalDhunMutation();
@@ -17,7 +18,6 @@ const AddKartalDhunModal = ({ isOpen, onClose, editingRecord = null }) => {
   const { data: citiesData } = useGetCitiesQuery();
 
   const nameRef = useRef(null);
-  const dateRef = useRef(null);
   const amountRef = useRef(null);
   const cityRef = useRef(null);
   const talukaRef = useRef(null);
@@ -135,12 +135,19 @@ const AddKartalDhunModal = ({ isOpen, onClose, editingRecord = null }) => {
   const isLoading = isAdding || isUpdating;
 
   return (
-    <AdminModal isOpen={isOpen} onClose={onClose} title={editingRecord ? "Edit Kartal Dhun" : "Add Kartal Dhun Income"} icon={<Music />} maxWidth="max-w-2xl">
+    <AdminModal isOpen={isOpen} onClose={onClose} title={editingRecord ? "Edit Kartal Dhun" : "Add Kartal Dhun Income"} icon={editingRecord ? <Edit /> : <MusicIcon />} maxWidth="max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormInput label="Kartal Dhun Name" name="name" placeholder="E.g. Navratri Dhun" value={form.name} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, dateRef)} inputRef={nameRef} icon={Tag} required />
+        <FormInput label="Kartal Dhun Name" name="name" placeholder="E.g. Navratri Dhun" value={form.name} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, amountRef)} inputRef={nameRef} icon={Tag} required />
 
         <div className="grid grid-cols-2 gap-4">
-          <FormInput label="Date" name="date" type="date" value={form.date} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, amountRef)} inputRef={dateRef} icon={Calendar} required />
+          <CustomDatePicker
+            label="Date"
+            name="date"
+            required
+            value={form.date}
+            onChange={handleChange}
+            icon={Calendar}
+          />
           <FormInput label="Amount (₹)" name="amount" type="number" placeholder="0" value={form.amount} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, cityRef)} inputRef={amountRef} icon={IndianRupee} required />
         </div>
 

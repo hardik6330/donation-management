@@ -26,7 +26,7 @@ const FilterDropdown = ({ field, value, onChange }) => {
   const filtered = field.options.filter(opt =>
     opt.label.toLowerCase().includes(search.toLowerCase())
   );
-  const allItems = [{ value: '', label: field.placeholder || `All ${field.label}` }, ...filtered];
+  const allItems = filtered;
 
   // Reset highlight when dropdown opens/search changes
   useEffect(() => {
@@ -108,7 +108,7 @@ const FilterDropdown = ({ field, value, onChange }) => {
 
       {isOpen && (
         <div className="absolute z-[120] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          {field.options.length > 5 && (
+          {field.options.length > 10 && (
             <div className="p-2 border-b border-gray-50">
               <input
                 ref={searchRef}
@@ -149,9 +149,9 @@ const FilterDropdown = ({ field, value, onChange }) => {
   );
 };
 
-const FilterSection = ({ filters, onFilterChange, onClearFilters, fields }) => {
+const FilterSection = ({ filters = {}, onFilterChange, onClearFilters, fields = [] }) => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
-  const hasActiveFilters = fields.some(f => filters[f.name] && filters[f.name] !== '');
+  const hasActiveFilters = fields.some(f => filters && filters[f.name] && filters[f.name] !== '');
 
   return (
     <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -191,20 +191,20 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters, fields }) => {
                 {field.type === 'select' ? (
                   <FilterDropdown
                     field={field}
-                    value={filters[field.name]}
+                    value={filters?.[field.name]}
                     onChange={onFilterChange}
                   />
                 ) : field.type === 'date' ? (
                   <CustomDatePicker
                     name={field.name}
-                    value={filters[field.name]}
+                    value={filters?.[field.name]}
                     onChange={onFilterChange}
                     placeholder={field.placeholder || 'Select date'}
                   />
                 ) : field.type === 'month' ? (
                   <CustomMonthPicker
                     name={field.name}
-                    value={filters[field.name]}
+                    value={filters?.[field.name]}
                     onChange={onFilterChange}
                     placeholder={field.placeholder || 'Select month'}
                   />
@@ -214,11 +214,11 @@ const FilterSection = ({ filters, onFilterChange, onClearFilters, fields }) => {
                       type={field.type || 'text'}
                       name={field.name}
                       placeholder={field.placeholder}
-                      value={filters[field.name]}
+                      value={filters?.[field.name] || ''}
                       onChange={(e) => onFilterChange(e)}
                       className="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none transition"
                     />
-                    {filters[field.name] && (
+                    {filters?.[field.name] && (
                       <button
                         onClick={() => onFilterChange({ target: { name: field.name, value: '' } })}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-1"

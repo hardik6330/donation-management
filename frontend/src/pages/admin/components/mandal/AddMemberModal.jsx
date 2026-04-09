@@ -5,7 +5,7 @@ import {
   useGetMandalsQuery,
   useGetCitiesQuery
 } from '../../../../services/apiSlice';
-import { Loader2, Plus, User, Phone, UsersRound, MapPin } from 'lucide-react';
+import { Loader2, Plus, User, Phone, UsersRound, MapPin, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
@@ -101,7 +101,7 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null }) => {
   const isLoading = isAdding || isUpdating;
 
   return (
-    <AdminModal isOpen={isOpen} onClose={onClose} title={editingMember ? "Edit Member" : "Add Member"} icon={<User />}>
+    <AdminModal isOpen={isOpen} onClose={onClose} title={editingMember ? "Edit Member" : "Add Member"} icon={editingMember ? <Edit /> : <User />}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput label="Full Name" name="name" placeholder="Member name" value={form.name} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, mobileRef)} inputRef={nameRef} icon={User} required />
         <FormInput label="Mobile Number" name="mobileNumber" placeholder="10 digit mobile" value={form.mobileNumber} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, mandalRef)} inputRef={mobileRef} icon={Phone} required />

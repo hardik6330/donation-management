@@ -3,7 +3,7 @@ import {
   useAddMandalMutation,
   useUpdateMandalMutation
 } from '../../../../services/apiSlice';
-import { Loader2, Plus, Tag, IndianRupee, Layers, UsersRound } from 'lucide-react';
+import { Loader2, Plus, Tag, IndianRupee, Layers, UsersRound, Edit, UsersRoundIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
@@ -86,7 +86,7 @@ const AddMandalModal = ({ isOpen, onClose, editingMandal = null }) => {
   const isLoading = isAdding || isUpdating;
 
   return (
-    <AdminModal isOpen={isOpen} onClose={onClose} title={editingMandal ? "Edit Mandal" : "Create Mandal"} icon={<UsersRound />}>
+    <AdminModal isOpen={isOpen} onClose={onClose} title={editingMandal ? "Edit Mandal" : "Create Mandal"} icon={editingMandal ? <Edit /> : <UsersRoundIcon />}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <FormInput
           label="Mandal Name"

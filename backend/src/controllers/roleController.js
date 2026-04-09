@@ -8,44 +8,47 @@ export const seedRoles = async () => {
   try {
     // Check if roles exist and permissions are valid
     const existing = await Role.findAll();
-    const needsReseed = existing.length === 0 || existing.some(r => {
-      const perms = r.permissions;
-      return !perms || typeof perms !== 'object' || perms['0'] !== undefined;
-    });
+    
+    // Define standard roles
+    const rolesToSeed = ['Admin', 'Manager', 'Entry Operator'];
+    
+    // Check if we need to seed
+    const existingNames = existing.map(r => r.name);
+    const needsReseed = existing.length === 0 || 
+                       rolesToSeed.some(name => !existingNames.includes(name)) ||
+                       existing.some(r => !r.permissions || typeof r.permissions !== 'object' || r.permissions['0'] !== undefined);
+    
     if (!needsReseed) return;
 
-    // Delete corrupted roles and recreate
-    if (existing.length > 0) {
-      await Role.destroy({ where: { name: ['Admin', 'Manager', 'Entry Operator'] } });
+    const fullPerms = {};
+    MODULES.forEach(m => { fullPerms[m] = 'full'; });
+
+    // 1. Admin (Full access) - Only create if not exists
+    const adminRole = await Role.findOne({ where: { name: 'Admin' } });
+    if (!adminRole) {
+      await Role.create({ name: 'Admin', permissions: fullPerms, description: 'Full access to all modules' });
     }
 
-    const fullPerms = {};
-    const entryPerms = {};
-    const viewPerms = {};
+    // 2. Manager - Only create if not exists
+    const managerRole = await Role.findOne({ where: { name: 'Manager' } });
+    if (!managerRole) {
+      const managerPerms = { ...fullPerms, users: 'view' };
+      await Role.create({ name: 'Manager', permissions: managerPerms, description: 'Manage all modules, view users' });
+    }
 
-    MODULES.forEach(m => {
-      fullPerms[m] = 'full';
-      entryPerms[m] = 'entry';
-      viewPerms[m] = 'view';
-    });
+    // 3. Entry Operator - Only create if not exists
+    const operatorRole = await Role.findOne({ where: { name: 'Entry Operator' } });
+    if (!operatorRole) {
+      const operatorPerms = {};
+      MODULES.forEach(m => {
+        if (['dashboard', 'donors'].includes(m)) operatorPerms[m] = 'view';
+        else if (['users', 'category', 'location'].includes(m)) operatorPerms[m] = 'none';
+        else operatorPerms[m] = 'entry';
+      });
+      await Role.create({ name: 'Entry Operator', permissions: operatorPerms, description: 'Data entry with limited access' });
+    }
 
-    // Admin gets full on everything
-    await Role.create({ name: 'Admin', permissions: fullPerms, description: 'Full access to all modules' });
-
-    // Manager gets full on most, view on users
-    const managerPerms = { ...fullPerms, users: 'view' };
-    await Role.create({ name: 'Manager', permissions: managerPerms, description: 'Manage all modules, view users' });
-
-    // Entry Operator gets entry on data modules, view on reports
-    const operatorPerms = {};
-    MODULES.forEach(m => {
-      if (['dashboard', 'donors'].includes(m)) operatorPerms[m] = 'view';
-      else if (['users', 'category', 'location'].includes(m)) operatorPerms[m] = 'none';
-      else operatorPerms[m] = 'entry';
-    });
-    await Role.create({ name: 'Entry Operator', permissions: operatorPerms, description: 'Data entry with limited access' });
-
-    console.log('✅ Default roles seeded');
+    console.log('✅ Default roles checked/seeded');
   } catch (error) {
     console.error('❌ Error seeding roles:', error.message);
   }

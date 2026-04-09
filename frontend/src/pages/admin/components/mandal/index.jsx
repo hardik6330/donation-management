@@ -1,0 +1,146 @@
+import React, { useState } from 'react';
+import MandalList from './MandalList';
+import AddMandalModal from './AddMandalModal';
+import usePermissions from '../../../../hooks/usePermissions';
+import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import { NavLink } from 'react-router-dom';
+import { UsersRound, IndianRupee } from 'lucide-react';
+import { useGetMandalsQuery, useDeleteMandalMutation, useUpdateMandalMutation, useGenerateMandalPaymentsMutation } from '../../../../services/apiSlice';
+import { toast } from 'react-toastify';
+
+const Mandal = () => {
+  const { hasPermission } = usePermissions();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingMandal, setEditingMandal] = useState(null);
+  const [generatedMandals, setGeneratedMandals] = useState(new Set());
+
+  const [filters, setFilters] = useState({
+    search: '',
+    isActive: '',
+    page: 1,
+    limit: 10
+  });
+
+  // API calls moved to index.jsx
+  const { data: mandalsData, isLoading: loading } = useGetMandalsQuery(filters);
+  const [deleteMandal, { isLoading: isDeleting }] = useDeleteMandalMutation();
+  const [updateMandal] = useUpdateMandalMutation();
+  const [generatePayments, { isLoading: isGenerating }] = useGenerateMandalPaymentsMutation();
+
+  const mandals = mandalsData?.data?.rows || [];
+  const pagination = {
+    currentPage: mandalsData?.data?.currentPage || 1,
+    totalPages: mandalsData?.data?.totalPages || 1,
+    totalData: mandalsData?.data?.totalData || 0,
+    limit: mandalsData?.data?.limit || 10
+  };
+
+  const handleAdd = () => {
+    setEditingMandal(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (mandal) => {
+    setEditingMandal(mandal);
+    setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm('Delete this mandal? All members & payments will be lost.')) {
+      try {
+        await deleteMandal(id).unwrap();
+        toast.success('Mandal deleted');
+      } catch (err) {
+        toast.error(err?.data?.message || 'Failed to delete');
+      }
+    }
+  };
+
+  const handleGeneratePayments = async (mandalId) => {
+    const now = new Date();
+    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    if (!window.confirm(`Generate payments for ${now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}?`)) return;
+    try {
+      const result = await generatePayments({ mandalId, month }).unwrap();
+      setGeneratedMandals(prev => new Set([...prev, mandalId]));
+      if (result?.data?.generated === 0) {
+        toast.info('Payments already generated for this month');
+      } else {
+        toast.success(result?.message || 'Monthly payments generated successfully');
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to generate payments');
+    }
+  };
+
+  const handleToggleStatus = async (mandal) => {
+    try {
+      await updateMandal({ id: mandal.id, isActive: !mandal.isActive }).unwrap();
+      toast.success(`Mandal ${mandal.isActive ? 'deactivated' : 'activated'}`);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to update');
+    }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
+  };
+
+  const clearFilters = () => {
+    setFilters({ search: '', isActive: '', page: 1, limit: 10 });
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+  };
+
+  return (
+    <div className="space-y-6">
+      <AdminPageHeader 
+        title="Mandal Management" 
+        subtitle="Manage mandals, members and monthly collections"
+        buttonText={hasPermission('mandal', 'entry') ? "Create Mandal" : null}
+        onButtonClick={handleAdd}
+      />
+
+      <div className="flex flex-wrap gap-3">
+        <NavLink to="/admin/mandal-members" className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 font-semibold rounded-xl hover:bg-blue-100 transition text-sm border border-blue-100">
+          <UsersRound className="w-4 h-4" /> Members
+        </NavLink>
+        <NavLink to="/admin/mandal-payments" className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 font-semibold rounded-xl hover:bg-green-100 transition text-sm border border-green-100">
+          <IndianRupee className="w-4 h-4" /> Payments
+        </NavLink>
+      </div>
+
+      <MandalList
+        mandals={mandals}
+        isLoading={loading}
+        isDeleting={isDeleting}
+        isGenerating={isGenerating}
+        generatedMandals={generatedMandals}
+        pagination={pagination}
+        filters={filters}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        onToggleStatus={handleToggleStatus}
+        onGeneratePayments={handleGeneratePayments}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+        onPageChange={handlePageChange}
+        hasPermission={hasPermission} 
+      />
+
+      {isModalOpen && (
+        <AddMandalModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          editingMandal={editingMandal}
+          key={editingMandal?.id || 'new'}
+        />
+      )}
+    </div>
+  );
+};
+
+export default Mandal;

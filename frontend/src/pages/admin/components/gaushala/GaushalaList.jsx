@@ -1,57 +1,47 @@
-import React, { useState } from 'react';
-import { useGetGaushalasQuery } from '../../../../services/apiSlice';
-import { Building2, Plus, MapPin, Loader2, Search, X } from 'lucide-react';
-import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import React from 'react';
+import { Building2, Search, Edit, Trash2, MapPin } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
-import AdminModal from '../../../../components/common/AdminModal';
 import FilterSection from '../../../../components/common/FilterSection';
-import AddGaushalaModal from './AddGaushalaModal';
 
-const GaushalaList = () => {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [filters, setFilters] = useState({
-    search: '',
-    gaushalaName: '',
-    page: 1,
-    limit: 10
-  });
-
-  const { data: gaushalasData, isLoading } = useGetGaushalasQuery(filters);
-  const allGaushalas = gaushalasData?.data?.rows || [];
-  const pagination = {
-    currentPage: gaushalasData?.data?.currentPage || 1,
-    totalPages: gaushalasData?.data?.totalPages || 1,
-    totalData: gaushalasData?.data?.totalData || 0,
-    limit: gaushalasData?.data?.limit || 10
-  };
-
-  // Client-side filtering for gaushala name dropdown only
-  const gaushalas = allGaushalas.filter(g => {
-    const matchesName = !filters.gaushalaName || g.name === filters.gaushalaName;
-    return matchesName;
-  });
-
-  const gaushalaNameOptions = [...new Set(allGaushalas.map(g => g.name))].sort().map(name => ({
-    value: name,
-    label: name
-  }));
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', gaushalaName: '', page: 1, limit: 10 });
-  };
-
+const GaushalaList = ({
+  gaushalas,
+  cities,
+  talukas,
+  villages,
+  isLoading,
+  isDeleting,
+  pagination,
+  filters,
+  onEdit,
+  onDelete,
+  onFilterChange,
+  onClearFilters,
+  onPageChange,
+  hasPermission
+}) => {
   const filterFields = [
-    { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name, city, village...' },
-    { name: 'gaushalaName', label: 'Gaushala Name', icon: Building2, type: 'select', options: gaushalaNameOptions, placeholder: 'All Gaushalas' },
+    { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
+    {
+      name: 'cityId',
+      label: 'City',
+      type: 'select',
+      icon: MapPin,
+      options: cities.map(c => ({ value: c.id, label: c.name }))
+    },
+    {
+      name: 'talukaId',
+      label: 'Taluka',
+      type: 'select',
+      icon: MapPin,
+      options: talukas.map(t => ({ value: t.id, label: t.name }))
+    },
+    {
+      name: 'villageId',
+      label: 'Village',
+      type: 'select',
+      icon: MapPin,
+      options: villages.map(v => ({ value: v.id, label: v.name }))
+    },
   ];
 
   const tableHeaders = [
@@ -60,22 +50,16 @@ const GaushalaList = () => {
     { label: 'Taluka' },
     { label: 'Village' },
     { label: 'Status', className: 'text-center' },
+    { label: 'Actions' },
   ];
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader
-        title="Gaushala Management"
-        subtitle="Manage different gaushalas for donation tracking"
-        buttonText="Add Gaushala"
-        onButtonClick={() => setIsModalOpen(true)}
-      />
-
       <FilterSection
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
         fields={filterFields}
+        filters={filters}
+        onFilterChange={onFilterChange}
+        onClearFilters={onClearFilters}
       />
 
       <AdminTable
@@ -86,76 +70,78 @@ const GaushalaList = () => {
         {gaushalas.map((gaushala) => (
           <tr key={gaushala.id} className="hover:bg-gray-50 transition">
             <td className="p-4 px-6 font-bold text-gray-800">{gaushala.name}</td>
-            <td className="p-4 px-6 text-sm text-gray-600">{gaushala.city || '-'}</td>
-            <td className="p-4 px-6 text-sm text-gray-600">{gaushala.taluka || '-'}</td>
-            <td className="p-4 px-6 text-sm text-gray-600">{gaushala.village || '-'}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.city}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.taluka}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.village}</td>
             <td className="p-4 px-6 text-center">
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                gaushala.isActive
-                ? 'bg-green-100 text-green-700'
-                : 'bg-red-100 text-red-700'
+                gaushala.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
               }`}>
                 {gaushala.isActive ? 'Active' : 'Inactive'}
               </span>
+            </td>
+            <td className="p-4 px-6">
+              <div className="flex items-center gap-2">
+                {hasPermission('gaushala', 'entry') && (
+                  <button
+                    onClick={() => onEdit(gaushala)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Edit"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
+                {hasPermission('gaushala', 'full') && (
+                  <button
+                    onClick={() => onDelete(gaushala.id)}
+                    disabled={isDeleting}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </td>
           </tr>
         ))}
       </AdminTable>
 
-      {/* Pagination UI */}
       {pagination.totalPages > 1 && (
-        <div className="p-4 sm:p-6 border-t flex flex-col sm:flex-row items-center justify-between bg-gray-50 gap-4 rounded-2xl shadow-sm border border-gray-100">
-          <p className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
-            Showing <span className="font-bold">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
+        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-sm text-gray-500">
+            Showing <span className="font-bold text-blue-600">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
           </p>
-          <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
+          <div className="flex items-center gap-1">
             <button
-              disabled={pagination.currentPage === 1}
-              onClick={() => handlePageChange(pagination.currentPage - 1)}
-              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+              disabled={filters.page === 1}
+              onClick={() => onPageChange(filters.page - 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Prev
             </button>
-            <div className="flex items-center gap-1">
-              {[...Array(pagination.totalPages)].map((_, i) => {
-                const pageNum = i + 1;
-                if (pagination.totalPages > 5 && (pageNum < pagination.currentPage - 1 || pageNum > pagination.currentPage + 1) && pageNum !== 1 && pageNum !== pagination.totalPages) {
-                  if (pageNum === pagination.currentPage - 2 || pageNum === pagination.currentPage + 2) {
-                    return <span key={pageNum} className="text-gray-400">...</span>;
-                  }
-                  return null;
-                }
-                return (
-                  <button
-                    key={pageNum}
-                    onClick={() => handlePageChange(pageNum)}
-                    className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm font-bold transition ${
-                      pagination.currentPage === pageNum
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                    }`}
-                  >
-                    {pageNum}
-                  </button>
-                );
-              })}
-            </div>
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => onPageChange(page)}
+                className={`w-9 h-9 text-sm font-bold rounded-lg transition ${
+                  filters.page === page
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
             <button
-              disabled={pagination.currentPage === pagination.totalPages}
-              onClick={() => handlePageChange(pagination.currentPage + 1)}
-              className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition"
+              disabled={filters.page === pagination.totalPages}
+              onClick={() => onPageChange(filters.page + 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               Next
             </button>
           </div>
         </div>
-      )}
-
-      {isModalOpen && (
-        <AddGaushalaModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-        />
       )}
     </div>
   );

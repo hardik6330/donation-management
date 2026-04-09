@@ -10,7 +10,9 @@ import {
 } from '../../../../services/apiSlice';
 import {
   Loader2, IndianRupee, Plus, Phone, User,
-  MapPin, UserCheck, Mail, Building2, Tag, CreditCard
+  MapPin, UserCheck, Mail, Building2, Tag, CreditCard,
+  HandCoins,
+  HandCoinsIcon
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -208,11 +210,11 @@ const AddDonationModal = ({ isOpen, onClose }) => {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
     } else if (field === 'gaushalaId') {
-      setAddForm(prev => ({ ...prev, gaushalaId: id }));
-      setAddDropdownLabels(prev => ({ ...prev, gaushalaName: name }));
+      setAddForm(prev => ({ ...prev, gaushalaId: id, kathaId: '' }));
+      setAddDropdownLabels(prev => ({ ...prev, gaushalaName: name, kathaName: '' }));
     } else if (field === 'kathaId') {
-      setAddForm(prev => ({ ...prev, kathaId: id }));
-      setAddDropdownLabels(prev => ({ ...prev, kathaName: name }));
+      setAddForm(prev => ({ ...prev, kathaId: id, gaushalaId: '' }));
+      setAddDropdownLabels(prev => ({ ...prev, kathaName: name, gaushalaName: '' }));
     } else if (field === 'paymentMode') {
       setAddForm(prev => ({ ...prev, paymentMode: id }));
       setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
@@ -222,6 +224,24 @@ const AddDonationModal = ({ isOpen, onClose }) => {
 
   const handleAddSubmit = async (e) => {
     e.preventDefault();
+
+    if (addDropdownLabels.gaushalaName && !addForm.gaushalaId) {
+      toast.error('Please select a Gaushala from the list');
+      gaushalaRef.current?.focus();
+      return;
+    }
+    if (addDropdownLabels.kathaName && !addForm.kathaId) {
+      toast.error('Please select a Katha from the list');
+      kathaRef.current?.focus();
+      return;
+    }
+
+    if (!addForm.categoryId && !addForm.gaushalaId && !addForm.kathaId) {
+      toast.error('Please select any one: Category, Gaushala, or Katha');
+      categoryRef.current?.focus();
+      return;
+    }
+
     const rawAmount = addForm.amount.toString().replace(/,/g, '');
 
     try {
@@ -272,7 +292,7 @@ const AddDonationModal = ({ isOpen, onClose }) => {
       isOpen={isOpen}
       onClose={onClose}
       title="Create New Donation"
-      icon={<Plus />}
+      icon={<HandCoinsIcon />}
       maxWidth="max-w-4xl"
     >
       <form onSubmit={handleAddSubmit} className="space-y-8">
@@ -413,7 +433,6 @@ const AddDonationModal = ({ isOpen, onClose }) => {
                   onKeyDown={(e) => handleKeyDown(e, gaushalaRef)}
                   isActive={activeAddDropdown === 'categoryName'}
                   setActive={setActiveAddDropdown}
-                  required
                   inputRef={categoryRef}
                   icon={Tag}
                 />
@@ -431,7 +450,7 @@ const AddDonationModal = ({ isOpen, onClose }) => {
                   onKeyDown={(e) => handleKeyDown(e, kathaRef)}
                   isActive={activeAddDropdown === 'gaushalaName'}
                   setActive={setActiveAddDropdown}
-                  disabled={!selectedLocationId}
+                  disabled={!selectedLocationId || gaushalas.length === 0 || !!addForm.kathaId}
                   inputRef={gaushalaRef}
                   icon={Building2}
                 />
@@ -446,7 +465,7 @@ const AddDonationModal = ({ isOpen, onClose }) => {
                   onKeyDown={(e) => handleKeyDown(e, referenceRef)}
                   isActive={activeAddDropdown === 'kathaName'}
                   setActive={setActiveAddDropdown}
-                  disabled={!selectedLocationId}
+                  disabled={!selectedLocationId || kathas.length === 0 || !!addForm.gaushalaId}
                   inputRef={kathaRef}
                   icon={Tag}
                 />
@@ -470,7 +489,6 @@ const AddDonationModal = ({ isOpen, onClose }) => {
                   value={addDropdownLabels.paymentModeName}
                   items={[
                     { id: 'cash', name: 'Cash' },
-                    { id: 'online', name: 'Online' },
                     { id: 'pay_later', name: 'Pay Later' }
                   ]}
                   onChange={handleAddInputChange}

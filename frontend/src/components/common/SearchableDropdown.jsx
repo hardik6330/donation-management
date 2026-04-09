@@ -72,8 +72,21 @@ const SearchableDropdown = ({
     if (onKeyDown) onKeyDown(e);
   };
 
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!isActive) return;
+    const handleMouseDown = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setActive(null);
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [isActive, setActive]);
+
   return (
-    <div className="space-y-1.5 relative" onClick={(e) => e.stopPropagation()}>
+    <div ref={containerRef} className="space-y-1.5 relative" onClick={(e) => e.stopPropagation()}>
       {label && (
         <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 flex items-center gap-2">
           {Icon && <Icon className="w-3 h-3" />} {label} {required && '*'}

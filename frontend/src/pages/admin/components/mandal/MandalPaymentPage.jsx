@@ -109,8 +109,8 @@ const MandalPaymentPage = () => {
       <AdminPageHeader
         title="Monthly Collections"
         subtitle={`Mandal payment tracking for ${formatMonth(filters.month)}`}
-        buttonText={isGenerating ? "Generating..." : "Generate Month"}
-        onButtonClick={handleGenerate}
+        buttonText={null}
+        onButtonClick={null}
       />
 
       <div className="flex flex-wrap gap-3">
@@ -159,7 +159,7 @@ const MandalPaymentPage = () => {
             <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.location?.name || '-'}</td>
             <td className="px-6 py-4 text-sm font-semibold text-gray-800">{inr(payment.amount)}</td>
             <td className="px-6 py-4">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase ${payment.status === 'paid' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+              <span className={`text-xs font-bold uppercase ${payment.status === 'paid' ? 'text-green-600' : 'text-red-600'}`}>
                 {payment.status}
               </span>
             </td>

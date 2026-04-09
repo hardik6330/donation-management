@@ -1,11 +1,12 @@
 import React from 'react';
 import { useGetAdminStatsQuery } from '../../../../services/apiSlice';
 import { Users, IndianRupee, CreditCard, Trophy, Loader2, HandCoins } from 'lucide-react';
+import Reports from '../reports/Reports';
 
 const Dashboard = () => {
   const user = JSON.parse(localStorage.getItem('user')) || { name: 'Administrator' };
 
-  console.log(user);
+  console.log('Dashboard User:', user);
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good Morning";
@@ -86,6 +87,11 @@ const Dashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Custom Reports Section */}
+      <div className="mt-8 border-t border-gray-100 pt-8">
+        <Reports />
       </div>
     </div>
   );

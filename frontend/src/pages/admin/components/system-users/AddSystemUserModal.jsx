@@ -4,7 +4,7 @@ import {
   useUpdateSystemUserMutation,
   useGetRolesQuery
 } from '../../../../services/apiSlice';
-import { Loader2, Plus, User, Phone, Mail, Lock, Shield } from 'lucide-react';
+import { Loader2, Plus, User, Phone, Mail, Lock, Shield, Edit } from 'lucide-react';
 
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -26,7 +26,7 @@ const AddSystemUserModal = ({ isOpen, onClose, editingUser = null }) => {
 
   const [form, setForm] = useState({
     name: '', email: '', mobileNumber: '', password: '',
-    roleId: '', roleName: ''
+    roleId: '', roleName: '', isAdmin: false
   });
   const [activeDropdown, setActiveDropdown] = useState(null);
 
@@ -40,9 +40,10 @@ const AddSystemUserModal = ({ isOpen, onClose, editingUser = null }) => {
           password: '',
           roleId: editingUser.roleId || '',
           roleName: editingUser.role?.name || '',
+          isAdmin: editingUser.isAdmin || false,
         });
       } else {
-        setForm({ name: '', email: '', mobileNumber: '', password: '', roleId: '', roleName: '' });
+        setForm({ name: '', email: '', mobileNumber: '', password: '', roleId: '', roleName: '', isAdmin: false });
       }
     }, 0);
     return () => clearTimeout(timer);
@@ -89,6 +90,7 @@ const AddSystemUserModal = ({ isOpen, onClose, editingUser = null }) => {
         email: form.email,
         mobileNumber: form.mobileNumber,
         roleId: form.roleId || null,
+        isAdmin: form.isAdmin
       };
       if (form.password) payload.password = form.password;
 
@@ -109,7 +111,7 @@ const AddSystemUserModal = ({ isOpen, onClose, editingUser = null }) => {
   const isLoading = isAdding || isUpdating;
 
   return (
-    <AdminModal isOpen={isOpen} onClose={onClose} title={editingUser ? "Edit User" : "Add System User"} icon={<User />}>
+    <AdminModal isOpen={isOpen} onClose={onClose} title={editingUser ? "Edit User" : "Add System User"} icon={editingUser ? <Edit /> : <User />}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <FormInput label="Full Name" name="name" placeholder="User name" value={form.name} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, emailRef)} inputRef={nameRef} icon={User} required />
@@ -139,7 +141,15 @@ const AddSystemUserModal = ({ isOpen, onClose, editingUser = null }) => {
           value={form.roleName}
           items={roleItems}
           onChange={handleChange}
-          onSelect={(id, name) => { setForm(prev => ({ ...prev, roleId: id, roleName: name })); setActiveDropdown(null); }}
+          onSelect={(id, name) => { 
+            setForm(prev => ({ 
+              ...prev, 
+              roleId: id, 
+              roleName: name,
+              isAdmin: id ? true : prev.isAdmin // Set isAdmin to true if a role is selected
+            })); 
+            setActiveDropdown(null); 
+          }}
           onKeyDown={(e) => handleKeyDown(e, submitRef)}
           isActive={activeDropdown === 'roleName'}
           setActive={setActiveDropdown}

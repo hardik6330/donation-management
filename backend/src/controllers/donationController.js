@@ -290,7 +290,8 @@ export const getDonations = async (req, res) => {
 
 export const getDonors = async (req, res) => {
   try {
-    const { search, name, mobileNumber, city } = req.query;
+    const { search, name, mobileNumber, city, minAmount, maxAmount } = req.query;
+    const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
 
     let whereClause = {
       isAdmin: false
@@ -319,26 +320,58 @@ export const getDonors = async (req, res) => {
       ];
     }
 
-    const donors = await User.findAll({
+    const havingConditions = [];
+    if (minAmount) {
+      havingConditions.push(sequelize.where(sequelize.fn('SUM', sequelize.col('Donations.amount')), { [Op.gte]: Number(minAmount) }));
+    }
+    if (maxAmount) {
+      havingConditions.push(sequelize.where(sequelize.fn('SUM', sequelize.col('Donations.amount')), { [Op.lte]: Number(maxAmount) }));
+    }
+    const havingClause = havingConditions.length > 0 ? { [Op.and]: havingConditions } : undefined;
+
+    const countResult = await User.findAll({
       where: whereClause,
-      attributes: [
-        'id', 'name', 'email', 'mobileNumber', 'village', 'district', 'companyName', 'createdAt'
-      ],
       include: [{
         model: Donation,
-        attributes: [] // We only need the aggregate values
+        attributes: []
       }],
-      attributes: {
-        include: [
-          [sequelize.fn('COUNT', sequelize.col('Donations.id')), 'donationCount'],
-          [sequelize.fn('SUM', sequelize.col('Donations.amount')), 'totalDonated']
-        ]
-      },
+      attributes: ['id'],
       group: ['User.id'],
-      order: [[sequelize.literal('totalDonated'), 'DESC']]
+      ...(havingClause && { having: havingClause }),
+      subQuery: false
     });
 
-    return sendSuccess(res, donors, 'Donors fetched successfully');
+    const totalCount = countResult.length;
+
+    const donors = await User.findAll({
+      where: whereClause,
+      include: [{
+        model: Donation,
+        attributes: []
+      }],
+      attributes: [
+        'id', 'name', 'email', 'mobileNumber', 'village', 'district', 'companyName', 'createdAt',
+        [sequelize.fn('COUNT', sequelize.col('Donations.id')), 'donationCount'],
+        [sequelize.fn('SUM', sequelize.col('Donations.amount')), 'totalDonated']
+      ],
+      group: ['User.id'],
+      ...(havingClause && { having: havingClause }),
+      order: [[sequelize.literal('totalDonated'), 'DESC']],
+      subQuery: false,
+      ...(queryLimit && { limit: queryLimit }),
+      ...(offset !== undefined && { offset })
+    });
+
+    const result = getPaginatedResponse({
+      rows: donors,
+      count: totalCount,
+      limit,
+      page,
+      isFetchAll,
+      dataKey: 'donors'
+    });
+
+    return sendSuccess(res, result, 'Donors fetched successfully');
   } catch (error) {
     console.error('❌ [getDonors] Error:', error);
     return sendError(res, 'Error fetching donors', 500, error);

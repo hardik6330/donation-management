@@ -222,6 +222,21 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Cities'],
     }),
+    updateLocation: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/master/location/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Cities'],
+    }),
+    deleteLocation: builder.mutation({
+      query: (id) => ({
+        url: `/master/location/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Cities'],
+    }),
     addCategoryMaster: builder.mutation({
       query: (newCategory) => ({
         url: '/master/category',
@@ -238,6 +253,13 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Categories'],
     }),
+    deleteCategory: builder.mutation({
+      query: (id) => ({
+        url: `/master/category/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Categories'],
+    }),
     addGaushala: builder.mutation({
       query: (data) => ({
         url: '/gaushala/add',
@@ -246,11 +268,41 @@ export const apiSlice = createApi({
       }),
       invalidatesTags: ['Gaushalas'],
     }),
+    updateGaushala: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/gaushala/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Gaushalas'],
+    }),
+    deleteGaushala: builder.mutation({
+      query: (id) => ({
+        url: `/gaushala/${id}`,
+        method: 'DELETE',
+      }),
+      invalidatesTags: ['Gaushalas'],
+    }),
     addKatha: builder.mutation({
       query: (data) => ({
         url: '/katha/add',
         method: 'POST',
         body: data,
+      }),
+      invalidatesTags: ['Kathas'],
+    }),
+    updateKatha: builder.mutation({
+      query: ({ id, ...data }) => ({
+        url: `/katha/${id}`,
+        method: 'PUT',
+        body: data,
+      }),
+      invalidatesTags: ['Kathas'],
+    }),
+    deleteKatha: builder.mutation({
+      query: (id) => ({
+        url: `/katha/${id}`,
+        method: 'DELETE',
       }),
       invalidatesTags: ['Kathas'],
     }),
@@ -472,10 +524,17 @@ export const {
   useGetGaushalasQuery,
   useGetKathasQuery,
   useAddLocationMasterMutation,
+  useUpdateLocationMutation,
+  useDeleteLocationMutation,
   useAddCategoryMasterMutation,
   useUpdateCategoryMutation,
+  useDeleteCategoryMutation,
   useAddGaushalaMutation,
+  useUpdateGaushalaMutation,
+  useDeleteGaushalaMutation,
   useAddKathaMutation,
+  useUpdateKathaMutation,
+  useDeleteKathaMutation,
   useAddCombinedMasterDataMutation,
   useUpdateDonationMutation,
   useGetBapuSchedulesQuery,

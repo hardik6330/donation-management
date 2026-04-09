@@ -1,84 +1,24 @@
-import { useState } from 'react';
+import React from 'react';
 import { 
-  useGetSevaksQuery, 
-  useDeleteSevakMutation,
-  useUpdateSevakMutation
-} from '../../../../services/apiSlice';
-import { 
-  Search, Loader2, Edit, Trash2, Filter, Plus, User, Phone, MapPin, Landmark, CheckCircle, XCircle, ChevronDown, X
+  Search, Edit, Trash2, MapPin, Landmark, CheckCircle, XCircle
 } from 'lucide-react';
-import { toast } from 'react-toastify';
-import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
-import AddSevakModal from './AddSevakModal';
 
-const SevakList = () => {
-  const [filters, setFilters] = useState({
-    search: '',
-    city: '',
-    state: '',
-    isActive: '',
-    page: 1,
-    limit: 10
-  });
-
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingSevak, setEditingSevak] = useState(null);
-
-  const { data: sevaksData, isLoading: loading } = useGetSevaksQuery(filters);
-  const [deleteSevak, { isLoading: isDeleting }] = useDeleteSevakMutation();
-  const [updateSevak] = useUpdateSevakMutation();
-
-  const sevaks = sevaksData?.data?.rows || [];
-  const pagination = {
-    currentPage: sevaksData?.data?.currentPage || 1,
-    totalPages: sevaksData?.data?.totalPages || 1,
-    totalData: sevaksData?.data?.totalData || 0,
-    limit: sevaksData?.data?.limit || 10
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      city: '',
-      state: '',
-      isActive: '',
-      page: 1,
-      limit: 10
-    });
-  };
-
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this sevak?')) {
-      try {
-        await deleteSevak(id).unwrap();
-        toast.success('Sevak deleted successfully');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete sevak');
-      }
-    }
-  };
-
-  const handleEdit = (sevak) => {
-    setEditingSevak(sevak);
-    setIsAddModalOpen(true);
-  };
-
-  const toggleStatus = async (sevak) => {
-    try {
-      await updateSevak({ id: sevak.id, isActive: !sevak.isActive }).unwrap();
-      toast.success(`Sevak ${sevak.isActive ? 'deactivated' : 'activated'} successfully`);
-    } catch (err) {
-      toast.error(err?.data?.message || 'Failed to update status');
-    }
-  };
-
+const SevakList = ({ 
+  sevaks, 
+  isLoading, 
+  isDeleting, 
+  pagination, 
+  filters, 
+  onEdit, 
+  onDelete, 
+  onToggleStatus, 
+  onFilterChange, 
+  onClearFilters,
+  onPageChange,
+  hasPermission 
+}) => {
   const tableHeaders = [
     { label: 'Name' },
     { label: 'Mobile' },
@@ -96,102 +36,100 @@ const SevakList = () => {
       name: 'isActive', 
       label: 'Status', 
       type: 'select', 
-      icon: CheckCircle,
       options: [
-        { value: 'true', label: 'Active Only' },
-        { value: 'false', label: 'Inactive Only' }
+        { value: 'true', label: 'Active' },
+        { value: 'false', label: 'Inactive' }
       ]
     }
   ];
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader 
-        title="Sevak Management" 
-        subtitle="Manage and track all organizational sevaks"
-        buttonText="Add Sevak"
-        onButtonClick={() => {
-          setEditingSevak(null);
-          setIsAddModalOpen(true);
-        }}
+      <FilterSection 
+        fields={filterFields} 
+        filters={filters} 
+        onFilterChange={onFilterChange} 
+        onClearFilters={onClearFilters} 
       />
 
-      <FilterSection
-        filters={filters}
-        onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
-        fields={filterFields}
-      />
-
-      {/* Table */}
-      <AdminTable
-        headers={tableHeaders}
-        isLoading={loading}
-        pagination={pagination}
-        onPageChange={(page) => setFilters(prev => ({ ...prev, page }))}
+      <AdminTable 
+        headers={tableHeaders} 
+        isLoading={isLoading}
+        emptyMessage="No sevaks found."
       >
         {sevaks.map((sevak) => (
-          <tr key={sevak.id} className="hover:bg-gray-50 transition-colors">
-            <td className="px-6 py-4 whitespace-nowrap">
-              <div className="text-sm font-semibold text-gray-900">{sevak.name}</div>
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-              {sevak.mobileNumber}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-              {sevak.city || '-'}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-              {sevak.state || '-'}
-            </td>
-            <td className="px-6 py-4 whitespace-nowrap">
-              <button 
-                onClick={() => toggleStatus(sevak)}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-all ${
+          <tr key={sevak.id} className="hover:bg-gray-50 transition">
+            <td className="p-4 px-6 font-bold text-gray-800">{sevak.name}</td>
+            <td className="p-4 px-6 text-sm text-gray-500">{sevak.mobileNumber}</td>
+            <td className="p-4 px-6 text-sm text-gray-500">{sevak.city}</td>
+            <td className="p-4 px-6 text-sm text-gray-500">{sevak.state}</td>
+            <td className="p-4 px-6">
+              <button
+                onClick={() => onToggleStatus(sevak)}
+                disabled={!hasPermission('sevaks', 'entry')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition ${
                   sevak.isActive 
                     ? 'bg-green-100 text-green-700 hover:bg-green-200' 
                     : 'bg-red-100 text-red-700 hover:bg-red-200'
                 }`}
               >
-                {sevak.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                {sevak.isActive ? 'Active' : 'Inactive'}
+                {sevak.isActive ? (
+                  <><CheckCircle className="w-3 h-3" /> Active</>
+                ) : (
+                  <><XCircle className="w-3 h-3" /> Inactive</>
+                )}
               </button>
             </td>
-            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <td className="p-4 px-6">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => handleEdit(sevak)}
-                  className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                  title="Edit"
-                >
-                  <Edit className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => handleDelete(sevak.id)}
-                  disabled={isDeleting}
-                  className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                  title="Delete"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {hasPermission('sevaks', 'entry') && (
+                  <button
+                    onClick={() => onEdit(sevak)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Edit"
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
+                {hasPermission('sevaks', 'full') && (
+                  <button
+                    onClick={() => onDelete(sevak.id)}
+                    disabled={isDeleting}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </td>
           </tr>
         ))}
-        {sevaks.length === 0 && !loading && (
-          <tr>
-            <td colSpan={tableHeaders.length} className="px-6 py-12 text-center text-gray-500">
-              No sevaks found matching your search.
-            </td>
-          </tr>
-        )}
       </AdminTable>
 
-      <AddSevakModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        editingSevak={editingSevak}
-      />
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-sm text-gray-500">
+            Showing <span className="font-bold">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> sevaks
+          </p>
+          <div className="flex gap-2">
+            <button
+              disabled={filters.page === 1}
+              onClick={() => onPageChange(filters.page - 1)}
+              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-bold transition disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <button
+              disabled={filters.page === pagination.totalPages}
+              onClick={() => onPageChange(filters.page + 1)}
+              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-bold transition disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

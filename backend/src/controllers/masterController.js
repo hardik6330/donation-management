@@ -175,3 +175,69 @@ export const updateCategoryMaster = async (req, res) => {
   }
 };
 
+// 7. Delete Category (Admin)
+export const deleteCategoryMaster = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const category = await Category.findByPk(id);
+    if (!category) return sendError(res, 'Category not found', 404);
+
+    // Check if any donations are linked to this category
+    const donationsCount = await Donation.count({ where: { categoryId: id } });
+    if (donationsCount > 0) {
+      return sendError(res, 'Cannot delete category with linked donations. Please deactivate it instead.', 400);
+    }
+
+    await category.destroy();
+    return sendSuccess(res, null, 'Category deleted successfully');
+  } catch (error) {
+    return sendError(res, 'Error deleting category', 500, error);
+  }
+};
+
+// 8. Update Location (Admin)
+export const updateLocationMaster = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, isActive } = req.body;
+
+    const location = await Location.findByPk(id);
+    if (!location) return sendError(res, 'Location not found', 404);
+
+    await location.update({
+      name: name !== undefined ? formatName(name) : location.name,
+      isActive: isActive !== undefined ? isActive : location.isActive,
+    });
+
+    return sendSuccess(res, location, 'Location updated successfully');
+  } catch (error) {
+    return sendError(res, 'Error updating location', 500, error);
+  }
+};
+
+// 9. Delete Location (Admin)
+export const deleteLocationMaster = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const location = await Location.findByPk(id);
+    if (!location) return sendError(res, 'Location not found', 404);
+
+    // Check if any sub-locations are linked to this location
+    const subLocationsCount = await Location.count({ where: { parentId: id } });
+    if (subLocationsCount > 0) {
+      return sendError(res, 'Cannot delete location with sub-locations (talukas/villages).', 400);
+    }
+
+    // Check if any donations are linked to this location
+    const donationsCount = await Donation.count({ where: { locationId: id } });
+    if (donationsCount > 0) {
+      return sendError(res, 'Cannot delete location with linked donations. Please deactivate it instead.', 400);
+    }
+
+    await location.destroy();
+    return sendSuccess(res, null, 'Location deleted successfully');
+  } catch (error) {
+    return sendError(res, 'Error deleting location', 500, error);
+  }
+};
+

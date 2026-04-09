@@ -1,34 +1,15 @@
-import React, { useState } from 'react';
-import { useGetDonorsQuery } from '../../../../services/apiSlice';
-import { Search, Phone, MapPin } from 'lucide-react';
-import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import React from 'react';
+import { Search, Phone, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 
-const DonorsList = () => {
-  const [filters, setFilters] = useState({
-    name: '',
-    mobileNumber: '',
-    city: ''
-  });
-  
-  const { data: donorsData, isLoading } = useGetDonorsQuery(filters);
-
-  const donors = donorsData?.data || [];
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ name: '', mobileNumber: '', city: '' });
-  };
-
+const DonorsList = ({ donors, isLoading, filters, pagination, onFilterChange, onClearFilters, onPageChange }) => {
   const filterFields = [
     { name: 'name', label: 'Donor Name', icon: Search, placeholder: 'Search by name...' },
     { name: 'mobileNumber', label: 'Mobile Number', icon: Phone, placeholder: 'Search by mobile...' },
     { name: 'city', label: 'City / Village', icon: MapPin, placeholder: 'Search by city...' },
+    { name: 'minAmount', label: 'Min Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 0' },
+    { name: 'maxAmount', label: 'Max Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 10000+' },
   ];
 
   const tableHeaders = [
@@ -40,15 +21,10 @@ const DonorsList = () => {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader 
-        title="Donors Management" 
-        subtitle="Manage and track your unique donor database"
-      />
-
       <FilterSection
         filters={filters}
-        onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
+        onFilterChange={onFilterChange}
+        onClearFilters={onClearFilters}
         fields={filterFields}
       />
 
@@ -90,6 +66,43 @@ const DonorsList = () => {
           </tr>
         ))}
       </AdminTable>
+
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+          <p className="text-sm text-gray-500">
+            Showing <span className="font-bold text-blue-600">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
+          </p>
+          <div className="flex items-center gap-1">
+            <button
+              disabled={filters.page === 1}
+              onClick={() => onPageChange(filters.page - 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Prev
+            </button>
+            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                onClick={() => onPageChange(page)}
+                className={`w-9 h-9 text-sm font-bold rounded-lg transition ${
+                  filters.page === page
+                    ? 'bg-blue-600 text-white shadow-md'
+                    : 'text-gray-600 hover:bg-gray-100 border border-gray-200'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              disabled={filters.page === pagination.totalPages}
+              onClick={() => onPageChange(filters.page + 1)}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

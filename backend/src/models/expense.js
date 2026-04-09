@@ -33,6 +33,14 @@ export const Expense = sequelize.define('Expense', {
       key: 'id',
     },
   },
+  kathaId: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'Kathas',
+      key: 'id',
+    },
+  },
   paymentMode: {
     type: DataTypes.ENUM('cash', 'online', 'check'),
     defaultValue: 'cash',
@@ -42,5 +50,8 @@ export const Expense = sequelize.define('Expense', {
 });
 
 import { Gaushala } from './gaushala.js';
+import { Katha } from './katha.js';
 Gaushala.hasMany(Expense, { foreignKey: 'gaushalaId' });
 Expense.belongsTo(Gaushala, { as: 'gaushala', foreignKey: 'gaushalaId' });
+Katha.hasMany(Expense, { foreignKey: 'kathaId' });
+Expense.belongsTo(Katha, { as: 'katha', foreignKey: 'kathaId' });
