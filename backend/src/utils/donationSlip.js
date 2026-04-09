@@ -4,7 +4,7 @@ import cloudinary from '../config/cloudinary.js';
 /**
  * Generate a donation slip PDF buffer
  */
-export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate) => {
+export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null) => {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0 });
     const chunks = [];
@@ -129,6 +129,23 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     );
     drawLine();
     drawRow('Receipt ID', donationId, 'Status', 'Completed');
+
+    y += 12;
+
+    // ═══════════════════════════════════
+    // GAUSHALA / KATHA DETAILS (Optional)
+    // ═══════════════════════════════════
+    if (gaushala) {
+      drawSection('GAUSHALA DETAILS');
+      drawRow('Gaushala Name', gaushala.name, 'Location', gaushala.location?.name);
+      y += 8;
+    } else if (katha) {
+      drawSection('KATHA DETAILS');
+      drawRow('Katha Name', katha.name, 'Duration', `${katha.startDate || '-'} to ${katha.endDate || '-'}`);
+      drawLine();
+      drawFullRow('Description', katha.description);
+      y += 8;
+    }
 
     // ─── Bottom decorative bar ───
     doc.rect(0, H - 60, W, 60).fill('#1e3a5f');

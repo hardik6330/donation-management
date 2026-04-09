@@ -148,7 +148,10 @@ export const createDonationOrder = async (req, res) => {
       // Generate slip, upload to Cloudinary, save URL, and send email for Cash Donation
       if (paymentMode === 'cash') {
         try {
-          const pdfBuffer = await generateDonationSlipBuffer(user, amount, causeString, donation.id, paymentMode, donation.paymentDate);
+          const gaushala = gaushalaId ? await Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null;
+          const katha = kathaId ? await Katha.findByPk(kathaId) : null;
+
+          const pdfBuffer = await generateDonationSlipBuffer(user, amount, causeString, donation.id, paymentMode, donation.paymentDate, gaushala, katha);
           const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id);
           await donation.update({ slipUrl: cloudinaryUrl });
           console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
@@ -223,7 +226,10 @@ export const verifyPayment = async (req, res) => {
       // Generate slip, upload to Cloudinary, save URL, and send email
       if (donor) {
         try {
-          const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, 'online', new Date());
+          const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null;
+          const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
+
+          const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, 'online', new Date(), gaushala, katha);
           const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id);
           await donation.update({ slipUrl: cloudinaryUrl });
           console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
@@ -412,7 +418,10 @@ export const updateDonation = async (req, res) => {
       const donor = await User.findByPk(donation.donorId);
       if (donor) {
         try {
-          const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, donation.paymentMode, donation.paymentDate);
+          const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null;
+          const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
+
+          const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, donation.paymentMode, donation.paymentDate, gaushala, katha);
           const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id);
           await donation.update({ slipUrl: cloudinaryUrl });
           console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
