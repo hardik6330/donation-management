@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Search, Edit, Trash2, Calendar
+  Search, Edit, Trash2, Calendar, MapPin
 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
@@ -11,6 +11,7 @@ const KartalDhunList = ({
   isDeleting, 
   pagination, 
   filters, 
+  filterData,
   onEdit, 
   onDelete, 
   onFilterChange, 
@@ -18,6 +19,8 @@ const KartalDhunList = ({
   onPageChange,
   hasPermission 
 }) => {
+  const { cities = [], talukas = [], villages = [] } = filterData || {};
+
   const tableHeaders = [
     { label: 'Kartal Dhun Name' },
     { label: 'Date' },
@@ -30,6 +33,27 @@ const KartalDhunList = ({
 
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
+    { 
+      name: 'cityId', 
+      label: 'City', 
+      type: 'select', 
+      icon: MapPin,
+      options: cities.map(c => ({ value: c.id, label: c.name }))
+    },
+    { 
+      name: 'talukaId', 
+      label: 'Taluka', 
+      type: 'select', 
+      icon: MapPin,
+      options: talukas.map(t => ({ value: t.id, label: t.name }))
+    },
+    { 
+      name: 'villageId', 
+      label: 'Village', 
+      type: 'select', 
+      icon: MapPin,
+      options: villages.map(v => ({ value: v.id, label: v.name }))
+    },
     { name: 'startDate', label: 'From Date', type: 'date', icon: Calendar },
     { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
   ];
@@ -51,9 +75,9 @@ const KartalDhunList = ({
             <td className="px-6 py-4 text-sm font-semibold text-gray-900">{record.name}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{record.date ? new Date(record.date).toLocaleDateString('en-IN') : '-'}</td>
             <td className="px-6 py-4 text-sm font-bold text-green-700">{inr(record.amount)}</td>
-            <td className="px-6 py-4 text-sm text-gray-700">{record.city || '-'}</td>
-            <td className="px-6 py-4 text-sm text-gray-700">{record.taluka || '-'}</td>
-            <td className="px-6 py-4 text-sm text-gray-700">{record.village || '-'}</td>
+            <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.city || '-'}</td>
+            <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.taluka || '-'}</td>
+            <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.village || '-'}</td>
             <td className="px-6 py-4 text-sm font-medium">
               <div className="flex items-center gap-2">
                 {hasPermission('kartalDhun', 'entry') && (

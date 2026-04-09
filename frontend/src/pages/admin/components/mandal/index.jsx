@@ -14,9 +14,12 @@ const Mandal = () => {
   const [editingMandal, setEditingMandal] = useState(null);
   const [generatedMandals, setGeneratedMandals] = useState(new Set());
 
+  const currentMonthValue = new Date().toISOString().slice(0, 7); // YYYY-MM format
+
   const [filters, setFilters] = useState({
     search: '',
     isActive: '',
+    month: currentMonthValue,
     page: 1,
     limit: 10
   });
@@ -57,11 +60,13 @@ const Mandal = () => {
   };
 
   const handleGeneratePayments = async (mandalId) => {
-    const now = new Date();
-    const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    if (!window.confirm(`Generate payments for ${now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}?`)) return;
+    const monthToGenerate = filters.month || currentMonthValue;
+    const [year, monthNum] = monthToGenerate.split('-');
+    const monthName = new Date(year, parseInt(monthNum) - 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    
+    if (!window.confirm(`Generate payments for ${monthName}?`)) return;
     try {
-      const result = await generatePayments({ mandalId, month }).unwrap();
+      const result = await generatePayments({ mandalId, month: monthToGenerate }).unwrap();
       setGeneratedMandals(prev => new Set([...prev, mandalId]));
       if (result?.data?.generated === 0) {
         toast.info('Payments already generated for this month');
@@ -88,7 +93,7 @@ const Mandal = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', isActive: '', page: 1, limit: 10 });
+    setFilters({ search: '', isActive: '', month: currentMonthValue, page: 1, limit: 10 });
   };
 
   const handlePageChange = (newPage) => {

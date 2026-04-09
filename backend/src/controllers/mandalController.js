@@ -30,7 +30,7 @@ export const addMandal = async (req, res) => {
 export const getAllMandals = async (req, res) => {
   try {
     const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
-    const { search, isActive } = req.query;
+    const { search, isActive, month } = req.query;
 
     const where = {};
     if (search && search.trim() !== '') {
@@ -40,11 +40,23 @@ export const getAllMandals = async (req, res) => {
       where.isActive = isActive === 'true';
     }
 
+    // Default to current month if not provided for payment generation check
+    const checkMonth = month || new Date().toISOString().slice(0, 7);
+
     const { count, rows } = await Mandal.findAndCountAll({
       where,
       attributes: {
         include: [
-          [sequelize.literal('(SELECT COUNT(*) FROM MandalMembers WHERE MandalMembers.mandalId = Mandal.id)'), 'memberCount']
+          [sequelize.literal('(SELECT COUNT(*) FROM MandalMembers WHERE MandalMembers.mandalId = Mandal.id)'), 'memberCount'],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*) 
+              FROM MandalPayments 
+              INNER JOIN MandalMembers ON MandalPayments.memberId = MandalMembers.id 
+              WHERE MandalMembers.mandalId = Mandal.id AND MandalPayments.month = '${checkMonth}'
+            ) > 0`), 
+            'paymentGenerated'
+          ]
         ]
       },
       order: [['name', 'ASC']],
@@ -55,6 +67,7 @@ export const getAllMandals = async (req, res) => {
     const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'rows' });
     return sendSuccess(res, response);
   } catch (error) {
+    console.error('❌ [getAllMandals] Error:', error);
     return sendError(res, 'Failed to fetch mandals', 500, error);
   }
 };

@@ -398,7 +398,7 @@ export const apiSlice = createApi({
         method: 'POST',
         body: data,
       }),
-      invalidatesTags: ['MandalPayments'],
+      invalidatesTags: ['MandalPayments', 'Mandals'],
     }),
     updateMandalPayment: builder.mutation({
       query: ({ id, ...data }) => ({

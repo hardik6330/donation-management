@@ -350,7 +350,7 @@ export const getDonors = async (req, res) => {
         attributes: []
       }],
       attributes: [
-        'id', 'name', 'email', 'mobileNumber', 'village', 'district', 'companyName', 'createdAt',
+        'id', 'name', 'email', 'mobileNumber','address', 'village', 'district', 'companyName', 'createdAt',
         [sequelize.fn('COUNT', sequelize.col('Donations.id')), 'donationCount'],
         [sequelize.fn('SUM', sequelize.col('Donations.amount')), 'totalDonated']
       ],

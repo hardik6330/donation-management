@@ -29,7 +29,7 @@ export const addKartalDhun = async (req, res) => {
 export const getAllKartalDhun = async (req, res) => {
   try {
     const { page, limit } = getPaginationParams(req.query);
-    const { search, startDate, endDate } = req.query;
+    const { search, startDate, endDate, cityId, talukaId, villageId } = req.query;
 
     const where = {};
     if (search && search.trim() !== '') {
@@ -41,6 +41,29 @@ export const getAllKartalDhun = async (req, res) => {
       where.date = { [Op.gte]: startDate };
     } else if (endDate) {
       where.date = { [Op.lte]: endDate };
+    }
+
+    // Hierarchical Location Filter
+    if (villageId) {
+      where.locationId = villageId;
+    } else if (talukaId) {
+      const subLocations = await Location.findAll({
+        where: { [Op.or]: [{ id: talukaId }, { parentId: talukaId }] },
+        attributes: ['id']
+      });
+      where.locationId = { [Op.in]: subLocations.map(loc => loc.id) };
+    } else if (cityId) {
+      const talukas = await Location.findAll({
+        where: { parentId: cityId },
+        attributes: ['id']
+      });
+      const talukaIds = talukas.map(t => t.id);
+      const villages = await Location.findAll({
+        where: { parentId: { [Op.in]: talukaIds } },
+        attributes: ['id']
+      });
+      const allLocationIds = [cityId, ...talukaIds, ...villages.map(v => v.id)];
+      where.locationId = { [Op.in]: allLocationIds };
     }
 
     const { count, rows } = await KartalDhun.findAndCountAll({

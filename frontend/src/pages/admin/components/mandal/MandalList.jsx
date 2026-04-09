@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Edit, Trash2, CheckCircle, XCircle, Receipt } from 'lucide-react';
+import { Search, Edit, Trash2, CheckCircle, XCircle, Receipt, Calendar } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 
@@ -20,7 +20,11 @@ const MandalList = ({
   onPageChange,
   hasPermission
 }) => {
-  const currentMonth = new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  const getDisplayMonth = (val) => {
+    if (!val) return new Date().toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+    const [y, m] = val.split('-');
+    return new Date(y, parseInt(m) - 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
+  };
 
   const tableHeaders = [
     { label: 'Mandal Name' },
@@ -34,6 +38,7 @@ const MandalList = ({
 
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search mandal name...' },
+    { name: 'month', label: 'Month', type: 'month', icon: Calendar },
     {
       name: 'isActive', label: 'Status', type: 'select', icon: CheckCircle,
       options: [{ value: 'true', label: 'Active' }, { value: 'false', label: 'Inactive' }]
@@ -51,7 +56,7 @@ const MandalList = ({
             <td className="px-6 py-4 text-sm text-gray-700 font-bold">₹{mandal.price}</td>
             <td className="px-6 py-4 text-xs font-bold uppercase text-gray-500">{mandal.mandalType}</td>
             <td className="px-6 py-4 text-sm text-gray-700 font-semibold">{mandal.memberCount || 0} Members</td>
-            <td className="px-6 py-4 text-xs font-medium text-gray-500">{currentMonth}</td>
+            <td className="px-6 py-4 text-xs font-medium text-gray-500">{getDisplayMonth(filters.month)}</td>
             <td className="px-6 py-4">
               <button
                 onClick={() => onToggleStatus(mandal)}
@@ -71,13 +76,13 @@ const MandalList = ({
                 {hasPermission('mandal', 'entry') && mandal.isActive && (
                   <button
                     onClick={() => onGeneratePayments(mandal.id)}
-                    disabled={isGenerating || generatedMandals?.has(mandal.id)}
+                    disabled={isGenerating || generatedMandals?.has(mandal.id) || mandal.paymentGenerated}
                     className={`p-1.5 rounded-lg transition-colors ${
-                      generatedMandals?.has(mandal.id)
+                      (generatedMandals?.has(mandal.id) || mandal.paymentGenerated)
                         ? 'text-gray-300 cursor-not-allowed'
                         : 'text-purple-600 hover:bg-purple-50'
                     }`}
-                    title={generatedMandals?.has(mandal.id) ? 'Payments already generated' : 'Generate Monthly Payment'}
+                    title={(generatedMandals?.has(mandal.id) || mandal.paymentGenerated) ? 'Payments already generated' : 'Generate Monthly Payment'}
                   >
                     <Receipt className="w-4 h-4" />
                   </button>

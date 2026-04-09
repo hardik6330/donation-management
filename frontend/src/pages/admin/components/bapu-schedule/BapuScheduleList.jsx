@@ -22,7 +22,9 @@ const BapuScheduleList = ({
   const tableHeaders = [
     { label: 'Date & Time' },
     { label: 'Event Details' },
-    { label: 'Location' },
+    { label: 'City' },
+    { label: 'Taluka' },
+    { label: 'Village' },
     { label: 'Contact' },
     { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
@@ -120,10 +122,20 @@ const BapuScheduleList = ({
             </td>
             <td className="p-4 px-6">
               <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                <MapPin className="w-3.5 h-3.5 text-red-500" />
-                {schedule.city}{schedule.village ? `, ${schedule.village}` : ''}
+                <td className="px-1 py-4 text-sm text-gray-500 uppercase">{schedule.city || '-'}</td>
               </div>
             </td>
+            <td className="p-4 px-6">
+              <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <td className="px-1py-4 text-sm text-gray-500 uppercase">{schedule.taluka || '-'}</td>
+              </div>
+            </td>
+            <td className="p-4 px-6">
+              <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <td className="px-1 py-4 text-sm text-gray-500 uppercase">{schedule.village || '-'}</td>
+              </div>
+            </td>
+
             <td className="p-4 px-6">
               <div className="flex flex-col gap-1">
                 <div className="text-sm font-medium text-gray-800">{schedule.contactPerson}</div>

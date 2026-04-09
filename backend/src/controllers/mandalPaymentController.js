@@ -9,18 +9,30 @@ import { Op } from 'sequelize';
 // Generate unpaid records for all active members for a given month
 export const generateMonthlyPayments = async (req, res) => {
   try {
-    const { month } = req.body;
+    const { month, mandalId } = req.body;
     if (!month || !/^\d{4}-\d{2}$/.test(month)) {
       return sendError(res, 'Valid month (YYYY-MM) is required', 400);
     }
 
+    const memberWhere = { isActive: true };
+    if (mandalId) {
+      memberWhere.mandalId = mandalId;
+    }
+
     const activeMembers = await MandalMember.findAll({
-      where: { isActive: true },
+      where: memberWhere,
       include: [{ model: Mandal, as: 'mandal', attributes: ['id', 'price'] }]
     });
 
+    const paymentWhere = { month };
+    if (mandalId) {
+      // If mandalId is provided, we only check for members of that mandal
+      const memberIds = activeMembers.map(m => m.id);
+      paymentWhere.memberId = { [Op.in]: memberIds };
+    }
+
     const existingPayments = await MandalPayment.findAll({
-      where: { month },
+      where: paymentWhere,
       attributes: ['memberId']
     });
     const existingIds = new Set(existingPayments.map(p => p.memberId));
@@ -43,6 +55,7 @@ export const generateMonthlyPayments = async (req, res) => {
       skipped: existingIds.size
     }, `Generated ${newPayments.length} payment records for ${month}`);
   } catch (error) {
+    console.error('❌ [generateMonthlyPayments] Error:', error);
     return sendError(res, 'Failed to generate monthly payments', 500, error);
   }
 };

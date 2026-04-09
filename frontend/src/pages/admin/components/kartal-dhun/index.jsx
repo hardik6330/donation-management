@@ -3,7 +3,12 @@ import KartalDhunList from './KartalDhunList';
 import AddKartalDhunModal from './AddKartalDhunModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetKartalDhunQuery, useDeleteKartalDhunMutation } from '../../../../services/apiSlice';
+import { 
+  useGetKartalDhunQuery, 
+  useDeleteKartalDhunMutation,
+  useGetCitiesQuery,
+  useGetSubLocationsQuery
+} from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
 
 const KartalDhun = () => {
@@ -15,6 +20,9 @@ const KartalDhun = () => {
     search: '',
     startDate: '',
     endDate: '',
+    cityId: '',
+    talukaId: '',
+    villageId: '',
     page: 1,
     limit: 10
   });
@@ -22,6 +30,15 @@ const KartalDhun = () => {
   // API calls moved to index.jsx
   const { data: listData, isLoading: loading } = useGetKartalDhunQuery(filters);
   const [deleteRecord, { isLoading: isDeleting }] = useDeleteKartalDhunMutation();
+
+  // Location Data for Filters
+  const { data: filterCitiesData } = useGetCitiesQuery();
+  const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
+  const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
+
+  const filterCities = filterCitiesData?.data || [];
+  const filterTalukas = filterTalukasData?.data || [];
+  const filterVillages = filterVillagesData?.data || [];
 
   const records = listData?.data?.rows || [];
   const pagination = {
@@ -54,11 +71,34 @@ const KartalDhun = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
+
+    if (name === 'cityId') {
+      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
+      return;
+    }
+    if (name === 'talukaId') {
+      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
+      return;
+    }
+    if (name === 'villageId') {
+      setFilters(prev => ({ ...prev, villageId: value, page: 1 }));
+      return;
+    }
+
     setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', startDate: '', endDate: '', page: 1, limit: 10 });
+    setFilters({ 
+      search: '', 
+      startDate: '', 
+      endDate: '', 
+      cityId: '', 
+      talukaId: '', 
+      villageId: '', 
+      page: 1, 
+      limit: 10 
+    });
   };
 
   const handlePageChange = (newPage) => {
@@ -80,6 +120,11 @@ const KartalDhun = () => {
         isDeleting={isDeleting}
         pagination={pagination}
         filters={filters}
+        filterData={{
+          cities: filterCities,
+          talukas: filterTalukas,
+          villages: filterVillages
+        }}
         onEdit={handleEdit} 
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}

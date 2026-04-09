@@ -14,9 +14,12 @@ const DonorsList = ({ donors, isLoading, filters, pagination, onFilterChange, on
 
   const tableHeaders = [
     { label: 'Donor Info' },
-    { label: 'Location' },
+    { label: 'Address' },
+    { label: 'City' },
+    { label: 'Village' },
+    { label: 'Company Name' },
     { label: 'Donations', className: 'text-center' },
-    { label: 'Total Amount', className: 'text-right' },
+    { label: 'Total Amount', className: 'text-center' },
   ];
 
   return (
@@ -45,22 +48,40 @@ const DonorsList = ({ donors, isLoading, filters, pagination, onFilterChange, on
                 </div>
               </div>
             </td>
-            <td className="p-4 px-6">
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                {donor.village || '-'}, {donor.district || '-'}
-              </div>
-              {donor.companyName && (
-                <div className="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                  {donor.companyName}
+             <td className="p-4 px-6">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm text-gray-500 uppercase">{donor.address || '-'}</div>
                 </div>
-              )}
+              </div>
             </td>
-            <td className="p-4 px-6 text-center">
-              <span className="px-3 py-1 bg-gray-100 rounded-full text-xs font-bold text-gray-700">
+              <td className="p-4 px-6">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm text-gray-500 uppercase">{donor.district || '-'}</div>    
+                </div>
+              </div>
+            </td>
+              <td className="p-4 px-6">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm text-gray-500 uppercase">{donor.village || '-'}</div>
+                </div>
+              </div>
+            </td>
+              <td className="p-4 px-6">
+              <div className="flex items-center gap-3">
+                <div>
+                  <div className="text-sm text-gray-500 uppercase">{donor.companyName || '-'}</div>
+                </div>
+              </div>
+            </td>
+            <td className="p-2 px-3 text-center">
+              <span className="bg-gray-100 rounded-full text-xs font-bold text-gray-700">
                 {donor.donationCount}
               </span>
             </td>
-            <td className="p-4 px-6 text-right font-bold text-blue-600">
+            <td className="p-4 px-6 text-center font-bold text-blue-600">
               ₹{donor.totalDonated?.toLocaleString()}
             </td>
           </tr>
