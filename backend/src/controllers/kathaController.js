@@ -1,9 +1,10 @@
 import { Katha } from '../models/katha.js';
+import { Donation } from '../models/donation.js';
 import { Location } from '../models/location.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { findOrCreateLocationStructure, getAllSubLocationIds } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
-import { Op } from 'sequelize';
+import { Op, fn, col, literal } from 'sequelize';
 
 export const getKathas = async (req, res) => {
   try {
@@ -23,24 +24,38 @@ export const getKathas = async (req, res) => {
 
     const { count, rows } = await Katha.findAndCountAll({
       where,
-      include: [{
-        model: Location,
-        as: 'location',
-        attributes: ['id', 'name', 'type'],
-        include: [{
+      include: [
+        {
           model: Location,
-          as: 'parent',
+          as: 'location',
           attributes: ['id', 'name', 'type'],
           include: [{
             model: Location,
             as: 'parent',
-            attributes: ['id', 'name', 'type']
+            attributes: ['id', 'name', 'type'],
+            include: [{
+              model: Location,
+              as: 'parent',
+              attributes: ['id', 'name', 'type']
+            }]
           }]
-        }]
-      }],
+        },
+        {
+          model: Donation,
+          attributes: [],
+        }
+      ],
+      attributes: {
+        include: [
+          [fn('COUNT', col('Donations.id')), 'totalDonations'],
+          [fn('COALESCE', fn('SUM', col('Donations.amount')), 0), 'totalDonationAmount']
+        ]
+      },
+      group: ['Katha.id', 'location.id', 'location->parent.id', 'location->parent->parent.id'],
       order: [['createdAt', 'DESC']],
       limit: queryLimit,
-      offset
+      offset,
+      subQuery: false
     });
 
     const formattedKathas = rows.map(k => {
@@ -55,10 +70,19 @@ export const getKathas = async (req, res) => {
         current = current.parent;
       }
 
-      return { ...katha, city, taluka, village };
+      return {
+        ...katha,
+        city,
+        taluka,
+        village,
+        totalDonations: parseInt(katha.totalDonations) || 0,
+        totalDonationAmount: parseFloat(katha.totalDonationAmount) || 0
+      };
     });
 
-    const response = getPaginatedResponse({ rows: formattedKathas, count, limit, page, isFetchAll, dataKey: 'rows' });
+    // With GROUP BY, count is an array - use its length for total count
+    const totalCount = Array.isArray(count) ? count.length : count;
+    const response = getPaginatedResponse({ rows: formattedKathas, count: totalCount, limit, page, isFetchAll, dataKey: 'rows' });
     return sendSuccess(res, response);
   } catch (error) {
     return sendError(res, 'Error fetching kathas', 500);

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 const SearchableDropdown = ({
@@ -18,16 +19,46 @@ const SearchableDropdown = ({
   onKeyDown
 }) => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const listRef = useRef(null);
+  const inputContainerRef = useRef(null);
 
   const filtered = items.filter(item =>
     item.name?.toLowerCase().includes((value || '').toLowerCase())
   );
 
-  // Reset highlight when list changes or dropdown opens/closes
+  // Update position coordinates whenever dropdown is opened or window changes
   useEffect(() => {
+    if (isActive && inputContainerRef.current) {
+      const updateCoords = () => {
+        const rect = inputContainerRef.current.getBoundingClientRect();
+        setCoords({
+          top: rect.bottom + window.scrollY,
+          left: rect.left + window.scrollX,
+          width: rect.width
+        });
+      };
+
+      updateCoords();
+      window.addEventListener('resize', updateCoords);
+      window.addEventListener('scroll', updateCoords, true);
+      return () => {
+        window.removeEventListener('resize', updateCoords);
+        window.removeEventListener('scroll', updateCoords, true);
+      };
+    }
+  }, [isActive]);
+
+  // Reset highlight when list changes or dropdown opens/closes
+  const handleInputChange = (e) => {
     setHighlightIndex(-1);
-  }, [isActive, value]);
+    onChange(e);
+  };
+
+  const handleInputFocus = () => {
+    setHighlightIndex(-1);
+    setActive(name);
+  };
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -39,6 +70,7 @@ const SearchableDropdown = ({
 
   const handleClear = (e) => {
     e.stopPropagation();
+    setHighlightIndex(-1);
     onChange({ target: { name, value: '' } });
   };
 
@@ -78,6 +110,8 @@ const SearchableDropdown = ({
     if (!isActive) return;
     const handleMouseDown = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
+        // Only close if not clicking inside the portal list
+        if (listRef.current && listRef.current.contains(e.target)) return;
         setActive(null);
       }
     };
@@ -92,15 +126,15 @@ const SearchableDropdown = ({
           {Icon && <Icon className="w-3 h-3" />} {label} {required && '*'}
         </label>
       )}
-      <div className="relative">
+      <div className="relative" ref={inputContainerRef}>
         <input
           ref={inputRef}
           type="text"
           name={name}
           placeholder={placeholder}
           value={value}
-          onChange={onChange}
-          onFocus={() => setActive(name)}
+          onChange={handleInputChange}
+          onFocus={handleInputFocus}
           onKeyDown={handleKeyDownInternal}
           disabled={disabled}
           autoComplete="off"
@@ -116,8 +150,18 @@ const SearchableDropdown = ({
           </button>
         )}
 
-        {isActive && filtered.length > 0 && (
-          <div ref={listRef} className="absolute z-[120] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200">
+        {isActive && filtered.length > 0 && coords.width > 0 && createPortal(
+          <div 
+            ref={listRef} 
+            style={{ 
+              position: 'absolute', 
+              top: `${coords.top}px`, 
+              left: `${coords.left}px`, 
+              width: `${coords.width}px`,
+              zIndex: 9999 
+            }}
+            className="mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
+          >
             {filtered.map((item, index) => (
               <button
                 key={item.id}
@@ -133,7 +177,8 @@ const SearchableDropdown = ({
                 {item.name}
               </button>
             ))}
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </div>

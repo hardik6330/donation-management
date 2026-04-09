@@ -1,9 +1,10 @@
 import { Gaushala } from '../models/gaushala.js';
+import { Donation } from '../models/donation.js';
 import { Location } from '../models/location.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { findOrCreateLocationStructure, getAllSubLocationIds } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
-import { Op } from 'sequelize';
+import { Op, fn, col, literal } from 'sequelize';
 
 export const getGaushalas = async (req, res) => {
   try {
@@ -22,24 +23,38 @@ export const getGaushalas = async (req, res) => {
 
     const { count, rows } = await Gaushala.findAndCountAll({
       where,
-      include: [{
-        model: Location,
-        as: 'location',
-        attributes: ['id', 'name', 'type'],
-        include: [{
+      include: [
+        {
           model: Location,
-          as: 'parent',
+          as: 'location',
           attributes: ['id', 'name', 'type'],
           include: [{
             model: Location,
             as: 'parent',
-            attributes: ['id', 'name', 'type']
+            attributes: ['id', 'name', 'type'],
+            include: [{
+              model: Location,
+              as: 'parent',
+              attributes: ['id', 'name', 'type']
+            }]
           }]
-        }]
-      }],
+        },
+        {
+          model: Donation,
+          attributes: [],
+        }
+      ],
+      attributes: {
+        include: [
+          [fn('COUNT', col('Donations.id')), 'totalDonations'],
+          [fn('COALESCE', fn('SUM', col('Donations.amount')), 0), 'totalDonationAmount']
+        ]
+      },
+      group: ['Gaushala.id', 'location.id', 'location->parent.id', 'location->parent->parent.id'],
       order: [['name', 'ASC']],
       limit: queryLimit,
-      offset
+      offset,
+      subQuery: false
     });
 
     // Format the response to include city, taluka, village
@@ -60,11 +75,15 @@ export const getGaushalas = async (req, res) => {
         city,
         taluka,
         village,
-        fullLocation: [village, taluka, city].filter(Boolean).join(', ')
+        fullLocation: [village, taluka, city].filter(Boolean).join(', '),
+        totalDonations: parseInt(gaushala.totalDonations) || 0,
+        totalDonationAmount: parseFloat(gaushala.totalDonationAmount) || 0
       };
     });
 
-    const response = getPaginatedResponse({ rows: formattedGaushalas, count, limit, page, isFetchAll, dataKey: 'rows' });
+    // With GROUP BY, count is an array - use its length for total count
+    const totalCount = Array.isArray(count) ? count.length : count;
+    const response = getPaginatedResponse({ rows: formattedGaushalas, count: totalCount, limit, page, isFetchAll, dataKey: 'rows' });
     return sendSuccess(res, response);
   } catch (error) {
     console.error('❌ [getGaushalas] Error:', error);

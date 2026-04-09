@@ -1,5 +1,5 @@
 import React from 'react';
-import { Building2, Search, Edit, Trash2, MapPin } from 'lucide-react';
+import { Building2, Search, Edit, Trash2, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 
@@ -49,6 +49,7 @@ const GaushalaList = ({
     { label: 'City' },
     { label: 'Taluka' },
     { label: 'Village' },
+    { label: 'Total Donations', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
   ];
@@ -73,6 +74,13 @@ const GaushalaList = ({
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.city}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.taluka}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.village}</td>
+            <td className="p-4 px-6 text-right">
+              <div className="text-sm font-bold text-blue-600 flex items-center justify-end gap-0.5">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(gaushala.totalDonationAmount || 0).toLocaleString('en-IN')}
+              </div>
+              <div className="text-[10px] text-gray-400">{gaushala.totalDonations || 0} donations</div>
+            </td>
             <td className="p-4 px-6 text-center">
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                 gaushala.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'

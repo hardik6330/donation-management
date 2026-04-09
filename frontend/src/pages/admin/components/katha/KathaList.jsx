@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Search, Edit, Trash2, MapPin } from 'lucide-react';
+import { Calendar, Search, Edit, Trash2, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 
@@ -50,6 +50,7 @@ const KathaList = ({
     { label: 'Taluka' },
     { label: 'Village' },
     { label: 'Dates' },
+    { label: 'Total Donations', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
   ];
@@ -88,6 +89,13 @@ const KathaList = ({
                 <Calendar className="w-3.5 h-3.5" />
                 {new Date(katha.startDate).toLocaleDateString('en-IN')} - {new Date(katha.endDate).toLocaleDateString('en-IN')}
               </div>
+            </td>
+            <td className="p-4 px-6 text-right">
+              <div className="text-sm font-bold text-blue-600 flex items-center justify-end gap-0.5">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(katha.totalDonationAmount || 0).toLocaleString('en-IN')}
+              </div>
+              <div className="text-[10px] text-gray-400">{katha.totalDonations || 0} donations</div>
             </td>
             <td className="p-4 px-6 text-center">
               <span className={`text-xs font-bold uppercase ${getStatusStyle(katha.status)}`}>
