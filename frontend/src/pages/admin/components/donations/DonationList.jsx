@@ -130,10 +130,10 @@ const DonationList = ({
               {donation.referenceName || '-'}
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                donation.paymentMode === 'cash' ? 'bg-blue-100 text-blue-700' :
-                donation.paymentMode === 'online' ? 'bg-purple-100 text-purple-700' :
-                'bg-orange-100 text-orange-700'
+              <span className={`text-xs font-bold uppercase ${
+                donation.paymentMode === 'cash' ? 'text-blue-600' :
+                donation.paymentMode === 'online' ? 'text-purple-600' :
+                'text-orange-600'
               }`}>
                 {donation.paymentMode}
               </span>
@@ -145,10 +145,10 @@ const DonationList = ({
               </div>
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                donation.status === 'completed' ? 'bg-green-100 text-green-700' :
-                donation.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
-                'bg-red-100 text-red-700'
+              <span className={`text-xs font-bold uppercase ${
+                donation.status === 'completed' ? 'text-green-600' :
+                donation.status === 'pending' ? 'text-yellow-600' :
+                'text-red-600'
               }`}>
                 {donation.status}
               </span>

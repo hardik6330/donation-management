@@ -67,10 +67,10 @@ const SevakList = ({
               <button
                 onClick={() => onToggleStatus(sevak)}
                 disabled={!hasPermission('sevaks', 'entry')}
-                className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase transition ${
-                  sevak.isActive 
-                    ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                className={`flex items-center gap-1.5 text-xs font-bold uppercase transition ${
+                  sevak.isActive
+                    ? 'text-green-600 hover:text-green-700'
+                    : 'text-red-600 hover:text-red-700'
                 }`}
               >
                 {sevak.isActive ? (

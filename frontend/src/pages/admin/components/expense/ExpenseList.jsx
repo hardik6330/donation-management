@@ -107,10 +107,10 @@ const ExpenseList = ({
               )}
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                expense.paymentMode === 'cash' ? 'bg-blue-100 text-blue-700' :
-                expense.paymentMode === 'online' ? 'bg-purple-100 text-purple-700' :
-                'bg-orange-100 text-orange-700'
+              <span className={`text-xs font-bold uppercase ${
+                expense.paymentMode === 'cash' ? 'text-blue-600' :
+                expense.paymentMode === 'online' ? 'text-purple-600' :
+                'text-orange-600'
               }`}>
                 {expense.paymentMode}
               </span>

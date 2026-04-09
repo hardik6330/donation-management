@@ -82,8 +82,8 @@ const GaushalaList = ({
               <div className="text-[10px] text-gray-400">{gaushala.totalDonations || 0} donations</div>
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-                gaushala.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+              <span className={`text-xs font-bold uppercase ${
+                gaushala.isActive ? 'text-green-600' : 'text-red-600'
               }`}>
                 {gaushala.isActive ? 'Active' : 'Inactive'}
               </span>
