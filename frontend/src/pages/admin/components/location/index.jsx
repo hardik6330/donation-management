@@ -3,18 +3,48 @@ import LocationList from './LocationList';
 import AddLocationModal from './AddLocationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetCitiesQuery, useDeleteLocationMutation } from '../../../../services/apiSlice';
+import { useGetCitiesQuery, useGetSubLocationsQuery, useDeleteLocationMutation } from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
+import { ChevronRight, Home } from 'lucide-react';
 
 const Location = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLocation, setEditingLocation] = useState(null);
 
-  // API calls moved to index.jsx
+  // Breadcrumb navigation state
+  const [breadcrumb, setBreadcrumb] = useState([]); // [{ id, name, type }]
+  const currentParent = breadcrumb.length > 0 ? breadcrumb[breadcrumb.length - 1] : null;
+
+  // API calls
   const { data: citiesData, isLoading: citiesLoading } = useGetCitiesQuery();
+  const { data: subLocationsData, isLoading: subLoading } = useGetSubLocationsQuery(
+    currentParent?.id,
+    { skip: !currentParent }
+  );
   const [deleteLocation, { isLoading: isDeleting }] = useDeleteLocationMutation();
+
   const cities = citiesData?.data || [];
+  const subLocations = subLocationsData?.data || [];
+
+  const locations = currentParent ? subLocations : cities;
+  const isLoading = currentParent ? subLoading : citiesLoading;
+
+  // Determine what type of children we're viewing
+  const currentLevel = breadcrumb.length === 0 ? 'city' : breadcrumb.length === 1 ? 'taluka' : 'village';
+  const canDrillDown = currentLevel !== 'village';
+
+  const handleDrillDown = (location) => {
+    setBreadcrumb(prev => [...prev, { id: location.id, name: location.name, type: location.type }]);
+  };
+
+  const handleBreadcrumbClick = (index) => {
+    if (index === -1) {
+      setBreadcrumb([]);
+    } else {
+      setBreadcrumb(prev => prev.slice(0, index + 1));
+    }
+  };
 
   const handleAdd = () => {
     setEditingLocation(null);
@@ -27,38 +57,75 @@ const Location = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this city? This will only delete the city if it has no sub-locations or donations.')) {
+    if (window.confirm('Are you sure? This will only delete if it has no sub-locations or linked donations.')) {
       try {
         await deleteLocation(id).unwrap();
-        toast.success('City deleted successfully');
+        toast.success('Location deleted successfully');
       } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete city');
+        toast.error(err?.data?.message || 'Failed to delete location');
       }
     }
   };
 
+  const getSubtitle = () => {
+    if (currentLevel === 'city') return 'Manage cities - click View to see talukas';
+    if (currentLevel === 'taluka') return `Talukas in ${currentParent.name} - click View to see villages`;
+    return `Villages in ${currentParent.name}`;
+  };
+
   return (
     <div className="space-y-6">
-      <AdminPageHeader 
-        title="Location Management" 
-        subtitle="Add and organize system locations for tracking donations"
+      <AdminPageHeader
+        title="Location Management"
+        subtitle={getSubtitle()}
         buttonText={hasPermission('location', 'entry') ? "Add Location" : null}
         onButtonClick={handleAdd}
       />
 
-      <LocationList 
-        cities={cities}
-        isLoading={citiesLoading}
+      {/* Breadcrumb */}
+      {breadcrumb.length > 0 && (
+        <div className="flex items-center gap-1.5 text-sm bg-white px-4 py-3 rounded-xl border border-gray-100 shadow-sm">
+          <button
+            onClick={() => handleBreadcrumbClick(-1)}
+            className="flex items-center gap-1 text-blue-600 hover:text-blue-700 font-semibold transition"
+          >
+            <Home className="w-3.5 h-3.5" />
+            Cities
+          </button>
+          {breadcrumb.map((item, index) => (
+            <React.Fragment key={item.id}>
+              <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
+              <button
+                onClick={() => handleBreadcrumbClick(index)}
+                className={`font-semibold transition capitalize ${
+                  index === breadcrumb.length - 1
+                    ? 'text-gray-800 cursor-default'
+                    : 'text-blue-600 hover:text-blue-700'
+                }`}
+              >
+                {item.name}
+              </button>
+            </React.Fragment>
+          ))}
+        </div>
+      )}
+
+      <LocationList
+        locations={locations}
+        isLoading={isLoading}
         isDeleting={isDeleting}
-        onEdit={handleEdit} 
+        currentLevel={currentLevel}
+        canDrillDown={canDrillDown}
+        onView={handleDrillDown}
+        onEdit={handleEdit}
         onDelete={handleDelete}
-        hasPermission={hasPermission} 
+        hasPermission={hasPermission}
       />
 
       {isModalOpen && (
-        <AddLocationModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
+        <AddLocationModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
           editingData={editingLocation}
           key={editingLocation?.id || 'new'}
         />
