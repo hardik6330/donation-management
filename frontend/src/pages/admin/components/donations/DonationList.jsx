@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import { getStatusColor, getPaymentModeColor } from '../../../../utils/tableUtils';
 
 const DonationList = ({
   donations,
@@ -130,11 +131,7 @@ const DonationList = ({
               {donation.referenceName || '-'}
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`text-xs font-bold uppercase ${
-                donation.paymentMode === 'cash' ? 'text-blue-600' :
-                donation.paymentMode === 'online' ? 'text-purple-600' :
-                'text-orange-600'
-              }`}>
+              <span className={`text-xs font-bold uppercase ${getPaymentModeColor(donation.paymentMode)}`}>
                 {donation.paymentMode}
               </span>
             </td>
@@ -145,11 +142,7 @@ const DonationList = ({
               </div>
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`text-xs font-bold uppercase ${
-                donation.status === 'completed' ? 'text-green-600' :
-                donation.status === 'pending' ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
+              <span className={`text-xs font-bold uppercase ${getStatusColor(donation.status)}`}>
                 {donation.status}
               </span>
             </td>

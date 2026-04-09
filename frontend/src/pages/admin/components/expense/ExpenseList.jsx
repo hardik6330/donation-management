@@ -3,6 +3,7 @@ import {
   Calendar, IndianRupee, Edit, Trash2, Tag, Building2, Mic2, CreditCard
 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
+import { getPaymentModeColor } from '../../../../utils/tableUtils';
 import FilterSection from '../../../../components/common/FilterSection';
 
 const ExpenseList = ({
@@ -107,11 +108,7 @@ const ExpenseList = ({
               )}
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`text-xs font-bold uppercase ${
-                expense.paymentMode === 'cash' ? 'text-blue-600' :
-                expense.paymentMode === 'online' ? 'text-purple-600' :
-                'text-orange-600'
-              }`}>
+              <span className={`text-xs font-bold uppercase ${getPaymentModeColor(expense.paymentMode)}`}>
                 {expense.paymentMode}
               </span>
             </td>

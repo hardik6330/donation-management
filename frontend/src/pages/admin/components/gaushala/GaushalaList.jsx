@@ -2,6 +2,7 @@ import React from 'react';
 import { Building2, Search, Edit, Trash2, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import { getActiveColor, getActiveLabel } from '../../../../utils/tableUtils';
 
 const GaushalaList = ({
   gaushalas,
@@ -82,10 +83,8 @@ const GaushalaList = ({
               <div className="text-[10px] text-gray-400">{gaushala.totalDonations || 0} donations</div>
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`text-xs font-bold uppercase ${
-                gaushala.isActive ? 'text-green-600' : 'text-red-600'
-              }`}>
-                {gaushala.isActive ? 'Active' : 'Inactive'}
+              <span className={`text-xs font-bold uppercase ${getActiveColor(gaushala.isActive)}`}>
+                {getActiveLabel(gaushala.isActive)}
               </span>
             </td>
             <td className="p-4 px-6">

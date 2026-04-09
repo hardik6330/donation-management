@@ -1,8 +1,9 @@
 import React from 'react';
-import { 
+import {
   Search, Edit, Trash2, MapPin, Landmark, CheckCircle, XCircle
 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
+import { getActiveHoverColor, getActiveLabel } from '../../../../utils/tableUtils';
 import FilterSection from '../../../../components/common/FilterSection';
 
 const SevakList = ({ 
@@ -67,16 +68,12 @@ const SevakList = ({
               <button
                 onClick={() => onToggleStatus(sevak)}
                 disabled={!hasPermission('sevaks', 'entry')}
-                className={`flex items-center gap-1.5 text-xs font-bold uppercase transition ${
-                  sevak.isActive
-                    ? 'text-green-600 hover:text-green-700'
-                    : 'text-red-600 hover:text-red-700'
-                }`}
+                className={`flex items-center gap-1.5 text-xs font-bold uppercase transition ${getActiveHoverColor(sevak.isActive)}`}
               >
                 {sevak.isActive ? (
-                  <><CheckCircle className="w-3 h-3" /> Active</>
+                  <> Active</>
                 ) : (
-                  <><XCircle className="w-3 h-3" /> Inactive</>
+                  <> Inactive</>
                 )}
               </button>
             </td>

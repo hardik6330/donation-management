@@ -16,6 +16,7 @@ import { toast } from 'react-toastify';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import { getStatusColor } from '../../../../utils/tableUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -359,11 +360,7 @@ const Reports = () => {
               <div className="text-[10px] text-gray-500 uppercase">{donation.paymentMode}</div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
-              <span className={`text-xs font-bold uppercase ${
-                donation.status === 'completed' ? 'text-green-600' :
-                donation.status === 'pending' ? 'text-yellow-600' :
-                'text-red-600'
-              }`}>
+              <span className={`text-xs font-bold uppercase ${getStatusColor(donation.status)}`}>
                 {donation.status}
               </span>
             </td>

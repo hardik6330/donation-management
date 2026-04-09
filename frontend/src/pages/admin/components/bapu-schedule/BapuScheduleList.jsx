@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, Phone, Clock, CheckCircle2, Trash2, Tag, MapPin, Edit } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import { getStatusColor, getEventTypeColor } from '../../../../utils/tableUtils';
 
 const BapuScheduleList = ({ 
   schedules, 
@@ -108,15 +109,11 @@ const BapuScheduleList = ({
             </td>
             <td className="p-4 px-6">
               <div className="flex flex-col gap-1">
-                <span className={`w-fit text-xs font-bold uppercase ${
-                  schedule.eventType === 'Padhramani' ? 'text-purple-600' :
-                  schedule.eventType === 'Katha' ? 'text-orange-600' :
-                  'text-blue-600'
-                }`}>
+                <span className={`w-fit text-xs font-bold uppercase ${getEventTypeColor(schedule.eventType)}`}>
                   {schedule.eventType}
                 </span>
                 <span className="text-sm font-medium text-gray-700 line-clamp-1">
-                  {schedule.eventDescription || 'No description'}
+                  {schedule.description || 'No description'}
                 </span>
               </div>
             </td>
@@ -146,11 +143,7 @@ const BapuScheduleList = ({
               </div>
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`text-xs font-bold uppercase ${
-                schedule.status === 'scheduled' ? 'text-blue-600' :
-                schedule.status === 'completed' ? 'text-green-600' :
-                'text-red-600'
-              }`}>
+              <span className={`text-xs font-bold uppercase ${getStatusColor(schedule.status)}`}>
                 {schedule.status}
               </span>
             </td>

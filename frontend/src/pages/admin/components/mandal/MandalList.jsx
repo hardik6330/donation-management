@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Edit, Trash2, CheckCircle, XCircle, Receipt, Calendar } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import { getActiveHoverColor, getActiveLabel } from '../../../../utils/tableUtils';
 
 const MandalList = ({
   mandals,
@@ -61,9 +62,9 @@ const MandalList = ({
               <button
                 onClick={() => onToggleStatus(mandal)}
                 disabled={!hasPermission('mandal', 'entry')}
-                className={`flex items-center gap-1 text-xs font-bold uppercase transition ${mandal.isActive ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}`}
+                className={`flex items-center gap-1 text-xs font-bold uppercase transition ${getActiveHoverColor(mandal.isActive)}`}
               >
-                {mandal.isActive ? <><CheckCircle className="w-3 h-3" /> Active</> : <><XCircle className="w-3 h-3" /> Inactive</>}
+                {mandal.isActive ? <><CheckCircle className="w-3 h-3" /> {getActiveLabel(true)}</> : <><XCircle className="w-3 h-3" /> {getActiveLabel(false)}</>}
               </button>
             </td>
             <td className="px-6 py-4 text-sm font-medium">

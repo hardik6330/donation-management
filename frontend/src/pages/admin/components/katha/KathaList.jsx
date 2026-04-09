@@ -2,6 +2,7 @@ import React from 'react';
 import { Calendar, Search, Edit, Trash2, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import { getStatusColor } from '../../../../utils/tableUtils';
 
 const KathaList = ({
   kathas,
@@ -55,14 +56,6 @@ const KathaList = ({
     { label: 'Actions' },
   ];
 
-  const getStatusStyle = (status) => {
-    switch (status) {
-      case 'active': return 'text-green-600';
-      case 'upcoming': return 'text-blue-600';
-      case 'completed': return 'text-gray-600';
-      default: return 'text-gray-500';
-    }
-  };
 
   return (
     <div className="space-y-6">
@@ -98,7 +91,7 @@ const KathaList = ({
               <div className="text-[10px] text-gray-400">{katha.totalDonations || 0} donations</div>
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`text-xs font-bold uppercase ${getStatusStyle(katha.status)}`}>
+              <span className={`text-xs font-bold uppercase ${getStatusColor(katha.status)}`}>
                 {katha.status}
               </span>
             </td>

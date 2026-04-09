@@ -8,6 +8,7 @@ import {
 import {
   Search, Edit, Trash2, CheckCircle, XCircle, UsersRound, IndianRupee
 } from 'lucide-react';
+import { getActiveHoverColor, getActiveLabel } from '../../../../utils/tableUtils';
 import { toast } from 'react-toastify';
 import { NavLink } from 'react-router-dom';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
@@ -116,9 +117,9 @@ const MandalMemberList = () => {
             <td className="px-6 py-4 text-sm text-gray-700">{member.mandal?.name || '-'}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{member.location?.name || '-'}</td>
             <td className="px-6 py-4">
-              <button onClick={() => toggleStatus(member)} className={`flex items-center gap-1.5 text-xs font-bold transition-all ${member.isActive ? 'text-green-600 hover:text-green-700' : 'text-red-600 hover:text-red-700'}`}>
+              <button onClick={() => toggleStatus(member)} className={`flex items-center gap-1.5 text-xs font-bold transition-all ${getActiveHoverColor(member.isActive)}`}>
                 {member.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
-                {member.isActive ? 'Active' : 'Inactive'}
+                {getActiveLabel(member.isActive)}
               </button>
             </td>
             <td className="px-6 py-4 text-sm font-medium">

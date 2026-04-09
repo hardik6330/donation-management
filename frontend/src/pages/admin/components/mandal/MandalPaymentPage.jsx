@@ -14,6 +14,7 @@ import { NavLink } from 'react-router-dom';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import { getStatusColor } from '../../../../utils/tableUtils';
 
 const getCurrentMonth = () => {
   const now = new Date();
@@ -159,7 +160,7 @@ const MandalPaymentPage = () => {
             <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.location?.name || '-'}</td>
             <td className="px-6 py-4 text-sm font-semibold text-gray-800">{inr(payment.amount)}</td>
             <td className="px-6 py-4">
-              <span className={`text-xs font-bold uppercase ${payment.status === 'paid' ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-xs font-bold uppercase ${getStatusColor(payment.status)}`}>
                 {payment.status}
               </span>
             </td>
