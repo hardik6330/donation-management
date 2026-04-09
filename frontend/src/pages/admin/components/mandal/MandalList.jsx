@@ -64,7 +64,7 @@ const MandalList = ({
                 disabled={!hasPermission('mandal', 'entry')}
                 className={`flex items-center gap-1 text-xs font-bold uppercase transition ${getActiveHoverColor(mandal.isActive)}`}
               >
-                {mandal.isActive ? <><CheckCircle className="w-3 h-3" /> {getActiveLabel(true)}</> : <><XCircle className="w-3 h-3" /> {getActiveLabel(false)}</>}
+                {mandal.isActive ? <>{getActiveLabel(true)}</> : <>{getActiveLabel(false)}</>}
               </button>
             </td>
             <td className="px-6 py-4 text-sm font-medium">
