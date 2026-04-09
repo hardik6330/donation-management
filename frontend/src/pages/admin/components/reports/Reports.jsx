@@ -198,7 +198,7 @@ const Reports = () => {
       (d.gaushala?.name || d.katha?.name || '-'),
       `${d.donor?.village || ''}, ${d.donor?.district || ''}`,
       d.paymentMode?.toUpperCase() || '-',
-      `₹${d.amount.toLocaleString('en-IN')}`,
+      `Rs. ${Number(d.amount).toLocaleString('en-IN')}`,
       d.status?.toUpperCase() || '-',
       d.paymentDate ? new Date(d.paymentDate).toLocaleDateString() : '-'
     ]);
