@@ -34,7 +34,7 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
     { id: 'katha', label: 'Katha', icon: Mic2, path: '/admin/katha', show: hasPermission('katha') },
     { id: 'mandal', label: 'Mandal', icon: UsersRound, path: '/admin/mandal', show: hasPermission('mandal') },
     { id: 'kartal-dhun', label: 'Kartal Dhun', icon: Music, path: '/admin/kartal-dhun', show: hasPermission('kartalDhun') },
-    { id: 'bapu-schedule', label: 'Bapu Schedule', icon: Calendar, path: '/admin/bapu-schedule', show: hasPermission('bapuSchedule') },
+    { id: 'bapu-schedule', label: 'Bapu Events', icon: Calendar, path: '/admin/bapu-schedule', show: hasPermission('bapuSchedule') },
     { id: 'category', label: 'Category', icon: Tags, path: '/admin/category', show: hasPermission('category') },
     { id: 'location', label: 'Location', icon: MapPin, path: '/admin/location', show: hasPermission('location') },
     { id: 'role', label: 'Role', icon: Users, path: '/admin/roles', show: hasPermission('users') },
