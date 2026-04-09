@@ -32,7 +32,7 @@ const BapuScheduleList = ({
   ];
 
   const filterFields = [
-    { name: 'startDate', label: 'Start Date', type: 'date', icon: Calendar },
+    { name: 'startDate', label: 'Event Date', type: 'date', icon: Calendar },
     { 
       name: 'cityId', 
       label: 'City', 
