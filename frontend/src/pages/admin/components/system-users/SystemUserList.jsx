@@ -53,7 +53,7 @@ const SystemUserList = ({
             </td>
             <td className="px-6 py-4 text-sm font-medium">
               <div className="flex items-center gap-2">
-                {hasPermission('systemUsers', 'entry') && (
+                {hasPermission('users', 'entry') && (
                   <button 
                     onClick={() => onEdit(user)} 
                     className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" 
@@ -62,7 +62,7 @@ const SystemUserList = ({
                     <Edit className="w-4 h-4" />
                   </button>
                 )}
-                {hasPermission('systemUsers', 'full') && (
+                {hasPermission('users', 'full') && (
                   <button 
                     onClick={() => onDelete(user.id)} 
                     disabled={isDeleting}

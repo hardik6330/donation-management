@@ -71,7 +71,7 @@ const SystemUser = () => {
       <AdminPageHeader 
         title="System Users" 
         subtitle="Manage admin, manager and operator accounts"
-        buttonText={hasPermission('systemUsers', 'entry') ? "Add User" : null}
+        buttonText={hasPermission('users', 'entry') ? "Add User" : null}
         onButtonClick={handleAdd}
       />
 

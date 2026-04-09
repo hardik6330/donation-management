@@ -14,13 +14,17 @@ const usePermissions = () => {
    * @returns {boolean}
    */
   const hasPermission = (module, level = 'view') => {
-    if (user.isAdmin) return true;
-    
     const userPerm = perms[module];
-    if (!userPerm || userPerm === 'none') return false;
-
     const levels = { none: 0, view: 1, entry: 2, full: 3 };
-    return (levels[userPerm] || 0) >= (levels[level] || 0);
+
+    // 1. If permission is explicitly set in the role, respect it (even if user is admin)
+    if (userPerm !== undefined) {
+      if (userPerm === 'none') return false;
+      return (levels[userPerm] || 0) >= (levels[level] || 0);
+    }
+
+    // 2. Fallback to isAdmin if no specific permission is defined for the module
+    return user.isAdmin || false;
   };
 
   return {
