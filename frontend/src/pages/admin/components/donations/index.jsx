@@ -75,9 +75,11 @@ const Donation = () => {
   });
 
   const [triggerGetCategories] = useLazyGetCategoriesQuery();
+  const [triggerGetActiveCategories] = useLazyGetCategoriesQuery();
   const categoryPagination = useDropdownPagination(triggerGetCategories, {
     additionalParams: { all: true }
   });
+  const activeCategoryPagination = useDropdownPagination(triggerGetActiveCategories);
 
   const donations = donationsData?.data?.donations || [];
   const pagination = {
@@ -209,7 +211,7 @@ const Donation = () => {
           villagePagination={villagePagination}
           gaushalaPagination={gaushalaPagination}
           kathaPagination={kathaPagination}
-          categoryPagination={categoryPagination}
+          categoryPagination={activeCategoryPagination}
           setModalState={setModalState}
         />
       )}
