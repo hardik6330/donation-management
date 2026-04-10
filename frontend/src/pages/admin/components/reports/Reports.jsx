@@ -378,7 +378,7 @@ const Reports = () => {
     { label: 'Cause / Purpose' },
     { label: 'Gaushala / Katha' },
     { label: 'Location' },
-    { label: 'Amount' },
+    { label: 'Amount', className: 'text-right' },
     { label: 'Status' },
     { label: 'Payment Date' },
   ];
@@ -420,7 +420,10 @@ const Reports = () => {
         </div>
         <div>
           <span className="text-sm text-gray-500">Total Amount:</span>
-          <span className="ml-2 font-bold text-blue-600">₹{exportDonations.reduce((sum, d) => sum + (d.amount || 0), 0).toLocaleString('en-IN')}</span>
+          <span className="ml-2 inline-flex items-center gap-0.5 font-bold text-blue-700">
+            <IndianRupee className="w-3.5 h-3.5" />
+            {exportDonations.reduce((sum, d) => sum + (d.amount || 0), 0).toLocaleString('en-IN')}
+          </span>
         </div>
       </div>
 
@@ -448,8 +451,11 @@ const Reports = () => {
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="text-sm text-gray-700">{donation.donor?.village || '-'}, {donation.donor?.district || '-'}</div>
             </td>
-            <td className="p-3 sm:p-4 px-4 sm:px-6">
-              <div className="font-bold text-gray-900 text-sm">₹{donation.amount.toLocaleString('en-IN')}</div>
+            <td className="p-3 sm:p-4 px-4 sm:px-6 text-right">
+              <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(donation.amount || 0).toLocaleString('en-IN')}
+              </div>
               <div className="text-[10px] text-gray-500 uppercase">{donation.paymentMode}</div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
