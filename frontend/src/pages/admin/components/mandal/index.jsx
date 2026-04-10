@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import MandalList from './MandalList';
 import AddMandalModal from './AddMandalModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { NavLink } from 'react-router-dom';
@@ -11,6 +12,8 @@ import { toast } from 'react-toastify';
 const Mandal = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingMandal, setEditingMandal] = useState(null);
   const [generatedMandals, setGeneratedMandals] = useState(new Set());
 
@@ -48,14 +51,19 @@ const Mandal = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this mandal? All members & payments will be lost.')) {
-      try {
-        await deleteMandal(id).unwrap();
-        toast.success('Mandal deleted');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteMandal(deletingId).unwrap();
+      toast.success('Mandal deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete mandal');
     }
   };
 
@@ -144,6 +152,18 @@ const Mandal = () => {
           key={editingMandal?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Mandal"
+        message="Are you sure you want to delete this mandal? All members and payments will be lost. This action cannot be undone."
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import KathaList from './KathaList';
 import AddKathaModal from './AddKathaModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetKathasQuery, useDeleteKathaMutation, useGetCitiesQuery, useGetSubLocationsQuery } from '../../../../services/apiSlice';
@@ -9,6 +10,8 @@ import { toast } from 'react-toastify';
 const Katha = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingKatha, setEditingKatha] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -49,14 +52,19 @@ const Katha = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this katha?')) {
-      try {
-        await deleteKatha(id).unwrap();
-        toast.success('Katha deleted successfully');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete katha');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteKatha(deletingId).unwrap();
+      toast.success('Katha deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete katha');
     }
   };
 
@@ -96,25 +104,34 @@ const Katha = () => {
         talukas={talukas}
         villages={villages}
         isLoading={loading}
-        isDeleting={isDeleting}
         pagination={pagination}
         filters={filters}
-        onEdit={handleEdit} 
+        onEdit={handleEdit}
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
-        hasPermission={hasPermission} 
+        hasPermission={hasPermission}
       />
 
-      {isModalOpen && (
-        <AddKathaModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          editingKatha={editingKatha}
-          key={editingKatha?.id || 'new'}
-        />
-      )}
+      <AddKathaModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        editingKatha={editingKatha}
+        cities={cities}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Katha"
+        message="Are you sure you want to delete this katha? This action cannot be undone."
+      />
     </div>
   );
 };

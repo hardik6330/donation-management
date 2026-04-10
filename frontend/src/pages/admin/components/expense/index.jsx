@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ExpenseList from './ExpenseList';
 import AddExpenseModal from './AddExpenseModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetExpensesQuery, useDeleteExpenseMutation, useGetGaushalasQuery, useGetKathasQuery } from '../../../../services/apiSlice';
@@ -9,6 +10,8 @@ import { toast } from 'react-toastify';
 const Expense = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -50,14 +53,19 @@ const Expense = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
-      try {
-        await deleteExpense(id).unwrap();
-        toast.success('Expense deleted successfully');
-      } catch (error) {
-        toast.error(error?.data?.message || 'Failed to delete expense');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteExpense(deletingId).unwrap();
+      toast.success('Expense deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (error) {
+      toast.error(error?.data?.message || 'Failed to delete expense');
     }
   };
 
@@ -115,9 +123,23 @@ const Expense = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           editingExpense={editingExpense}
+          gaushalas={gaushalas}
+          kathas={kathas}
           key={editingExpense?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Expense"
+        message="Are you sure you want to delete this expense? This action cannot be undone."
+      />
     </div>
   );
 };

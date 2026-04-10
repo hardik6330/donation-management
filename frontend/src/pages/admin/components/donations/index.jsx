@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DonationList from './DonationList';
 import AddDonationModal from './AddDonationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { 
-  useGetAllDonationsQuery, 
+import {
+  useGetAllDonationsQuery,
   useGetCitiesQuery,
   useGetSubLocationsQuery,
   useGetGaushalasQuery,
@@ -15,6 +16,7 @@ import {
 const Donation = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchParams] = useSearchParams();
 
   const [filters, setFilters] = useState({
     search: '',
@@ -26,8 +28,8 @@ const Donation = () => {
     cityId: '',
     talukaId: '',
     villageId: '',
-    gaushalaId: '',
-    kathaId: '',
+    gaushalaId: searchParams.get('gaushalaId') || '',
+    kathaId: searchParams.get('kathaId') || '',
     status: '',
     page: 1,
     limit: 10,
@@ -44,10 +46,12 @@ const Donation = () => {
   const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
   const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
 
-  // Filter Gaushalas and Kathas based on location filters
+  // Gaushalas and Kathas - load all by default, filter by location when selected
   const filterLocationId = filters.villageId || filters.talukaId || filters.cityId;
-  const { data: filterGaushalasData } = useGetGaushalasQuery({ locationId: filterLocationId, fetchAll: 'true' }, { skip: !filterLocationId });
-  const { data: filterKathasData } = useGetKathasQuery({ locationId: filterLocationId, fetchAll: 'true' }, { skip: !filterLocationId });
+  const gaushalaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
+  const kathaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
+  const { data: filterGaushalasData } = useGetGaushalasQuery(gaushalaParams);
+  const { data: filterKathasData } = useGetKathasQuery(kathaParams);
 
   const filterCities = filterCitiesData?.data || [];
   const filterTalukas = filterTalukasData?.data || [];

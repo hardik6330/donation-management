@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import LocationList from './LocationList';
 import AddLocationModal from './AddLocationModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetCitiesQuery, useGetSubLocationsQuery, useDeleteLocationMutation } from '../../../../services/apiSlice';
@@ -10,6 +11,8 @@ import { ChevronRight, Home } from 'lucide-react';
 const Location = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingLocation, setEditingLocation] = useState(null);
 
   // Breadcrumb navigation state
@@ -56,14 +59,19 @@ const Location = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure? This will only delete if it has no sub-locations or linked donations.')) {
-      try {
-        await deleteLocation(id).unwrap();
-        toast.success('Location deleted successfully');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete location');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteLocation(deletingId).unwrap();
+      toast.success('Location deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete location');
     }
   };
 
@@ -98,9 +106,7 @@ const Location = () => {
               <button
                 onClick={() => handleBreadcrumbClick(index)}
                 className={`font-semibold transition capitalize ${
-                  index === breadcrumb.length - 1
-                    ? 'text-gray-800 cursor-default'
-                    : 'text-blue-600 hover:text-blue-700'
+                  index === breadcrumb.length - 1 ? 'text-gray-500 cursor-default' : 'text-blue-600 hover:text-blue-700'
                 }`}
               >
                 {item.name}
@@ -113,12 +119,10 @@ const Location = () => {
       <LocationList
         locations={locations}
         isLoading={isLoading}
-        isDeleting={isDeleting}
-        currentLevel={currentLevel}
-        canDrillDown={canDrillDown}
-        onView={handleDrillDown}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onView={handleDrillDown}
+        canViewSub={canDrillDown}
         hasPermission={hasPermission}
       />
 
@@ -127,9 +131,23 @@ const Location = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           editingData={editingLocation}
+          parentId={currentParent?.id}
+          level={currentLevel}
           key={editingLocation?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Location"
+        message="Are you sure you want to delete this location? This action cannot be undone and will only work if it has no sub-locations or linked donations."
+      />
     </div>
   );
 };

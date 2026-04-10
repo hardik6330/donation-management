@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import BapuScheduleList from './BapuScheduleList';
 import AddBapuScheduleModal from './AddBapuScheduleModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { 
@@ -14,6 +15,8 @@ import { toast } from 'react-toastify';
 const BapuSchedule = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingSchedule, setEditingSchedule] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -61,14 +64,19 @@ const BapuSchedule = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this schedule?')) {
-      try {
-        await deleteSchedule(id).unwrap();
-        toast.success('Schedule deleted successfully');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete schedule');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteSchedule(deletingId).unwrap();
+      toast.success('Schedule deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete schedule');
     }
   };
 
@@ -145,6 +153,18 @@ const BapuSchedule = () => {
           key={editingSchedule?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Schedule"
+        message="Are you sure you want to delete this schedule? This action cannot be undone."
+      />
     </div>
   );
 };

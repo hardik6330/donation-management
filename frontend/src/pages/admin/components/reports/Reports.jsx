@@ -49,10 +49,12 @@ const Reports = () => {
   const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
   const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
 
-  // Filter Gaushalas and Kathas based on location filters
+  // Gaushalas and Kathas - load all by default, filter by location when selected
   const filterLocationId = filters.villageId || filters.talukaId || filters.cityId;
-  const { data: filterGaushalasData } = useGetGaushalasQuery({ locationId: filterLocationId, fetchAll: 'true' }, { skip: !filterLocationId });
-  const { data: filterKathasData } = useGetKathasQuery({ locationId: filterLocationId, fetchAll: 'true' }, { skip: !filterLocationId });
+  const gaushalaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
+  const kathaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
+  const { data: filterGaushalasData } = useGetGaushalasQuery(gaushalaParams);
+  const { data: filterKathasData } = useGetKathasQuery(kathaParams);
 
   const filterCities = filterCitiesData?.data || [];
   const filterTalukas = filterTalukasData?.data || [];

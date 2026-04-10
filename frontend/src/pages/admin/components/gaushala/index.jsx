@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import GaushalaList from './GaushalaList';
 import AddGaushalaModal from './AddGaushalaModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetGaushalasQuery, useDeleteGaushalaMutation, useGetCitiesQuery, useGetSubLocationsQuery } from '../../../../services/apiSlice';
@@ -9,6 +10,8 @@ import { toast } from 'react-toastify';
 const Gaushala = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingGaushala, setEditingGaushala] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -50,14 +53,19 @@ const Gaushala = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this gaushala?')) {
-      try {
-        await deleteGaushala(id).unwrap();
-        toast.success('Gaushala deleted successfully');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete gaushala');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteGaushala(deletingId).unwrap();
+      toast.success('Gaushala deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete gaushala');
     }
   };
 
@@ -97,15 +105,14 @@ const Gaushala = () => {
         talukas={talukas}
         villages={villages}
         isLoading={loading}
-        isDeleting={isDeleting}
         pagination={pagination}
         filters={filters}
-        onEdit={handleEdit} 
+        onEdit={handleEdit}
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
-        hasPermission={hasPermission} 
+        hasPermission={hasPermission}
       />
 
       {isModalOpen && (
@@ -113,9 +120,22 @@ const Gaushala = () => {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           editingGaushala={editingGaushala}
+          cities={cities}
           key={editingGaushala?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Gaushala"
+        message="Are you sure you want to delete this gaushala? This action cannot be undone."
+      />
     </div>
   );
 };

@@ -10,47 +10,50 @@ import { Op, fn, col } from 'sequelize';
 
 export const getAdminStats = async (req, res) => {
   try {
-    // 1. Total Unique Donors count (Only those who have completed at least one donation)
-    const totalUsersResult = await Donation.count({
-      where: { status: 'completed' },
-      distinct: true,
-      col: 'donorId'
-    });
+    // 1. Run queries in parallel for better performance
+    const [totalUsersResult, totalDonationsData, topDonorData] = await Promise.all([
+      // Total Unique Donors count
+      Donation.count({
+        where: { status: 'completed' },
+        distinct: true,
+        col: 'donorId'
+      }),
+      
+      // Total Amount and Total Successful Donation Count
+      Donation.findAll({
+        where: { status: 'completed' },
+        attributes: [
+          [fn('SUM', col('amount')), 'totalAmount'],
+          [fn('COUNT', col('id')), 'count']
+        ],
+        raw: true
+      }),
 
-    // 2. Total Amount and Total Successful Donation Count
-    const totalDonationsData = await Donation.findAll({
-      where: { status: 'completed' },
-      attributes: [
-        [fn('SUM', col('amount')), 'totalAmount'],
-        [fn('COUNT', col('id')), 'count']
-      ],
-      raw: true
-    });
+      // Top Donor
+      Donation.findAll({
+        where: { status: 'completed' },
+        attributes: [
+          'donorId',
+          [fn('SUM', col('amount')), 'totalAmount']
+        ],
+        include: [{
+          model: User,
+          as: 'donor',
+          attributes: ['name', 'email', 'village', 'district']
+        }],
+        group: ['donorId', 'donor.id'],
+        order: [[fn('SUM', col('amount')), 'DESC']],
+        limit: 1,
+        raw: true,
+        nest: true
+      })
+    ]);
 
     const stats = {
       totalUsers: totalUsersResult,
       totalDonationAmount: parseFloat(totalDonationsData[0]?.totalAmount || 0),
       totalDonationCount: parseInt(totalDonationsData[0]?.count || 0)
     };
-
-    // 3. Top Donor (Person who has donated the maximum total amount)
-    const topDonorData = await Donation.findAll({
-      where: { status: 'completed' },
-      attributes: [
-        'donorId',
-        [fn('SUM', col('amount')), 'totalAmount']
-      ],
-      include: [{
-        model: User,
-        as: 'donor',
-        attributes: ['name', 'email', 'village', 'district']
-      }],
-      group: ['donorId', 'donor.id'],
-      order: [[fn('SUM', col('amount')), 'DESC']],
-      limit: 1,
-      raw: true,
-      nest: true
-    });
 
     if (topDonorData.length > 0) {
       const topDonor = topDonorData[0];

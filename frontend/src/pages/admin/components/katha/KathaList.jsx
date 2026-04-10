@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Calendar, Search, Edit, Trash2, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
@@ -20,6 +21,8 @@ const KathaList = ({
   onPageChange,
   hasPermission
 }) => {
+  const navigate = useNavigate();
+
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
     {
@@ -72,7 +75,11 @@ const KathaList = ({
         emptyMessage="No kathas found."
       >
         {kathas.map((katha) => (
-          <tr key={katha.id} className="hover:bg-gray-50 transition">
+          <tr
+            key={katha.id}
+            className="hover:bg-blue-50/50 transition cursor-pointer"
+            onClick={() => navigate(`/admin/donations?kathaId=${katha.id}`)}
+          >
             <td className="p-4 px-6 font-bold text-gray-800">{katha.name}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.city}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.taluka}</td>
@@ -95,7 +102,7 @@ const KathaList = ({
                 {katha.status}
               </span>
             </td>
-            <td className="p-4 px-6">
+            <td className="p-4 px-6" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-2">
                 {hasPermission('katha', 'entry') && (
                   <button

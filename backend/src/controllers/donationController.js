@@ -14,6 +14,7 @@ import { sequelize } from '../config/db.js';
 import { FRONTEND_URL, RAZORPAY_KEY_SECRET, RAZORPAY_KEY_ID } from '../config/db.js';
 import { Op } from 'sequelize';
 import { sendEmail, getDonationEmailTemplate } from '../utils/emailService.js';
+import { sendDetailedDonationSMS } from '../utils/smsService.js';
 import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/donationSlip.js';
 
 // 1. QR Code Generate Karo
@@ -145,26 +146,88 @@ export const createDonationOrder = async (req, res) => {
     if (paymentMode === 'cash' || paymentMode === 'pay_later') {
       const donation = await Donation.create(donationData);
       
-      // Generate slip, upload to Cloudinary, save URL, and send email for Cash Donation
+      // Generate slip, upload to Cloudinary, save URL, and send email/SMS for Cash Donation
       if (paymentMode === 'cash') {
-        try {
-          const gaushala = gaushalaId ? await Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null;
-          const katha = kathaId ? await Katha.findByPk(kathaId) : null;
-
-          const pdfBuffer = await generateDonationSlipBuffer(user, amount, causeString, donation.id, paymentMode, donation.paymentDate, gaushala, katha);
-          const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id);
-          await donation.update({ slipUrl: cloudinaryUrl });
-          console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
-
-          if (user.email) {
-            const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
-            await sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
-              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+        // Run background tasks without blocking the main response if possible
+        // But in serverless we should wait to ensure they finish.
+        // Using Promise.all to run them in parallel.
+        (async () => {
+          try {
+            const [gaushala, katha] = await Promise.all([
+              gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
+              kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null)
             ]);
+
+            const pdfBuffer = await generateDonationSlipBuffer(user, amount, causeString, donation.id, paymentMode, donation.paymentDate, gaushala, katha);
+            
+            // Start Cloudinary, Email, and SMS tasks in parallel
+            const tasks = [];
+            
+            // 1. Cloudinary Upload
+            const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
+              .then(url => donation.update({ slipUrl: url }))
+              .catch(err => console.error('❌ Cloudinary Upload Error:', err));
+            tasks.push(uploadTask);
+
+            // 2. Email Task
+            if (user.email) {
+              const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
+              const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
+                { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+              ]).catch(err => console.error('❌ Email Error:', err));
+              tasks.push(emailTask);
+            }
+
+            // 3. SMS Task
+            if (user.mobileNumber) {
+              const smsTask = (async () => {
+                try {
+                  const [category, locData] = await Promise.all([
+                    categoryId ? Category.findByPk(categoryId) : Promise.resolve(null),
+                    (async () => {
+                      const locId = villageId || talukaId || cityId;
+                      if (!locId) return null;
+                      return Location.findByPk(locId, {
+                        include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+                      });
+                    })()
+                  ]);
+
+                  let city = '', taluka = '', village = '';
+                  if (locData) {
+                    if (locData.type === 'village') {
+                      village = locData.name;
+                      taluka = locData.parent?.name || '';
+                      city = locData.parent?.parent?.name || '';
+                    } else if (locData.type === 'taluka') {
+                      taluka = locData.name;
+                      city = locData.parent?.name || '';
+                    } else {
+                      city = locData.name;
+                    }
+                  }
+
+                  await sendDetailedDonationSMS(user.name, amount, donation.id, user.mobileNumber, {
+                    category: category?.name,
+                    gaushala: gaushala?.name,
+                    katha: katha?.name,
+                    city,
+                    taluka,
+                    village
+                  });
+                } catch (err) {
+                  console.error('❌ SMS Task Error:', err);
+                }
+              })();
+              tasks.push(smsTask);
+            }
+
+            await Promise.all(tasks);
+            console.log(`✅ All post-donation tasks completed for donation ${donation.id}`);
+          } catch (error) {
+            console.error('❌ Background tasks failed:', error);
           }
-        } catch (slipError) {
-          console.error('❌ Slip generation/upload error (donation still saved):', slipError);
-        }
+        })();
       }
 
       const message = paymentMode === 'cash'
@@ -239,6 +302,42 @@ export const verifyPayment = async (req, res) => {
             await sendEmail(donor.email, 'Donation Successful - Thank You!', emailHtml, [
               { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
             ]);
+          }
+
+          // Send SMS notification
+          if (donor.mobileNumber) {
+            const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
+            const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId) : null;
+            const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
+            
+            let city = '', taluka = '', village = '';
+            const locId = donation.locationId;
+            if (locId) {
+              const loc = await Location.findByPk(locId, {
+                include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+              });
+              if (loc) {
+                if (loc.type === 'village') {
+                  village = loc.name;
+                  taluka = loc.parent?.name || '';
+                  city = loc.parent?.parent?.name || '';
+                } else if (loc.type === 'taluka') {
+                  taluka = loc.name;
+                  city = loc.parent?.name || '';
+                } else {
+                  city = loc.name;
+                }
+              }
+            }
+
+            await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
+              category: category?.name,
+              gaushala: gaushala?.name,
+              katha: katha?.name,
+              city,
+              taluka,
+              village
+            });
           }
         } catch (slipError) {
           console.error('❌ Slip generation/upload error (payment still verified):', slipError);
@@ -431,6 +530,42 @@ export const updateDonation = async (req, res) => {
             await sendEmail(donor.email, 'Donation Completed - Thank You!', emailHtml, [
               { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
             ]);
+          }
+
+          // Send SMS notification
+          if (donor.mobileNumber) {
+            const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
+            const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId) : null;
+            const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
+            
+            let city = '', taluka = '', village = '';
+            const locId = donation.locationId;
+            if (locId) {
+              const loc = await Location.findByPk(locId, {
+                include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+              });
+              if (loc) {
+                if (loc.type === 'village') {
+                  village = loc.name;
+                  taluka = loc.parent?.name || '';
+                  city = loc.parent?.parent?.name || '';
+                } else if (loc.type === 'taluka') {
+                  taluka = loc.name;
+                  city = loc.parent?.name || '';
+                } else {
+                  city = loc.name;
+                }
+              }
+            }
+
+            await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
+              category: category?.name,
+              gaushala: gaushala?.name,
+              katha: katha?.name,
+              city,
+              taluka,
+              village
+            });
           }
         } catch (slipError) {
           console.error('❌ Slip generation/upload error (donation still updated):', slipError);

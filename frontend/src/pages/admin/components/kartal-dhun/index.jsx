@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import KartalDhunList from './KartalDhunList';
 import AddKartalDhunModal from './AddKartalDhunModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { 
@@ -14,6 +15,8 @@ import { toast } from 'react-toastify';
 const KartalDhun = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -58,14 +61,19 @@ const KartalDhun = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this record?')) {
-      try {
-        await deleteRecord(id).unwrap();
-        toast.success('Record deleted');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteRecord(deletingId).unwrap();
+      toast.success('Record deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete record');
     }
   };
 
@@ -108,39 +116,45 @@ const KartalDhun = () => {
   return (
     <div className="space-y-6">
       <AdminPageHeader 
-        title="Kartal Dhun Income" 
-        subtitle="Track and manage kartal dhun income records"
-        buttonText={hasPermission('kartalDhun', 'entry') ? "Add Income" : null}
+        title="Kartal Dhun Management" 
+        subtitle="Manage and track kartal dhun records"
+        buttonText={hasPermission('kartalDhun', 'entry') ? "Add Record" : null}
         onButtonClick={handleAdd}
       />
 
       <KartalDhunList 
         records={records}
         isLoading={loading}
-        isDeleting={isDeleting}
         pagination={pagination}
         filters={filters}
-        filterData={{
-          cities: filterCities,
-          talukas: filterTalukas,
-          villages: filterVillages
-        }}
-        onEdit={handleEdit} 
+        onEdit={handleEdit}
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
-        hasPermission={hasPermission} 
+        hasPermission={hasPermission}
+        cities={filterCities}
+        talukas={filterTalukas}
+        villages={filterVillages}
       />
 
-      {isModalOpen && (
-        <AddKartalDhunModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          editingRecord={editingRecord}
-          key={editingRecord?.id || 'new'}
-        />
-      )}
+      <AddKartalDhunModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        editingRecord={editingRecord}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Record"
+        message="Are you sure you want to delete this record? This action cannot be undone."
+      />
     </div>
   );
 };

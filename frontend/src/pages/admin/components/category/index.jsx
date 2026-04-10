@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import CategoryList from './CategoryList';
 import AddCategoryModal from './AddCategoryModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetCategoriesQuery, useUpdateCategoryMutation, useDeleteCategoryMutation } from '../../../../services/apiSlice';
@@ -9,6 +10,8 @@ import { toast } from 'react-toastify';
 const Category = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingCategory, setEditingCategory] = useState(null);
 
   // API calls moved to index.jsx
@@ -36,14 +39,19 @@ const Category = () => {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this category? This will only work if no donations are linked to it.')) {
-      try {
-        await deleteCategory(id).unwrap();
-        toast.success('Category deleted successfully');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete category');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteCategory(deletingId).unwrap();
+      toast.success('Category deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete category');
     }
   };
 
@@ -75,6 +83,18 @@ const Category = () => {
           key={editingCategory?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? This action cannot be undone and will only work if no donations are linked to it."
+      />
     </div>
   );
 };

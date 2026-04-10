@@ -15,6 +15,7 @@ import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import AddMemberModal from './AddMemberModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 
 const MandalMemberList = () => {
   const [filters, setFilters] = useState({
@@ -25,6 +26,8 @@ const MandalMemberList = () => {
     limit: 10
   });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingMember, setEditingMember] = useState(null);
 
   const { data: membersData, isLoading } = useGetMandalMembersQuery(filters);
@@ -54,14 +57,19 @@ const MandalMemberList = () => {
 
   const handlePageChange = (page) => setFilters(prev => ({ ...prev, page }));
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this member?')) {
-      try {
-        await deleteMember(id).unwrap();
-        toast.success('Member deleted');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteMember(deletingId).unwrap();
+      toast.success('Member deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete member');
     }
   };
 
@@ -154,7 +162,24 @@ const MandalMemberList = () => {
         </div>
       )}
 
-      <AddMemberModal isOpen={isAddModalOpen} onClose={() => setIsAddModalOpen(false)} editingMember={editingMember} />
+      <AddMemberModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        editingData={editingMember}
+        mandals={mandals}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Member"
+        message="Are you sure you want to delete this member? This action cannot be undone."
+      />
     </div>
   );
 };

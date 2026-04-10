@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Building2, Search, Edit, Trash2, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
@@ -20,6 +21,8 @@ const GaushalaList = ({
   onPageChange,
   hasPermission
 }) => {
+  const navigate = useNavigate();
+
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
     {
@@ -70,7 +73,11 @@ const GaushalaList = ({
         emptyMessage="No gaushalas found."
       >
         {gaushalas.map((gaushala) => (
-          <tr key={gaushala.id} className="hover:bg-gray-50 transition">
+          <tr
+            key={gaushala.id}
+            className="hover:bg-blue-50/50 transition cursor-pointer"
+            onClick={() => navigate(`/admin/donations?gaushalaId=${gaushala.id}`)}
+          >
             <td className="p-4 px-6 font-bold text-gray-800">{gaushala.name}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.city}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.taluka}</td>
@@ -87,7 +94,7 @@ const GaushalaList = ({
                 {getActiveLabel(gaushala.isActive)}
               </span>
             </td>
-            <td className="p-4 px-6">
+            <td className="p-4 px-6" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-2">
                 {hasPermission('gaushala', 'entry') && (
                   <button

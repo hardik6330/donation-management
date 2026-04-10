@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SevakList from './SevakList';
 import AddSevakModal from './AddSevakModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetSevaksQuery, useDeleteSevakMutation, useUpdateSevakMutation } from '../../../../services/apiSlice';
@@ -9,6 +10,8 @@ import { toast } from 'react-toastify';
 const Sevak = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingSevak, setEditingSevak] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -59,14 +62,19 @@ const Sevak = () => {
     });
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this sevak?')) {
-      try {
-        await deleteSevak(id).unwrap();
-        toast.success('Sevak deleted successfully');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete sevak');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteSevak(deletingId).unwrap();
+      toast.success('Sevak deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete sevak');
     }
   };
 
@@ -115,6 +123,18 @@ const Sevak = () => {
           key={editingSevak?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Sevak"
+        message="Are you sure you want to delete this sevak? This action cannot be undone."
+      />
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import RoleList from './RoleList';
 import AddRoleModal from './AddRoleModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetRolesQuery, useDeleteRoleMutation } from '../../../../services/apiSlice';
@@ -40,6 +41,8 @@ const parsePerms = (perms) => {
 const Roles = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingRole, setEditingRole] = useState(null);
 
   // API calls
@@ -57,14 +60,19 @@ const Roles = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this role?')) {
-      try {
-        await deleteRole(id).unwrap();
-        toast.success('Role deleted');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteRole(deletingId).unwrap();
+      toast.success('Role deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete role');
     }
   };
 
@@ -100,6 +108,18 @@ const Roles = () => {
           key={editingRole?.id || 'new'}
         />
       )}
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete Role"
+        message="Are you sure you want to delete this role? This action cannot be undone."
+      />
     </div>
   );
 };

@@ -19,19 +19,28 @@ const numCPUs = os.cpus().length;
 let dbInitialized = false;
 let dbInitPromise = null;
 
-const initDB = async () => {
-  if (dbInitialized) return;
-  if (dbInitPromise) return dbInitPromise;
+const initDB = async (force = false) => {
+  if (dbInitialized && !force) return;
+  if (dbInitPromise && !force) return dbInitPromise;
 
   dbInitPromise = (async () => {
     try {
       await connectDB();
-      // In development, alter: false initially to avoid constraint errors, then use migration or manual fixes
-      const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
-      await sequelize.sync(syncOptions);
-      console.log('✅ Database synchronized (Tables created/updated)');
-      await seedRoles();
-      await seedAdmin();
+      
+      // OPTIMIZATION: Only sync and seed in development or when explicitly requested
+      // Running sync and seed on every cold start in serverless is very expensive
+      const shouldSync = NODE_ENV === 'development' || process.env.FORCE_DB_SYNC === 'true';
+      
+      if (shouldSync) {
+        const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
+        await sequelize.sync(syncOptions);
+        console.log('✅ Database synchronized (Tables created/updated)');
+        await seedRoles();
+        await seedAdmin();
+      } else {
+        console.log('ℹ️ Database sync skipped (Production mode)');
+      }
+      
       dbInitialized = true;
       dbInitPromise = null;
     } catch (error) {

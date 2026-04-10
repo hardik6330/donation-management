@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import SystemUserList from './SystemUserList';
 import AddSystemUserModal from './AddSystemUserModal';
+import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetSystemUsersQuery, useDeleteSystemUserMutation, useGetRolesQuery } from '../../../../services/apiSlice';
@@ -9,6 +10,8 @@ import { toast } from 'react-toastify';
 const SystemUser = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
 
   const [filters, setFilters] = useState({
@@ -42,14 +45,19 @@ const SystemUser = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this user?')) {
-      try {
-        await deleteUser(id).unwrap();
-        toast.success('User deleted');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to delete');
-      }
+  const handleDelete = (id) => {
+    setDeletingId(id);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await deleteUser(deletingId).unwrap();
+      toast.success('User deleted successfully');
+      setIsDeleteModalOpen(false);
+      setDeletingId(null);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete user');
     }
   };
 
@@ -90,14 +98,23 @@ const SystemUser = () => {
         hasPermission={hasPermission} 
       />
 
-      {isModalOpen && (
-        <AddSystemUserModal 
-          isOpen={isModalOpen} 
-          onClose={() => setIsModalOpen(false)} 
-          editingUser={editingUser}
-          key={editingUser?.id || 'new'}
-        />
-      )}
+      <AddSystemUserModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        editingUser={editingUser}
+      />
+
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setDeletingId(null);
+        }}
+        onConfirm={confirmDelete}
+        isLoading={isDeleting}
+        title="Delete User"
+        message="Are you sure you want to delete this user? This action cannot be undone."
+      />
     </div>
   );
 };
