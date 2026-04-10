@@ -199,7 +199,7 @@ const DonationList = ({
                     <FileDown className="w-4 h-4" />
                   </button>
                 )}
-                {hasPermission('donations', 'full') && (
+                {/* {hasPermission('donations', 'full') && (
                   <button
                     onClick={() => onDelete(donation.id)}
                     className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -207,7 +207,7 @@ const DonationList = ({
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
-                )}
+                )} */}
               </div>
             </td>
           </tr>
