@@ -6,12 +6,13 @@ import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import {
   useGetAllDonationsQuery,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery,
-  useGetGaushalasQuery,
-  useGetKathasQuery,
-  useGetCategoriesQuery
+  useLazyGetCitiesQuery,
+  useLazyGetSubLocationsQuery,
+  useLazyGetGaushalasQuery,
+  useLazyGetKathasQuery,
+  useLazyGetCategoriesQuery
 } from '../../../../services/apiSlice';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 
 const Donation = () => {
   const { hasPermission } = usePermissions();
@@ -37,28 +38,41 @@ const Donation = () => {
     fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,'
   });
 
-  // API calls moved to index.jsx
+  // API calls
   const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(filters);
-  const { data: categoriesData } = useGetCategoriesQuery();
+  
+  // Dropdown Paginations
+  const [triggerGetCities] = useLazyGetCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities);
 
-  // Location Data for Filters
-  const { data: filterCitiesData } = useGetCitiesQuery();
-  const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
-  const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
+  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
+  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
+    additionalParams: { parentId: filters.cityId },
+    skip: !filters.cityId
+  });
 
-  // Gaushalas and Kathas - load all by default, filter by location when selected
-  const filterLocationId = filters.villageId || filters.talukaId || filters.cityId;
-  const gaushalaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
-  const kathaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
-  const { data: filterGaushalasData } = useGetGaushalasQuery(gaushalaParams);
-  const { data: filterKathasData } = useGetKathasQuery(kathaParams);
+  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
+  const villagePagination = useDropdownPagination(triggerGetVillages, {
+    additionalParams: { parentId: filters.talukaId },
+    skip: !filters.talukaId
+  });
 
-  const filterCities = filterCitiesData?.data || [];
-  const filterTalukas = filterTalukasData?.data || [];
-  const filterVillages = filterVillagesData?.data || [];
-  const filterGaushalas = filterGaushalasData?.data?.rows || [];
-  const filterKathas = filterKathasData?.data?.rows || [];
-  const categories = categoriesData?.data || [];
+  const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
+  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, {
+    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+    rowsKey: 'rows'
+  });
+
+  const [triggerGetKathas] = useLazyGetKathasQuery();
+  const kathaPagination = useDropdownPagination(triggerGetKathas, {
+    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+    rowsKey: 'rows'
+  });
+
+  const [triggerGetCategories] = useLazyGetCategoriesQuery();
+  const categoryPagination = useDropdownPagination(triggerGetCategories, {
+    additionalParams: { all: true }
+  });
 
   const donations = donationsData?.data?.donations || [];
   const pagination = {
@@ -77,10 +91,13 @@ const Donation = () => {
     
     if (name === 'cityId') {
       setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
+      talukaPagination.reset();
+      villagePagination.reset();
       return;
     }
     if (name === 'talukaId') {
       setFilters(prev => ({ ...prev, talukaId: value, villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
+      villagePagination.reset();
       return;
     }
     if (name === 'villageId') {
@@ -95,34 +112,56 @@ const Donation = () => {
     }));
   };
 
-  const clearFilters = () => setFilters({
-    search: '',
-    startDate: '',
-    endDate: '',
-    minAmount: '',
-    maxAmount: '',
-    categoryId: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
-    gaushalaId: '',
-    kathaId: '',
-    status: '',
-    page: 1,
-    limit: 10,
-    fetchAll: false,
-    fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,village,district'
-  });
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      startDate: '',
+      endDate: '',
+      minAmount: '',
+      maxAmount: '',
+      categoryId: '',
+      cityId: '',
+      talukaId: '',
+      villageId: '',
+      gaushalaId: '',
+      kathaId: '',
+      status: '',
+      page: 1,
+      limit: 10,
+      fetchAll: false,
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,village,district'
+    });
+    cityPagination.reset();
+    talukaPagination.reset();
+    villagePagination.reset();
+    gaushalaPagination.reset();
+    kathaPagination.reset();
+    categoryPagination.reset();
+  };
 
   const handlePageChange = (newPage) => {
     setFilters(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
+    }
+  };
+
+  const handleDownloadSlip = (donation) => {
+    if (donation.slipUrl) {
+      window.open(donation.slipUrl, '_blank');
+    }
   };
 
   return (
     <div className="space-y-6">
       <AdminPageHeader 
         title="Donation Management" 
-        subtitle="View and manage all system donations"
+        subtitle="View and manage all received donations"
         buttonText={hasPermission('donations', 'entry') ? "Add Donation" : null}
         onButtonClick={handleAdd}
       />
@@ -132,24 +171,30 @@ const Donation = () => {
         isLoading={loading}
         pagination={pagination}
         filters={filters}
-        filterData={{
-          cities: filterCities,
-          talukas: filterTalukas,
-          villages: filterVillages,
-          gaushalas: filterGaushalas,
-          kathas: filterKathas,
-          categories: categories
-        }}
+        cityPagination={cityPagination}
+        talukaPagination={talukaPagination}
+        villagePagination={villagePagination}
+        gaushalaPagination={gaushalaPagination}
+        kathaPagination={kathaPagination}
+        categoryPagination={categoryPagination}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+        onDownloadSlip={handleDownloadSlip}
         hasPermission={hasPermission} 
       />
 
       {isModalOpen && (
-        <AddDonationModal
+        <AddDonationModal 
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          cityPagination={cityPagination}
+          talukaPagination={talukaPagination}
+          villagePagination={villagePagination}
+          gaushalaPagination={gaushalaPagination}
+          kathaPagination={kathaPagination}
+          categoryPagination={categoryPagination}
         />
       )}
     </div>

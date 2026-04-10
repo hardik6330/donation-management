@@ -7,9 +7,10 @@ import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { 
   useGetBapuSchedulesQuery, 
   useDeleteBapuScheduleMutation,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery 
+  useLazyGetCitiesQuery,
+  useLazyGetSubLocationsQuery 
 } from '../../../../services/apiSlice';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const BapuSchedule = () => {
@@ -37,14 +38,24 @@ const BapuSchedule = () => {
   const { data: schedulesData, isLoading: loading } = useGetBapuSchedulesQuery(filters);
   const [deleteSchedule, { isLoading: isDeleting }] = useDeleteBapuScheduleMutation();
 
-  // Location Data for Filters
-  const { data: filterCitiesData } = useGetCitiesQuery();
-  const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
-  const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
+  // Dropdown Paginations
+  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
+  const [triggerGetCities] = useLazyGetCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities, { fields: 'id,name' });
 
-  const filterCities = filterCitiesData?.data || [];
-  const filterTalukas = filterTalukasData?.data || [];
-  const filterVillages = filterVillagesData?.data || [];
+  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
+  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
+    fields: 'id,name',
+    additionalParams: { parentId: filters.cityId || modalState.cityId },
+    skip: !(filters.cityId || modalState.cityId)
+  });
+
+  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
+  const villagePagination = useDropdownPagination(triggerGetVillages, {
+    fields: 'id,name',
+    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
+    skip: !(filters.talukaId || modalState.talukaId)
+  });
 
   const schedules = schedulesData?.data?.data || [];
   const pagination = {
@@ -85,10 +96,13 @@ const BapuSchedule = () => {
     
     if (name === 'cityId') {
       setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
+      talukaPagination.reset();
+      villagePagination.reset();
       return;
     }
     if (name === 'talukaId') {
       setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
+      villagePagination.reset();
       return;
     }
     if (name === 'villageId') {
@@ -103,25 +117,38 @@ const BapuSchedule = () => {
     setFilters(prev => ({ ...prev, page }));
   };
 
-  const clearFilters = () => setFilters({
-    startDate: '',
-    endDate: '',
-    eventType: '',
-    status: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
-    locationId: '',
-    search: '',
-    page: 1,
-    limit: 10
-  });
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
+    }
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      startDate: '',
+      endDate: '',
+      eventType: '',
+      status: '',
+      cityId: '',
+      talukaId: '',
+      villageId: '',
+      locationId: '',
+      search: '',
+      page: 1,
+      limit: 10
+    });
+    cityPagination.reset();
+    talukaPagination.reset();
+    villagePagination.reset();
+  };
 
   return (
     <div className="space-y-6">
       <AdminPageHeader 
-        title="Bapu Schedule" 
-        subtitle="Manage and track Bapu's upcoming events and schedule"
+        title="Bapu Schedule Management" 
+        subtitle="Track Morari Bapu's upcoming katha events"
         buttonText={hasPermission('bapuSchedule', 'entry') ? "Add Schedule" : null}
         onButtonClick={handleAdd}
       />
@@ -132,17 +159,16 @@ const BapuSchedule = () => {
         isDeleting={isDeleting}
         pagination={pagination}
         filters={filters}
-        filterData={{
-          cities: filterCities,
-          talukas: filterTalukas,
-          villages: filterVillages
-        }}
-        onEdit={handleEdit} 
+        onEdit={handleEdit}
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
-        hasPermission={hasPermission} 
+        onLimitChange={handleLimitChange}
+        hasPermission={hasPermission}
+        cityPagination={cityPagination}
+        talukaPagination={talukaPagination}
+        villagePagination={villagePagination}
       />
 
       {isModalOpen && (
@@ -150,6 +176,10 @@ const BapuSchedule = () => {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           editingSchedule={editingSchedule}
+          cityPagination={cityPagination}
+          talukaPagination={talukaPagination}
+          villagePagination={villagePagination}
+          setModalState={setModalState}
           key={editingSchedule?.id || 'new'}
         />
       )}

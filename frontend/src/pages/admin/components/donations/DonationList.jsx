@@ -1,7 +1,8 @@
 import React from 'react';
-import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard } from 'lucide-react';
+import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard, Trash2 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import Pagination from '../../../../components/common/Pagination';
 import { getStatusColor, getPaymentModeColor } from '../../../../utils/tableUtils';
 
 const DonationList = ({
@@ -9,14 +10,20 @@ const DonationList = ({
   isLoading,
   pagination,
   filters,
-  filterData,
-  onFilterChange,
-  onClearFilters,
+  cityPagination,
+  talukaPagination,
+  villagePagination,
+  gaushalaPagination,
+  kathaPagination,
+  categoryPagination,
+  onDelete,
+  onDownloadSlip, 
+  onFilterChange, 
+  onClearFilters, 
   onPageChange,
-  hasPermission
+  onLimitChange,
+  hasPermission 
 }) => {
-  const { cities, talukas, villages, gaushalas, kathas, categories } = filterData;
-
   const tableHeaders = [
     { label: 'Donor Name' },
     { label: 'Cause / Purpose' },
@@ -37,42 +44,74 @@ const DonationList = ({
       label: 'City',
       type: 'select',
       icon: MapPin,
-      options: cities.map(c => ({ value: c.id, label: c.name }))
+      options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
+      isServerSearch: true,
+      onSearchChange: cityPagination.handleSearch,
+      onLoadMore: cityPagination.handleLoadMore,
+      hasMore: cityPagination.hasMore,
+      loading: cityPagination.loading
     },
     {
       name: 'talukaId',
       label: 'Taluka',
       type: 'select',
       icon: MapPin,
-      options: talukas.map(t => ({ value: t.id, label: t.name }))
+      options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
+      disabled: !filters.cityId,
+      isServerSearch: true,
+      onSearchChange: talukaPagination.handleSearch,
+      onLoadMore: talukaPagination.handleLoadMore,
+      hasMore: talukaPagination.hasMore,
+      loading: talukaPagination.loading
     },
     {
       name: 'villageId',
       label: 'Village',
       type: 'select',
       icon: MapPin,
-      options: villages.map(v => ({ value: v.id, label: v.name }))
+      options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
+      disabled: !filters.talukaId,
+      isServerSearch: true,
+      onSearchChange: villagePagination.handleSearch,
+      onLoadMore: villagePagination.handleLoadMore,
+      hasMore: villagePagination.hasMore,
+      loading: villagePagination.loading
     },
     {
       name: 'gaushalaId',
       label: 'Gaushala',
       type: 'select',
       icon: Building2,
-      options: gaushalas.map(g => ({ value: g.id, label: g.name }))
+      options: gaushalaPagination.items.map(g => ({ value: g.id, label: g.name })),
+      isServerSearch: true,
+      onSearchChange: gaushalaPagination.handleSearch,
+      onLoadMore: gaushalaPagination.handleLoadMore,
+      hasMore: gaushalaPagination.hasMore,
+      loading: gaushalaPagination.loading
     },
     {
       name: 'kathaId',
       label: 'Katha',
       type: 'select',
       icon: Mic2,
-      options: kathas.map(k => ({ value: k.id, label: k.name }))
+      options: kathaPagination.items.map(k => ({ value: k.id, label: k.name })),
+      isServerSearch: true,
+      onSearchChange: kathaPagination.handleSearch,
+      onLoadMore: kathaPagination.handleLoadMore,
+      hasMore: kathaPagination.hasMore,
+      loading: kathaPagination.loading
     },
     {
       name: 'categoryId',
       label: 'Category',
       type: 'select',
       icon: Tag,
-      options: categories.map(c => ({ value: c.id, label: c.name }))
+      options: categoryPagination.items.map(c => ({ value: c.id, label: c.name })),
+      isServerSearch: true,
+      onSearchChange: categoryPagination.handleSearch,
+      onLoadMore: categoryPagination.handleLoadMore,
+      hasMore: categoryPagination.hasMore,
+      loading: categoryPagination.loading
     },
     { name: 'startDate', label: 'From Date', type: 'date', icon: Calendar },
     { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
@@ -152,15 +191,22 @@ const DonationList = ({
             <td className="p-4 px-6">
               <div className="flex items-center gap-2">
                 {donation.slipUrl && (
-                  <a
-                    href={donation.slipUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    onClick={() => onDownloadSlip(donation)}
                     className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                     title="Download Slip"
                   >
                     <FileDown className="w-4 h-4" />
-                  </a>
+                  </button>
+                )}
+                {hasPermission('donations', 'full') && (
+                  <button
+                    onClick={() => onDelete(donation.id)}
+                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                    title="Delete"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 )}
               </div>
             </td>
@@ -168,42 +214,12 @@ const DonationList = ({
         ))}
       </AdminTable>
 
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <p className="text-sm text-gray-500">
-            Showing <span className="font-bold text-blue-600">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              disabled={filters.page === 1}
-              onClick={() => onPageChange(filters.page - 1)}
-              className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Prev
-            </button>
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => onPageChange(page)}
-                className={`w-9 h-9 text-sm font-bold rounded-lg transition ${
-                  filters.page === page
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              disabled={filters.page === pagination.totalPages}
-              onClick={() => onPageChange(filters.page + 1)}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination 
+        pagination={pagination}
+        filters={filters}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+      />
     </div>
   );
 };

@@ -386,7 +386,7 @@ export const getDonations = async (req, res) => {
       dataKey: 'donations'
     });
 
-    return sendSuccess(res, responseData, 'Donations fetched successfully');
+    return sendSuccess(res, responseData, 'All donations records fetched successfully');
   } catch (error) {
     console.error('❌ [getDonations] Error:', error);
     return sendError(res, 'Error fetching donations', 500, error);
@@ -398,85 +398,59 @@ export const getDonors = async (req, res) => {
     const { search, name, mobileNumber, city, minAmount, maxAmount } = req.query;
     const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
 
-    let whereClause = {
-      isAdmin: false
-    };
+    const { donorWhere } = await buildDonationFilter({ search, name, mobileNumber, city }, '');
 
-    if (search) {
-      whereClause[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { mobileNumber: { [Op.like]: `%${search}%` } }
-      ];
-    }
-
-    if (name) {
-      whereClause.name = { [Op.like]: `%${name}%` };
-    }
-
-    if (mobileNumber) {
-      whereClause.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
-    }
-
-    if (city) {
-      whereClause[Op.or] = [
-        ...(whereClause[Op.or] || []),
-        { village: { [Op.like]: `%${city}%` } },
-        { district: { [Op.like]: `%${city}%` } }
-      ];
-    }
-
-    const havingConditions = [];
-    if (minAmount) {
-      havingConditions.push(sequelize.where(sequelize.fn('SUM', sequelize.col('Donations.amount')), { [Op.gte]: Number(minAmount) }));
-    }
-    if (maxAmount) {
-      havingConditions.push(sequelize.where(sequelize.fn('SUM', sequelize.col('Donations.amount')), { [Op.lte]: Number(maxAmount) }));
-    }
-    const havingClause = havingConditions.length > 0 ? { [Op.and]: havingConditions } : undefined;
-
-    const countResult = await User.findAll({
-      where: whereClause,
-      include: [{
-        model: Donation,
-        attributes: []
-      }],
-      attributes: ['id'],
-      group: ['User.id'],
-      ...(havingClause && { having: havingClause }),
-      subQuery: false
-    });
-
-    const totalCount = countResult.length;
-
-    const donors = await User.findAll({
-      where: whereClause,
-      include: [{
-        model: Donation,
-        attributes: []
-      }],
-      attributes: [
-        'id', 'name', 'email', 'mobileNumber','address', 'village', 'district', 'companyName', 'createdAt',
-        [sequelize.fn('COUNT', sequelize.col('Donations.id')), 'donationCount'],
-        [sequelize.fn('SUM', sequelize.col('Donations.amount')), 'totalDonated']
-      ],
-      group: ['User.id'],
-      ...(havingClause && { having: havingClause }),
+    const { count, rows: donors } = await User.findAndCountAll({
+      where: {
+        ...donorWhere,
+        isAdmin: false
+      },
+      attributes: {
+        include: [
+          [
+            sequelize.literal(`(
+              SELECT COALESCE(SUM(amount), 0)
+              FROM Donations
+              WHERE Donations.donorId = User.id AND Donations.status = 'completed'
+            )`),
+            'totalDonated'
+          ],
+          [
+            sequelize.literal(`(
+              SELECT COUNT(*)
+              FROM Donations
+              WHERE Donations.donorId = User.id AND Donations.status = 'completed'
+            )`),
+            'donationCount'
+          ]
+        ]
+      },
       order: [[sequelize.literal('totalDonated'), 'DESC']],
-      subQuery: false,
-      ...(queryLimit && { limit: queryLimit }),
-      ...(offset !== undefined && { offset })
+      limit: queryLimit,
+      offset
     });
 
-    const result = getPaginatedResponse({
-      rows: donors,
-      count: totalCount,
+    // Apply amount filters if present (since totalDonated is a virtual field)
+    let filteredDonors = donors;
+    if (minAmount || maxAmount) {
+      filteredDonors = donors.filter(d => {
+        const total = parseFloat(d.getDataValue('totalDonated'));
+        if (minAmount && total < parseFloat(minAmount)) return false;
+        if (maxAmount && total > parseFloat(maxAmount)) return false;
+        return true;
+      });
+    }
+
+    const responseData = getPaginatedResponse({
+      rows: filteredDonors,
+      count: minAmount || maxAmount ? filteredDonors.length : count,
       limit,
       page,
       isFetchAll,
       dataKey: 'donors'
     });
 
-    return sendSuccess(res, result, 'Donors fetched successfully');
+    return sendSuccess(res, responseData, 'All donors records fetched successfully');
   } catch (error) {
     console.error('❌ [getDonors] Error:', error);
     return sendError(res, 'Error fetching donors', 500, error);

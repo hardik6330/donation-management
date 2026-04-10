@@ -1,21 +1,25 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   useAddKartalDhunMutation,
-  useUpdateKartalDhunMutation,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery
+  useUpdateKartalDhunMutation
 } from '../../../../services/apiSlice';
-import { Loader2, Plus, Tag, Calendar, IndianRupee, MapPin, AlignLeft, Music, Edit, MusicIcon } from 'lucide-react';
+import { Loader2, Plus, Tag, Calendar, IndianRupee, MapPin, AlignLeft, Edit, MusicIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 
-const AddKartalDhunModal = ({ isOpen, onClose, editingRecord = null }) => {
+const AddKartalDhunModal = ({ 
+  isOpen, 
+  onClose, 
+  editingRecord = null,
+  cityPagination,
+  talukaPagination,
+  villagePagination
+}) => {
   const [addRecord, { isLoading: isAdding }] = useAddKartalDhunMutation();
   const [updateRecord, { isLoading: isUpdating }] = useUpdateKartalDhunMutation();
-  const { data: citiesData } = useGetCitiesQuery();
 
   const nameRef = useRef(null);
   const amountRef = useRef(null);
@@ -31,12 +35,9 @@ const AddKartalDhunModal = ({ isOpen, onClose, editingRecord = null }) => {
   });
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  const { data: talukasData } = useGetSubLocationsQuery(form.cityId, { skip: !form.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(form.talukaId, { skip: !form.talukaId });
-
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
+  const cities = cityPagination.items;
+  const talukas = talukaPagination.items;
+  const villages = villagePagination.items;
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -94,8 +95,11 @@ const AddKartalDhunModal = ({ isOpen, onClose, editingRecord = null }) => {
   const handleDropdownSelect = (field, id, name) => {
     if (field === 'cityId') {
       setForm(prev => ({ ...prev, cityId: id, cityName: name, talukaId: '', talukaName: '', villageId: '', villageName: '' }));
+      talukaPagination.reset();
+      villagePagination.reset();
     } else if (field === 'talukaId') {
       setForm(prev => ({ ...prev, talukaId: id, talukaName: name, villageId: '', villageName: '' }));
+      villagePagination.reset();
     } else if (field === 'villageId') {
       setForm(prev => ({ ...prev, villageId: id, villageName: name }));
     }
@@ -152,9 +156,62 @@ const AddKartalDhunModal = ({ isOpen, onClose, editingRecord = null }) => {
         </div>
 
         <div className="grid grid-cols-3 gap-4">
-          <SearchableDropdown label="City" name="cityName" placeholder="Select City" value={form.cityName} items={cities} onChange={handleChange} onSelect={(id, name) => handleDropdownSelect('cityId', id, name)} onKeyDown={(e) => handleKeyDown(e, talukaRef)} isActive={activeDropdown === 'cityName'} setActive={setActiveDropdown} inputRef={cityRef} icon={MapPin} />
-          <SearchableDropdown label="Taluka" name="talukaName" placeholder="Select Taluka" value={form.talukaName} items={talukas} onChange={handleChange} onSelect={(id, name) => handleDropdownSelect('talukaId', id, name)} onKeyDown={(e) => handleKeyDown(e, villageRef)} isActive={activeDropdown === 'talukaName'} setActive={setActiveDropdown} disabled={!form.cityId} inputRef={talukaRef} icon={MapPin} />
-          <SearchableDropdown label="Village" name="villageName" placeholder="Select Village" value={form.villageName} items={villages} onChange={handleChange} onSelect={(id, name) => handleDropdownSelect('villageId', id, name)} onKeyDown={(e) => handleKeyDown(e, descriptionRef)} isActive={activeDropdown === 'villageName'} setActive={setActiveDropdown} disabled={!form.talukaId} inputRef={villageRef} icon={MapPin} />
+          <SearchableDropdown
+            label="City"
+            name="cityName"
+            placeholder="Select City"
+            value={form.cityName}
+            items={cities}
+            onChange={handleChange}
+            onSelect={(id, name) => handleDropdownSelect('cityId', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, talukaRef)}
+            isActive={activeDropdown === 'cityName'}
+            setActive={setActiveDropdown}
+            inputRef={cityRef}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={cityPagination.handleLoadMore}
+            hasMore={cityPagination.hasMore}
+            loading={cityPagination.loading}
+          />
+          <SearchableDropdown
+            label="Taluka"
+            name="talukaName"
+            placeholder="Select Taluka"
+            value={form.talukaName}
+            items={talukas}
+            onChange={handleChange}
+            onSelect={(id, name) => handleDropdownSelect('talukaId', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, villageRef)}
+            isActive={activeDropdown === 'talukaName'}
+            setActive={setActiveDropdown}
+            disabled={!form.cityId}
+            inputRef={talukaRef}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={talukaPagination.handleLoadMore}
+            hasMore={talukaPagination.hasMore}
+            loading={talukaPagination.loading}
+          />
+          <SearchableDropdown
+            label="Village"
+            name="villageName"
+            placeholder="Select Village"
+            value={form.villageName}
+            items={villages}
+            onChange={handleChange}
+            onSelect={(id, name) => handleDropdownSelect('villageId', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
+            isActive={activeDropdown === 'villageName'}
+            setActive={setActiveDropdown}
+            disabled={!form.talukaId}
+            inputRef={villageRef}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={villagePagination.handleLoadMore}
+            hasMore={villagePagination.hasMore}
+            loading={villagePagination.loading}
+          />
         </div>
 
         <FormInput label="Description" name="description" type="textarea" rows="2" placeholder="Details..." value={form.description} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, submitRef)} inputRef={descriptionRef} icon={AlignLeft} />

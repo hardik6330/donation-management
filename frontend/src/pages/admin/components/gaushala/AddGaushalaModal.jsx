@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddGaushalaMutation,
-  useUpdateGaushalaMutation,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery
+  useUpdateGaushalaMutation
 } from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
 import { MapPin, Building2, Plus, Loader2, CheckCircle2, Tag, Edit, Building2Icon } from 'lucide-react';
@@ -11,7 +9,14 @@ import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 
-const AddGaushalaModal = ({ isOpen, onClose, editingGaushala }) => {
+const AddGaushalaModal = ({ 
+  isOpen, 
+  onClose, 
+  editingGaushala,
+  cityPagination,
+  talukaPagination,
+  villagePagination
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     cityId: '',
@@ -32,13 +37,9 @@ const AddGaushalaModal = ({ isOpen, onClose, editingGaushala }) => {
   const villageRef = useRef(null);
   const submitRef = useRef(null);
 
-  const { data: citiesData } = useGetCitiesQuery();
-  const { data: talukasData } = useGetSubLocationsQuery(formData.cityId, { skip: !formData.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(formData.talukaId, { skip: !formData.talukaId });
-
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
+  const cities = cityPagination.items;
+  const talukas = talukaPagination.items;
+  const villages = villagePagination.items;
 
   const [addGaushala, { isLoading: isAdding }] = useAddGaushalaMutation();
   const [updateGaushala, { isLoading: isUpdating }] = useUpdateGaushalaMutation();
@@ -86,6 +87,8 @@ const AddGaushalaModal = ({ isOpen, onClose, editingGaushala }) => {
         villageId: '',
         villageName: ''
       }));
+      talukaPagination.reset();
+      villagePagination.reset();
     } else if (field === 'taluka') {
       setFormData(prev => ({
         ...prev,
@@ -94,6 +97,7 @@ const AddGaushalaModal = ({ isOpen, onClose, editingGaushala }) => {
         villageId: '',
         villageName: ''
       }));
+      villagePagination.reset();
     } else if (field === 'village') {
       setFormData(prev => ({
         ...prev,
@@ -189,6 +193,10 @@ const AddGaushalaModal = ({ isOpen, onClose, editingGaushala }) => {
             setActive={setActiveDropdown}
             inputRef={cityRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={cityPagination.handleLoadMore}
+            hasMore={cityPagination.hasMore}
+            loading={cityPagination.loading}
           />
 
           <SearchableDropdown
@@ -205,6 +213,10 @@ const AddGaushalaModal = ({ isOpen, onClose, editingGaushala }) => {
             disabled={!formData.cityName}
             inputRef={talukaRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={talukaPagination.handleLoadMore}
+            hasMore={talukaPagination.hasMore}
+            loading={talukaPagination.loading}
           />
 
           <SearchableDropdown
@@ -221,6 +233,10 @@ const AddGaushalaModal = ({ isOpen, onClose, editingGaushala }) => {
             disabled={!formData.talukaName}
             inputRef={villageRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={villagePagination.handleLoadMore}
+            hasMore={villagePagination.hasMore}
+            loading={villagePagination.loading}
           />
 
           <div className="space-y-1.5">

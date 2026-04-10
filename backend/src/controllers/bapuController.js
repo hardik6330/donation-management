@@ -108,7 +108,7 @@ export const getBapuSchedules = async (req, res) => {
       dataKey: 'data'
     });
 
-    return sendSuccess(res, responseData, 'Schedules fetched successfully');
+    return sendSuccess(res, responseData, 'All schedules records fetched successfully');
   } catch (error) {
     console.error('❌ [getBapuSchedules] Error:', error);
     return sendError(res, 'Error fetching Bapu schedules', 500, error);

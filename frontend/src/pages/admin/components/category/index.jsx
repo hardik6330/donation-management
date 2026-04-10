@@ -4,7 +4,13 @@ import AddCategoryModal from './AddCategoryModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetCategoriesQuery, useUpdateCategoryMutation, useDeleteCategoryMutation } from '../../../../services/apiSlice';
+import { 
+  useGetCategoriesQuery, 
+  useUpdateCategoryMutation, 
+  useDeleteCategoryMutation,
+  useLazyGetCategoriesQuery
+} from '../../../../services/apiSlice';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const Category = () => {
@@ -12,13 +18,34 @@ const Category = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [filters, setFilters] = useState({
+    search: '',
+    page: 1,
+    limit: 10,
+    all: true
+  });
   const [editingCategory, setEditingCategory] = useState(null);
 
-  // API calls moved to index.jsx
-  const { data: categoriesData, isLoading: categoriesLoading } = useGetCategoriesQuery({ all: true });
+  // API calls
+  const { data: categoriesData, isLoading: categoriesLoading } = useGetCategoriesQuery(filters);
   const [updateCategory, { isLoading: isUpdating }] = useUpdateCategoryMutation();
   const [deleteCategory, { isLoading: isDeleting }] = useDeleteCategoryMutation();
-  const categories = categoriesData?.data || [];
+
+  // Dropdown Pagination for Modal (Auto-complete)
+  const [triggerGetCategories] = useLazyGetCategoriesQuery();
+  const categoryPagination = useDropdownPagination(triggerGetCategories, { 
+    limit: 20, 
+    fields: 'id,name',
+    additionalParams: { all: true } 
+  });
+  
+  const categories = categoriesData?.data?.data || [];
+  const pagination = {
+    currentPage: categoriesData?.data?.currentPage || 1,
+    totalPages: categoriesData?.data?.totalPages || 1,
+    totalData: categoriesData?.data?.totalData || 0,
+    limit: categoriesData?.data?.limit || 10
+  };
 
   const handleAdd = () => {
     setEditingCategory(null);
@@ -55,6 +82,32 @@ const Category = () => {
     }
   };
 
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      page: 1,
+      limit: 10,
+      all: true
+    });
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader 
@@ -69,9 +122,15 @@ const Category = () => {
         isLoading={categoriesLoading}
         isUpdating={isUpdating}
         isDeleting={isDeleting}
+        pagination={pagination}
+        filters={filters}
         onEdit={handleEdit} 
         onDelete={handleDelete}
         onToggleStatus={handleToggleStatus}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
         hasPermission={hasPermission} 
       />
 
@@ -80,6 +139,7 @@ const Category = () => {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           editingData={editingCategory}
+          categoryPagination={categoryPagination}
           key={editingCategory?.id || 'new'}
         />
       )}

@@ -116,7 +116,7 @@ export const getAllDonationsAdmin = async (req, res) => {
       dataKey: 'donations'
     });
 
-    return sendSuccess(res, responseData, 'All donations fetched successfully');
+    return sendSuccess(res, responseData, 'All donations records fetched successfully');
   } catch (error) {
     return sendError(res, 'Error fetching donations', 500, error);
   }

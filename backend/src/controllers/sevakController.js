@@ -62,7 +62,7 @@ export const getAllSevaks = async (req, res) => {
     });
 
     const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
-    return sendSuccess(res, response, 'Sevaks fetched successfully');
+    return sendSuccess(res, response, 'All sevaks records fetched successfully');
   } catch (error) {
     return sendError(res, 'Failed to fetch sevaks', 500, error);
   }

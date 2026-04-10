@@ -22,16 +22,40 @@ const FilterDropdown = ({ field, value, onChange }) => {
     }
   }, [isOpen]);
 
+  // Handle server-side search
+  useEffect(() => {
+    if (field.onSearchChange) {
+      field.onSearchChange(search);
+    }
+  }, [search, field.onSearchChange]);
+
   // "All" option + filtered options combined for keyboard nav
-  const filtered = field.options.filter(opt =>
-    opt.label.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = field.isServerSearch 
+    ? field.options 
+    : field.options.filter(opt =>
+        opt.label.toLowerCase().includes(search.toLowerCase())
+      );
   const allItems = filtered;
 
-  // Reset highlight when dropdown opens/search changes
-  useEffect(() => {
+  const handleScroll = (e) => {
+    if (!field.onLoadMore || !field.hasMore || field.loading) return;
+    const { scrollTop, scrollHeight, clientHeight } = e.target;
+    // Check if user is near the bottom (within 40px)
+    if (scrollHeight - scrollTop <= clientHeight + 40) {
+      field.onLoadMore();
+    }
+  };
+
+  const toggleDropdown = () => {
+    setIsOpen(!isOpen);
+    setSearch('');
     setHighlightIndex(-1);
-  }, [isOpen, search]);
+  };
+
+  const handleSearchChange = (e) => {
+    setSearch(e.target.value);
+    setHighlightIndex(-1);
+  };
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -85,7 +109,7 @@ const FilterDropdown = ({ field, value, onChange }) => {
       <div
         ref={triggerRef}
         tabIndex={0}
-        onClick={() => { setIsOpen(!isOpen); setSearch(''); }}
+        onClick={toggleDropdown}
         onKeyDown={handleKeyDown}
         className={`w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm cursor-pointer flex items-center justify-between transition ${isOpen ? 'ring-2 ring-blue-500' : ''} ${field.disabled ? 'opacity-50 pointer-events-none' : ''}`}
       >
@@ -108,22 +132,7 @@ const FilterDropdown = ({ field, value, onChange }) => {
 
       {isOpen && (
         <div className="absolute z-[120] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-          {field.options.length > 10 && (
-            <div className="p-2 border-b border-gray-50">
-              <input
-                ref={searchRef}
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onClick={(e) => e.stopPropagation()}
-                onKeyDown={handleKeyDown}
-                autoFocus
-                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-xs sm:text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-          )}
-          <div ref={listRef} className="max-h-48 overflow-y-auto custom-scrollbar">
+          <div ref={listRef} onScroll={handleScroll} className="max-h-56 overflow-y-auto custom-scrollbar py-2">
             {allItems.map((item, index) => (
               <button
                 key={item.value || '__all__'}
@@ -139,7 +148,12 @@ const FilterDropdown = ({ field, value, onChange }) => {
                 {item.label}
               </button>
             ))}
-            {filtered.length === 0 && (
+            {field.loading && (
+              <div className="p-3 text-center">
+                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              </div>
+            )}
+            {filtered.length === 0 && !field.loading && (
               <div className="px-4 py-3 text-sm text-gray-400 text-center">No results</div>
             )}
           </div>

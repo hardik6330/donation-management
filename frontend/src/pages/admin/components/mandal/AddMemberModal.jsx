@@ -3,7 +3,8 @@ import {
   useAddMandalMemberMutation,
   useUpdateMandalMemberMutation,
   useGetMandalsQuery,
-  useGetCitiesQuery
+  useGetCitiesQuery,
+  useGetSubLocationsQuery
 } from '../../../../services/apiSlice';
 import { Loader2, Plus, User, Phone, UsersRound, MapPin, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -14,10 +15,11 @@ import SearchableDropdown from '../../../../components/common/SearchableDropdown
 const AddMemberModal = ({ isOpen, onClose, editingMember = null }) => {
   const [addMember, { isLoading: isAdding }] = useAddMandalMemberMutation();
   const [updateMember, { isLoading: isUpdating }] = useUpdateMandalMemberMutation();
-  const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true' });
-  const { data: citiesData } = useGetCitiesQuery();
-  const mandals = mandalsData?.data?.rows || [];
-  const cities = citiesData?.data || [];
+  const { data: mandalsData } = useGetMandalsQuery({ fetchAll: true });
+  const { data: citiesData } = useGetCitiesQuery({ fetchAll: true });
+
+  const mandals = mandalsData?.data?.data || [];
+  const cities = citiesData?.data?.data || [];
 
   const nameRef = useRef(null);
   const mobileRef = useRef(null);

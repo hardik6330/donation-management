@@ -8,7 +8,7 @@ import { Op, fn, col, literal } from 'sequelize';
 
 export const getKathas = async (req, res) => {
   try {
-    const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
+    const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
     const { status, locationId, search } = req.query;
     const where = {};
     if (status) where.status = status;
@@ -20,6 +20,19 @@ export const getKathas = async (req, res) => {
     if (locationId) {
       const locationIds = await getAllSubLocationIds(locationId);
       where.locationId = { [Op.in]: locationIds };
+    }
+
+    // If only specific fields are requested (e.g. id, name), avoid complex logic
+    if (requestedFields) {
+      const { count, rows } = await Katha.findAndCountAll({
+        where,
+        attributes: requestedFields,
+        order: [['name', 'ASC']],
+        limit: queryLimit,
+        offset
+      });
+      const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'rows' });
+      return sendSuccess(res, response, 'Kathas records fetched successfully');
     }
 
     const { count, rows } = await Katha.findAndCountAll({
@@ -83,7 +96,7 @@ export const getKathas = async (req, res) => {
     // With GROUP BY, count is an array - use its length for total count
     const totalCount = Array.isArray(count) ? count.length : count;
     const response = getPaginatedResponse({ rows: formattedKathas, count: totalCount, limit, page, isFetchAll, dataKey: 'rows' });
-    return sendSuccess(res, response);
+    return sendSuccess(res, response, 'All kathas records fetched successfully');
   } catch (error) {
     return sendError(res, 'Error fetching kathas', 500);
   }

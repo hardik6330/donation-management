@@ -102,7 +102,7 @@ export const getAllKartalDhun = async (req, res) => {
     });
 
     const response = getPaginatedResponse({ rows: formattedRows, count, limit, page, dataKey: 'rows' });
-    return sendSuccess(res, response);
+    return sendSuccess(res, response, 'All kartal dhun records fetched successfully');
   } catch (error) {
     return sendError(res, 'Failed to fetch kartal dhun records', 500, error);
   }

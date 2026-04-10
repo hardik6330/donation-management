@@ -5,7 +5,8 @@ import { Katha } from '../models/katha.js';
 import { Donation } from '../models/donation.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { sequelize } from '../config/db.js';
-import { formatName, findOrCreateLocationStructure } from '../utils/locationHelper.js';
+import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
+import { Op } from 'sequelize';
 
 // --- MASTER DATA MANAGEMENT (ADMIN) ---
 
@@ -106,9 +107,34 @@ export const addCombinedMasterData = async (req, res) => {
 // 3. Get all cities
 export const getCities = async (req, res) => {
   try {
-    const cities = await Location.findAll({ where: { type: 'city' }, order: [['name', 'ASC']] });
-    return sendSuccess(res, cities);
+    const { search } = req.query;
+    const { page, limit, offset, isFetchAll, requestedFields } = getPaginationParams(req.query);
+
+    const where = { type: 'city' };
+    if (search && search.trim() !== '') {
+      where.name = { [Op.like]: `%${search}%` };
+    }
+
+    const { count, rows: cities } = await Location.findAndCountAll({
+      where,
+      attributes: requestedFields || undefined,
+      order: [['name', 'ASC']],
+      limit: isFetchAll ? undefined : limit,
+      offset: isFetchAll ? undefined : offset
+    });
+
+    const response = getPaginatedResponse({
+      rows: cities,
+      count,
+      limit,
+      page,
+      isFetchAll,
+      dataKey: 'data'
+    });
+
+    return sendSuccess(res, response, 'All cities records fetched successfully');
   } catch (error) {
+    console.error('❌ [getCities] Error:', error);
     return sendError(res, 'Error fetching cities', 500);
   }
 };
@@ -117,9 +143,34 @@ export const getCities = async (req, res) => {
 export const getSubLocations = async (req, res) => {
   try {
     const { parentId } = req.params;
-    const locations = await Location.findAll({ where: { parentId }, order: [['name', 'ASC']] });
-    return sendSuccess(res, locations);
+    const { search } = req.query;
+    const { page, limit, offset, isFetchAll, requestedFields } = getPaginationParams(req.query);
+
+    const where = { parentId };
+    if (search && search.trim() !== '') {
+      where.name = { [Op.like]: `%${search}%` };
+    }
+
+    const { count, rows: locations } = await Location.findAndCountAll({
+      where,
+      attributes: requestedFields || undefined,
+      order: [['name', 'ASC']],
+      limit: isFetchAll ? undefined : limit,
+      offset: isFetchAll ? undefined : offset
+    });
+
+    const response = getPaginatedResponse({
+      rows: locations,
+      count,
+      limit,
+      page,
+      isFetchAll,
+      dataKey: 'data'
+    });
+
+    return sendSuccess(res, response, 'All sub-locations records fetched successfully');
   } catch (error) {
+    console.error('❌ [getSubLocations] Error:', error);
     return sendError(res, 'Error fetching sub-locations', 500);
   }
 };
@@ -127,27 +178,47 @@ export const getSubLocations = async (req, res) => {
 // 5. Get all categories
 export const getCategories = async (req, res) => {
   try {
-    const { all } = req.query;
+    const { all, search } = req.query;
+    const { page, limit, offset, isFetchAll, requestedFields } = getPaginationParams(req.query);
+
     const where = all === 'true' ? {} : { isActive: true };
     
-    const categories = await Category.findAll({ 
-      where, 
-      attributes: {
-        include: [
-          [
-            sequelize.literal(`(
-              SELECT COALESCE(SUM(amount), 0)
-              FROM Donations
-              WHERE Donations.categoryId = Category.id AND Donations.status = 'completed'
-            )`),
-            'totalDonation'
-          ]
+    // Add search filter if provided
+    if (search && search.trim() !== '') {
+      where.name = { [Op.like]: `%${search}%` };
+    }
+
+    const attributes = requestedFields ? requestedFields : {
+      include: [
+        [
+          sequelize.literal(`(
+            SELECT COALESCE(SUM(amount), 0)
+            FROM Donations
+            WHERE Donations.categoryId = Category.id AND Donations.status = 'completed'
+          )`),
+          'totalDonation'
         ]
-      },
-      order: [['name', 'ASC']] 
+      ]
+    };
+
+    const { count, rows: categories } = await Category.findAndCountAll({
+      where,
+      attributes,
+      order: [['name', 'ASC']],
+      limit: isFetchAll ? undefined : limit,
+      offset: isFetchAll ? undefined : offset
+    });
+
+    const response = getPaginatedResponse({
+      rows: categories,
+      count,
+      limit,
+      page,
+      isFetchAll,
+      dataKey: 'data'
     });
     
-    return sendSuccess(res, categories);
+    return sendSuccess(res, response, 'All categories records fetched successfully');
   } catch (error) {
     console.error('❌ [getCategories] Error:', error);
     return sendError(res, 'Error fetching categories', 500);

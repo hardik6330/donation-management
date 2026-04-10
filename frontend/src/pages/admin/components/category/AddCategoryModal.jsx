@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   useAddCombinedMasterDataMutation,
-  useUpdateCategoryMutation,
-  useGetCategoriesQuery
+  useUpdateCategoryMutation
 } from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
 import { Tag, Plus, Loader2, CheckCircle2, Edit } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
 
-const AddCategoryModal = ({ isOpen, onClose, editingData }) => {
+const AddCategoryModal = ({ isOpen, onClose, editingData, categoryPagination }) => {
   const [addCombinedMaster, { isLoading: isAdding }] = useAddCombinedMasterDataMutation();
   const [updateCategory, { isLoading: isUpdatingCategory }] = useUpdateCategoryMutation();
   const isLoading = isAdding || isUpdatingCategory;
@@ -36,8 +35,15 @@ const AddCategoryModal = ({ isOpen, onClose, editingData }) => {
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
-  const { data: categoriesData } = useGetCategoriesQuery();
-  const categories = categoriesData?.data || [];
+  const categories = categoryPagination.items;
+
+  // Handle scroll to load more
+  const handleScroll = (e) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 10 && !categoryPagination.loading && categoryPagination.hasMore) {
+      categoryPagination.handleLoadMore();
+    }
+  };
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -73,6 +79,7 @@ const AddCategoryModal = ({ isOpen, onClose, editingData }) => {
     if (name === 'categoryName') {
       setFormData(prev => ({ ...prev, categoryName: value }));
       setActiveDropdown('category');
+      categoryPagination.handleSearch(value);
       return;
     }
 
@@ -120,6 +127,7 @@ const AddCategoryModal = ({ isOpen, onClose, editingData }) => {
       <div
         className="absolute z-[110] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
         onClick={(e) => e.stopPropagation()}
+        onScroll={handleScroll}
       >
         {filteredItems.map((item, idx) => (
           <button
@@ -131,6 +139,11 @@ const AddCategoryModal = ({ isOpen, onClose, editingData }) => {
             {item[valueField]}
           </button>
         ))}
+        {categoryPagination.loading && (
+          <div className="flex justify-center p-2">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+          </div>
+        )}
       </div>
     );
   };

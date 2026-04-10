@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   useGetAllDonationsQuery, 
-  useGetCitiesQuery,
-  useGetSubLocationsQuery,
-  useGetGaushalasQuery,
-  useGetKathasQuery,
-  useGetCategoriesQuery
+  useLazyGetCitiesQuery,
+  useLazyGetSubLocationsQuery,
+  useLazyGetGaushalasQuery,
+  useLazyGetKathasQuery,
+  useLazyGetCategoriesQuery
 } from '../../../../services/apiSlice';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { 
   Search, Calendar, Loader2, IndianRupee, FileDown, 
   MapPin, MapPinHouse, Building2, Mic2, Tag, Filter, 
@@ -16,6 +17,7 @@ import { toast } from 'react-toastify';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import Pagination from '../../../../components/common/Pagination';
 import { getStatusColor } from '../../../../utils/tableUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -36,34 +38,84 @@ const Reports = () => {
     kathaId: '',
     status: '',
     page: 1,
-    limit: 1000, // Increased limit to fetch all for export
-    fetchAll: true,
+    limit: 10,
+    fetchAll: false,
     fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId'
   });
 
   const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(filters);
-  const { data: categoriesData } = useGetCategoriesQuery();
+
+  // Separate query to fetch all records for export
+  const exportFilters = { ...filters, fetchAll: true, limit: 1000, page: 1 };
+  const { data: exportData } = useGetAllDonationsQuery(exportFilters);
   
-  // Location Data for Filters
-  const { data: filterCitiesData } = useGetCitiesQuery();
-  const { data: filterTalukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
-  const { data: filterVillagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
+  // City Pagination
+  const [triggerGetCities] = useLazyGetCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities, { limit: 20 });
 
-  // Gaushalas and Kathas - load all by default, filter by location when selected
-  const filterLocationId = filters.villageId || filters.talukaId || filters.cityId;
-  const gaushalaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
-  const kathaParams = { fetchAll: 'true', ...(filterLocationId && { locationId: filterLocationId }) };
-  const { data: filterGaushalasData } = useGetGaushalasQuery(gaushalaParams);
-  const { data: filterKathasData } = useGetKathasQuery(kathaParams);
+  // Taluka Pagination
+  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
+  const talukaPagination = useDropdownPagination(triggerGetTalukas, { 
+    limit: 20, 
+    additionalParams: { parentId: filters.cityId },
+    skip: !filters.cityId 
+  });
 
-  const filterCities = filterCitiesData?.data || [];
-  const filterTalukas = filterTalukasData?.data || [];
-  const filterVillages = filterVillagesData?.data || [];
-  const filterGaushalas = filterGaushalasData?.data?.rows || [];
-  const filterKathas = filterKathasData?.data?.rows || [];
-  const categories = categoriesData?.data || [];
+  // Village Pagination
+  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
+  const villagePagination = useDropdownPagination(triggerGetVillages, { 
+    limit: 20, 
+    additionalParams: { parentId: filters.talukaId },
+    skip: !filters.talukaId 
+  });
+
+  // Gaushala Pagination
+  const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
+  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, { 
+    limit: 20, 
+    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+    rowsKey: 'rows'
+  });
+
+  // Katha Pagination
+  const [triggerGetKathas] = useLazyGetKathasQuery();
+  const kathaPagination = useDropdownPagination(triggerGetKathas, { 
+    limit: 20, 
+    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+    rowsKey: 'rows'
+  });
+
+  // Category Pagination
+  const [triggerGetCategories] = useLazyGetCategoriesQuery();
+  const categoryPagination = useDropdownPagination(triggerGetCategories, { 
+    limit: 20, 
+    additionalParams: { all: true }
+  });
+
+  const filterCities = cityPagination.items;
+  const filterTalukas = talukaPagination.items;
+  const filterVillages = villagePagination.items;
+  const filterGaushalas = gaushalaPagination.items;
+  const filterKathas = kathaPagination.items;
+  const categories = categoryPagination.items;
 
   const donations = donationsData?.data?.donations || [];
+  const exportDonations = exportData?.data?.donations || [];
+  const pagination = {
+    currentPage: donationsData?.data?.currentPage || 1,
+    totalPages: donationsData?.data?.totalPages || 1,
+    totalData: donationsData?.data?.totalData || 0,
+    limit: donationsData?.data?.limit || 10
+  };
+
+  const handlePageChange = (page) => setFilters(prev => ({ ...prev, page }));
+  const handleLimitChange = (value) => {
+    if (value === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 1000, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, fetchAll: false, limit: value, page: 1 }));
+    }
+  };
 
   const getDynamicFileName = (extension) => {
     let nameParts = ['Donations'];
@@ -101,10 +153,13 @@ const Reports = () => {
     
     if (name === 'cityId') {
       setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
+      talukaPagination.reset();
+      villagePagination.reset();
       return;
     }
     if (name === 'talukaId') {
       setFilters(prev => ({ ...prev, talukaId: value, villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
+      villagePagination.reset();
       return;
     }
     if (name === 'villageId') {
@@ -133,20 +188,26 @@ const Reports = () => {
       gaushalaId: '',
       kathaId: '',
       status: '',
-      page: 1, 
-      limit: 1000, 
-      fetchAll: true, 
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId' 
+      page: 1,
+      limit: 10,
+      fetchAll: false,
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId'
     });
+    cityPagination.reset();
+    talukaPagination.reset();
+    villagePagination.reset();
+    gaushalaPagination.reset();
+    kathaPagination.reset();
+    categoryPagination.reset();
   };
 
   const exportToExcel = () => {
-    if (donations.length === 0) {
+    if (exportDonations.length === 0) {
       toast.error('No data to export');
       return;
     }
 
-    const exportData = donations.map(d => ({
+    const exportData = exportDonations.map(d => ({
       'Donor Name': d.donor?.name || '-',
       'Mobile': d.donor?.mobileNumber || '-',
       'Cause': d.cause || '-',
@@ -168,7 +229,7 @@ const Reports = () => {
   };
 
   const exportToPDF = () => {
-    if (donations.length === 0) {
+    if (exportDonations.length === 0) {
       toast.error('No data to export');
       return;
     }
@@ -195,7 +256,7 @@ const Reports = () => {
     }
 
     const tableHeaders = [['Donor Name', 'Cause', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Date']];
-    const tableData = donations.map(d => [
+    const tableData = exportDonations.map(d => [
       d.donor?.name || '-',
       d.cause || '-',
       (d.gaushala?.name || d.katha?.name || '-'),
@@ -225,8 +286,13 @@ const Reports = () => {
       name: 'cityId', 
       label: 'City', 
       type: 'select', 
-      icon: MapPin,
-      options: filterCities.map(c => ({ value: c.id, label: c.name }))
+      icon: MapPin, 
+      options: filterCities.map(c => ({ value: c.id, label: c.name })),
+      isServerSearch: true,
+      onSearchChange: cityPagination.handleSearch,
+      onLoadMore: cityPagination.handleLoadMore,
+      hasMore: cityPagination.hasMore,
+      loading: cityPagination.loading
     },
     { 
       name: 'talukaId', 
@@ -234,7 +300,12 @@ const Reports = () => {
       type: 'select', 
       icon: MapPinHouse,
       disabled: !filters.cityId,
-      options: filterTalukas.map(t => ({ value: t.id, label: t.name }))
+      options: filterTalukas.map(t => ({ value: t.id, label: t.name })),
+      isServerSearch: true,
+      onSearchChange: talukaPagination.handleSearch,
+      onLoadMore: talukaPagination.handleLoadMore,
+      hasMore: talukaPagination.hasMore,
+      loading: talukaPagination.loading
     },
     { 
       name: 'villageId', 
@@ -242,28 +313,48 @@ const Reports = () => {
       type: 'select', 
       icon: Building2,
       disabled: !filters.talukaId,
-      options: filterVillages.map(v => ({ value: v.id, label: v.name }))
+      options: filterVillages.map(v => ({ value: v.id, label: v.name })),
+      isServerSearch: true,
+      onSearchChange: villagePagination.handleSearch,
+      onLoadMore: villagePagination.handleLoadMore,
+      hasMore: villagePagination.hasMore,
+      loading: villagePagination.loading
     },
     { 
       name: 'gaushalaId', 
       label: 'Gaushala', 
       type: 'select', 
       icon: Building2,
-      options: filterGaushalas.map(g => ({ value: g.id, label: g.name }))
+      options: filterGaushalas.map(g => ({ value: g.id, label: g.name })),
+      isServerSearch: true,
+      onSearchChange: gaushalaPagination.handleSearch,
+      onLoadMore: gaushalaPagination.handleLoadMore,
+      hasMore: gaushalaPagination.hasMore,
+      loading: gaushalaPagination.loading
     },
     { 
       name: 'kathaId', 
       label: 'Katha', 
       type: 'select', 
       icon: Mic2,
-      options: filterKathas.map(k => ({ value: k.id, label: k.name }))
+      options: filterKathas.map(k => ({ value: k.id, label: k.name })),
+      isServerSearch: true,
+      onSearchChange: kathaPagination.handleSearch,
+      onLoadMore: kathaPagination.handleLoadMore,
+      hasMore: kathaPagination.hasMore,
+      loading: kathaPagination.loading
     },
     { 
       name: 'categoryId', 
       label: 'Category', 
       type: 'select', 
       icon: Tag,
-      options: categories.map(cat => ({ value: cat.id, label: cat.name }))
+      options: categories.map(cat => ({ value: cat.id, label: cat.name })),
+      isServerSearch: true,
+      onSearchChange: categoryPagination.handleSearch,
+      onLoadMore: categoryPagination.handleLoadMore,
+      hasMore: categoryPagination.hasMore,
+      loading: categoryPagination.loading
     },
     { 
       name: 'status', 
@@ -325,11 +416,11 @@ const Reports = () => {
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
         <div>
           <span className="text-sm text-gray-500">Total Records:</span>
-          <span className="ml-2 font-bold text-gray-800">{donations.length}</span>
+          <span className="ml-2 font-bold text-gray-800">{exportDonations.length}</span>
         </div>
         <div>
           <span className="text-sm text-gray-500">Total Amount:</span>
-          <span className="ml-2 font-bold text-blue-600">₹{donations.reduce((sum, d) => sum + (d.amount || 0), 0).toLocaleString('en-IN')}</span>
+          <span className="ml-2 font-bold text-blue-600">₹{exportDonations.reduce((sum, d) => sum + (d.amount || 0), 0).toLocaleString('en-IN')}</span>
         </div>
       </div>
 
@@ -374,6 +465,13 @@ const Reports = () => {
           </tr>
         ))}
       </AdminTable>
+
+      <Pagination
+        pagination={pagination}
+        filters={filters}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+      />
     </div>
   );
 };

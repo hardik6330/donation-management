@@ -5,11 +5,10 @@ import {
 import AdminTable from '../../../../components/common/AdminTable';
 import { getPaymentModeColor } from '../../../../utils/tableUtils';
 import FilterSection from '../../../../components/common/FilterSection';
+import Pagination from '../../../../components/common/Pagination';
 
 const ExpenseList = ({
   expenses,
-  gaushalas,
-  kathas,
   isLoading,
   isDeleting,
   pagination,
@@ -19,44 +18,49 @@ const ExpenseList = ({
   onFilterChange,
   onClearFilters,
   onPageChange,
-  hasPermission
+  onLimitChange,
+  hasPermission,
+  gaushalaPagination,
+  kathaPagination
 }) => {
   const tableHeaders = [
-    { label: 'Date' },
-    { label: 'Category' },
-    { label: 'Amount' },
-    { label: 'Gaushala / Katha' },
-    { label: 'Payment Mode', className: 'text-center' },
     { label: 'Description' },
+    { label: 'Category' },
+    { label: 'Gaushala/Katha' },
+    { label: 'Amount', className: 'text-right' },
+    { label: 'Payment Mode', className: 'text-center' },
+    { label: 'Date' },
     { label: 'Actions' }
   ];
 
-  const categories = ['Food', 'Medicine', 'Maintenance', 'Salary', 'Utility', 'Other'];
-
   const filterFields = [
-    { name: 'startDate', label: 'Start Date', type: 'date', icon: Calendar },
-    { name: 'endDate', label: 'End Date', type: 'date', icon: Calendar },
-    {
-      name: 'category',
-      label: 'Category',
-      type: 'select',
-      icon: Tag,
-      options: categories.map(cat => ({ value: cat, label: cat }))
-    },
+    { name: 'category', label: 'Category', placeholder: 'Search category...' },
     {
       name: 'gaushalaId',
       label: 'Gaushala',
       type: 'select',
       icon: Building2,
-      options: gaushalas.map(g => ({ value: g.id, label: g.name }))
+      options: gaushalaPagination.items.map(g => ({ value: g.id, label: g.name })),
+      isServerSearch: true,
+      onSearchChange: gaushalaPagination.handleSearch,
+      onLoadMore: gaushalaPagination.handleLoadMore,
+      hasMore: gaushalaPagination.hasMore,
+      loading: gaushalaPagination.loading
     },
     {
       name: 'kathaId',
       label: 'Katha',
       type: 'select',
       icon: Mic2,
-      options: kathas.map(k => ({ value: k.id, label: k.name }))
+      options: kathaPagination.items.map(k => ({ value: k.id, label: k.name })),
+      isServerSearch: true,
+      onSearchChange: kathaPagination.handleSearch,
+      onLoadMore: kathaPagination.handleLoadMore,
+      hasMore: kathaPagination.hasMore,
+      loading: kathaPagination.loading
     },
+    { name: 'startDate', label: 'From Date', type: 'date', icon: Calendar },
+    { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
     { name: 'minAmount', label: 'Min Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 0' },
     { name: 'maxAmount', label: 'Max Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 10000+' },
     {
@@ -66,10 +70,10 @@ const ExpenseList = ({
       icon: CreditCard,
       options: [
         { value: 'cash', label: 'Cash' },
-        { value: 'online', label: 'Online' },
-        { value: 'check', label: 'Check' }
+        { value: 'bank', label: 'Bank' },
+        { value: 'online', label: 'Online' }
       ]
-    },
+    }
   ];
 
   return (
@@ -142,42 +146,12 @@ const ExpenseList = ({
         ))}
       </AdminTable>
 
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <p className="text-sm text-gray-500">
-            Showing <span className="font-bold text-blue-600">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
-          </p>
-          <div className="flex items-center gap-1">
-            <button
-              disabled={filters.page === 1}
-              onClick={() => onPageChange(filters.page - 1)}
-              className="px-3 py-1.5 text-sm font-medium text-gray-500 hover:bg-gray-100 rounded-lg transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Prev
-            </button>
-            {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => onPageChange(page)}
-                className={`w-9 h-9 text-sm font-bold rounded-lg transition ${
-                  filters.page === page
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-gray-600 hover:bg-gray-100 border border-gray-200'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
-            <button
-              disabled={filters.page === pagination.totalPages}
-              onClick={() => onPageChange(filters.page + 1)}
-              className="px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-100 rounded-lg border border-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+         pagination={pagination}
+         filters={filters}
+         onPageChange={onPageChange}
+         onLimitChange={onLimitChange}
+       />
     </div>
   );
 };

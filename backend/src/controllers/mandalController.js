@@ -65,7 +65,7 @@ export const getAllMandals = async (req, res) => {
     });
 
     const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'rows' });
-    return sendSuccess(res, response);
+    return sendSuccess(res, response, 'All mandals records fetched successfully');
   } catch (error) {
     console.error('❌ [getAllMandals] Error:', error);
     return sendError(res, 'Failed to fetch mandals', 500, error);
@@ -146,7 +146,7 @@ export const getAllMembers = async (req, res) => {
     });
 
     const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
-    return sendSuccess(res, response);
+    return sendSuccess(res, response, 'All members records fetched successfully');
   } catch (error) {
     return sendError(res, 'Failed to fetch members', 500, error);
   }

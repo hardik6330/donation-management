@@ -1,9 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   useAddExpenseMutation,
-  useUpdateExpenseMutation,
-  useGetGaushalasQuery,
-  useGetKathasQuery
+  useUpdateExpenseMutation
 } from '../../../../services/apiSlice';
 import {
   Loader2, IndianRupee, Plus, Calendar, Tag, Building2, AlignLeft, CreditCard, Mic2, Edit,
@@ -15,13 +13,33 @@ import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 
-const AddExpenseModal = ({ isOpen, onClose, editingExpense = null }) => {
+const categories = [
+  { id: 'Food', name: 'Food' },
+  { id: 'Medicine', name: 'Medicine' },
+  { id: 'Maintenance', name: 'Maintenance' },
+  { id: 'Salary', name: 'Salary' },
+  { id: 'Utility', name: 'Utility' },
+  { id: 'Other', name: 'Other' },
+];
+
+const paymentModes = [
+  { id: 'cash', name: 'Cash' },
+  { id: 'online', name: 'Online' },
+  { id: 'check', name: 'Check' }
+];
+
+const AddExpenseModal = ({ 
+  isOpen, 
+  onClose, 
+  editingExpense = null,
+  gaushalaPagination,
+  kathaPagination
+}) => {
   const [addExpense, { isLoading: isAdding }] = useAddExpenseMutation();
   const [updateExpense, { isLoading: isUpdating }] = useUpdateExpenseMutation();
-  const { data: gaushalasData } = useGetGaushalasQuery({ fetchAll: 'true' });
-  const { data: kathasData } = useGetKathasQuery({ fetchAll: 'true' });
-  const gaushalas = gaushalasData?.data?.rows || [];
-  const kathas = kathasData?.data?.rows || [];
+  
+  const gaushalas = gaushalaPagination.items;
+  const kathas = kathaPagination.items;
 
   // Refs for Fast Entry
   const amountRef = useRef(null);
@@ -169,21 +187,6 @@ const AddExpenseModal = ({ isOpen, onClose, editingExpense = null }) => {
     }
   };
 
-  const categories = [
-    { id: 'Food', name: 'Food' },
-    { id: 'Medicine', name: 'Medicine' },
-    { id: 'Maintenance', name: 'Maintenance' },
-    { id: 'Salary', name: 'Salary' },
-    { id: 'Utility', name: 'Utility' },
-    { id: 'Other', name: 'Other' },
-  ];
-
-  const paymentModes = [
-    { id: 'cash', name: 'Cash' },
-    { id: 'online', name: 'Online' },
-    { id: 'check', name: 'Check' }
-  ];
-
   const isLoading = isAdding || isUpdating;
 
   return (
@@ -254,6 +257,10 @@ const AddExpenseModal = ({ isOpen, onClose, editingExpense = null }) => {
             setActive={setActiveDropdown}
             inputRef={gaushalaRef}
             icon={Building2}
+            isServerSearch={true}
+            onLoadMore={gaushalaPagination.handleLoadMore}
+            hasMore={gaushalaPagination.hasMore}
+            loading={gaushalaPagination.loading}
           />
         </div>
 
@@ -275,6 +282,10 @@ const AddExpenseModal = ({ isOpen, onClose, editingExpense = null }) => {
             setActive={setActiveDropdown}
             inputRef={kathaRef}
             icon={Mic2}
+            isServerSearch={true}
+            onLoadMore={kathaPagination.handleLoadMore}
+            hasMore={kathaPagination.hasMore}
+            loading={kathaPagination.loading}
           />
           <SearchableDropdown
             label="Payment Mode"

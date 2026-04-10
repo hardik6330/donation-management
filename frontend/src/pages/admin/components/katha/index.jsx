@@ -4,7 +4,13 @@ import AddKathaModal from './AddKathaModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetKathasQuery, useDeleteKathaMutation, useGetCitiesQuery, useGetSubLocationsQuery } from '../../../../services/apiSlice';
+import { 
+  useGetKathasQuery, 
+  useDeleteKathaMutation, 
+  useLazyGetCitiesQuery, 
+  useLazyGetSubLocationsQuery 
+} from '../../../../services/apiSlice';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const Katha = () => {
@@ -27,13 +33,22 @@ const Katha = () => {
   const { data: kathasData, isLoading: loading } = useGetKathasQuery({ ...filters, locationId });
   const [deleteKatha, { isLoading: isDeleting }] = useDeleteKathaMutation();
 
-  const { data: citiesData } = useGetCitiesQuery();
-  const { data: talukasData } = useGetSubLocationsQuery(filters.cityId, { skip: !filters.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(filters.talukaId, { skip: !filters.talukaId });
+  // Dropdown Paginations
+  const [triggerGetCities] = useLazyGetCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities);
 
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
+  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
+  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
+    additionalParams: { parentId: filters.cityId },
+    skip: !filters.cityId
+  });
+
+  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
+  const villagePagination = useDropdownPagination(triggerGetVillages, {
+    additionalParams: { parentId: filters.talukaId },
+    skip: !filters.talukaId
+  });
+
   const kathas = kathasData?.data?.rows || [];
   const pagination = {
     currentPage: kathasData?.data?.currentPage || 1,
@@ -72,10 +87,13 @@ const Katha = () => {
     const { name, value } = e.target;
     if (name === 'cityId') {
       setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
+      talukaPagination.reset();
+      villagePagination.reset();
       return;
     }
     if (name === 'talukaId') {
       setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
+      villagePagination.reset();
       return;
     }
     setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
@@ -83,10 +101,21 @@ const Katha = () => {
 
   const clearFilters = () => {
     setFilters({ search: '', cityId: '', talukaId: '', villageId: '', page: 1, limit: 10 });
+    cityPagination.reset();
+    talukaPagination.reset();
+    villagePagination.reset();
   };
 
   const handlePageChange = (newPage) => {
     setFilters(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
+    }
   };
 
   return (
@@ -100,9 +129,9 @@ const Katha = () => {
 
       <KathaList
         kathas={kathas}
-        cities={cities}
-        talukas={talukas}
-        villages={villages}
+        cityPagination={cityPagination}
+        talukaPagination={talukaPagination}
+        villagePagination={villagePagination}
         isLoading={loading}
         pagination={pagination}
         filters={filters}
@@ -111,6 +140,7 @@ const Katha = () => {
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
         hasPermission={hasPermission}
       />
 
@@ -118,7 +148,9 @@ const Katha = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         editingKatha={editingKatha}
-        cities={cities}
+        cityPagination={cityPagination}
+        talukaPagination={talukaPagination}
+        villagePagination={villagePagination}
       />
 
       <DeleteConfirmationModal

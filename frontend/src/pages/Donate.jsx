@@ -15,10 +15,11 @@ import { toast } from 'react-toastify';
 import confetti from 'canvas-confetti';
 
 // Reusable dropdown for Donate page
-const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false, required = false }) => {
+const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
+  const [width, setWidth] = useState(0);
   const ref = useRef(null);
   const listRef = useRef(null);
   const searchRef = useRef(null);
@@ -31,23 +32,20 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
     };
     if (isOpen) {
       document.addEventListener('mousedown', handleClick);
+      if (ref.current) setWidth(ref.current.offsetWidth);
       return () => document.removeEventListener('mousedown', handleClick);
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    setHighlightIndex(-1);
-    setSearch('');
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (listRef.current && highlightIndex >= 0) {
-      const el = listRef.current.children[highlightIndex];
-      if (el) el.scrollIntoView({ block: 'nearest' });
-    }
-  }, [highlightIndex]);
-
   const filtered = items.filter(i => i.name.toLowerCase().includes(search.toLowerCase()));
+
+  const handleToggle = () => {
+    if (!disabled) {
+      setIsOpen(!isOpen);
+      setSearch('');
+      setHighlightIndex(-1);
+    }
+  };
 
   const handleSelect = (item) => {
     onChange(item.id);
@@ -59,7 +57,11 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
     if (!isOpen) {
       if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        if (!disabled) setIsOpen(true);
+        if (!disabled) {
+          setIsOpen(true);
+          setSearch('');
+          setHighlightIndex(-1);
+        }
       }
       return;
     }
@@ -84,7 +86,7 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
       </label>
       <div
         tabIndex={0}
-        onClick={() => !disabled && setIsOpen(!isOpen)}
+        onClick={handleToggle}
         onKeyDown={handleKeyDown}
         className={`w-full px-4 py-2.5 border rounded-xl text-sm cursor-pointer flex items-center justify-between transition
           ${isOpen ? 'ring-2 ring-blue-500 border-blue-300' : 'border-gray-300'}
@@ -109,7 +111,7 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
       </div>
 
       {isOpen && (
-        <div className="absolute z-[120] mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" style={{ width: ref.current?.offsetWidth }}>
+        <div className="absolute z-[120] mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" style={{ width }}>
           {items.length > 5 && (
             <div className="p-2 border-b border-gray-50">
               <input
@@ -172,10 +174,10 @@ const Donate = () => {
     companyName: '', referenceName: '', amount: '', paymentMode: 'online',
   });
 
-  const { data: citiesData } = useGetCitiesQuery();
-  const { data: talukasData } = useGetSubLocationsQuery(formData.cityId, { skip: !formData.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(formData.talukaId, { skip: !formData.talukaId });
-  const { data: categoriesData } = useGetCategoriesQuery();
+  const { data: categoriesData } = useGetCategoriesQuery({ fetchAll: true });
+  const { data: citiesData } = useGetCitiesQuery({ fetchAll: true });
+  const { data: talukasData } = useGetSubLocationsQuery({ parentId: formData.cityId, fetchAll: true }, { skip: !formData.cityId });
+  const { data: villagesData } = useGetSubLocationsQuery({ parentId: formData.talukaId, fetchAll: true }, { skip: !formData.talukaId });
 
   const filterLocationId = formData.villageId || formData.talukaId || formData.cityId;
 
@@ -183,13 +185,13 @@ const Donate = () => {
     { locationId: filterLocationId, fetchAll: 'true' }, { skip: !filterLocationId }
   );
   const { data: kathasData, isFetching: isFetchingKathas } = useGetKathasQuery(
-    { locationId: filterLocationId, fetchAll: 'true' }, { skip: !filterLocationId }
+    { locationId: filterLocationId, status: 'active', fetchAll: 'true' }, { skip: !filterLocationId }
   );
 
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
-  const categories = categoriesData?.data || [];
+  const cities = citiesData?.data?.data || [];
+  const talukas = talukasData?.data?.data || [];
+  const villages = villagesData?.data?.data || [];
+  const categories = categoriesData?.data?.data || [];
   const gaushalas = gaushalasData?.data?.rows || [];
   const kathas = kathasData?.data?.rows || [];
 

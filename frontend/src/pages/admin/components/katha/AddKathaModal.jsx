@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddKathaMutation,
-  useUpdateKathaMutation,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery
+  useUpdateKathaMutation
 } from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
 import { MapPin, Mic2, Plus, Loader2, CheckCircle2, Calendar, Tag, CheckCircle, Edit, Mic2Icon } from 'lucide-react';
@@ -12,7 +10,14 @@ import SearchableDropdown from '../../../../components/common/SearchableDropdown
 import FormInput from '../../../../components/common/FormInput';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 
-const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
+const AddKathaModal = ({ 
+  isOpen, 
+  onClose, 
+  editingKatha,
+  cityPagination,
+  talukaPagination,
+  villagePagination
+}) => {
   const [formData, setFormData] = useState({
     name: '',
     cityId: '',
@@ -39,13 +44,9 @@ const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
-  const { data: citiesData } = useGetCitiesQuery();
-  const { data: talukasData } = useGetSubLocationsQuery(formData.cityId, { skip: !formData.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(formData.talukaId, { skip: !formData.talukaId });
-
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
+  const cities = cityPagination.items;
+  const talukas = talukaPagination.items;
+  const villages = villagePagination.items;
 
   const [addKatha, { isLoading: isAdding }] = useAddKathaMutation();
   const [updateKatha, { isLoading: isUpdating }] = useUpdateKathaMutation();
@@ -97,6 +98,8 @@ const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
         villageId: '',
         villageName: ''
       }));
+      talukaPagination.reset();
+      villagePagination.reset();
     } else if (field === 'taluka') {
       setFormData(prev => ({
         ...prev,
@@ -105,6 +108,7 @@ const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
         villageId: '',
         villageName: ''
       }));
+      villagePagination.reset();
     } else if (field === 'village') {
       setFormData(prev => ({
         ...prev,
@@ -208,6 +212,10 @@ const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
             setActive={setActiveDropdown}
             inputRef={cityRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={cityPagination.handleLoadMore}
+            hasMore={cityPagination.hasMore}
+            loading={cityPagination.loading}
           />
 
           <SearchableDropdown
@@ -224,6 +232,10 @@ const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
             disabled={!formData.cityName}
             inputRef={talukaRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={talukaPagination.handleLoadMore}
+            hasMore={talukaPagination.hasMore}
+            loading={talukaPagination.loading}
           />
 
           <SearchableDropdown
@@ -240,6 +252,10 @@ const AddKathaModal = ({ isOpen, onClose, editingKatha }) => {
             disabled={!formData.talukaName}
             inputRef={villageRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={villagePagination.handleLoadMore}
+            hasMore={villagePagination.hasMore}
+            loading={villagePagination.loading}
           />
 
           <SearchableDropdown

@@ -4,7 +4,13 @@ import AddExpenseModal from './AddExpenseModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetExpensesQuery, useDeleteExpenseMutation, useGetGaushalasQuery, useGetKathasQuery } from '../../../../services/apiSlice';
+import { 
+  useGetExpensesQuery, 
+  useDeleteExpenseMutation, 
+  useLazyGetGaushalasQuery, 
+  useLazyGetKathasQuery 
+} from '../../../../services/apiSlice';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const Expense = () => {
@@ -27,14 +33,17 @@ const Expense = () => {
     limit: 10
   });
 
-  // API calls moved to index.jsx
+  // API calls
   const { data: expensesData, isLoading: loading } = useGetExpensesQuery(filters);
-  const { data: gaushalasData } = useGetGaushalasQuery({ fetchAll: 'true' });
-  const { data: kathasData } = useGetKathasQuery({ fetchAll: 'true' });
   const [deleteExpense, { isLoading: isDeleting }] = useDeleteExpenseMutation();
 
-  const gaushalas = gaushalasData?.data?.rows || [];
-  const kathas = kathasData?.data?.rows || [];
+  // Dropdown Paginations
+  const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
+  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, { rowsKey: 'rows' });
+
+  const [triggerGetKathas] = useLazyGetKathasQuery();
+  const kathaPagination = useDropdownPagination(triggerGetKathas, { rowsKey: 'rows' });
+
   const expenses = expensesData?.data?.rows || [];
   const pagination = {
     currentPage: expensesData?.data?.currentPage || 1,
@@ -87,35 +96,46 @@ const Expense = () => {
       page: 1,
       limit: 10
     });
+    gaushalaPagination.reset();
+    kathaPagination.reset();
   };
 
   const handlePageChange = (newPage) => {
     setFilters(prev => ({ ...prev, page: newPage }));
   };
 
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader 
         title="Expense Management" 
-        subtitle="Track and manage system expenses"
-        buttonText={hasPermission('expenses', 'entry') ? "Add Expense" : null}
+        subtitle="Track and manage all system expenses"
+        buttonText={hasPermission('expense', 'entry') ? "Add Expense" : null}
         onButtonClick={handleAdd}
       />
 
-      <ExpenseList
+      <ExpenseList 
         expenses={expenses}
-        gaushalas={gaushalas}
-        kathas={kathas}
         isLoading={loading}
         isDeleting={isDeleting}
         pagination={pagination}
         filters={filters}
-        onEdit={handleEdit} 
+        onEdit={handleEdit}
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
-        hasPermission={hasPermission} 
+        onLimitChange={handleLimitChange}
+        hasPermission={hasPermission}
+        gaushalaPagination={gaushalaPagination}
+        kathaPagination={kathaPagination}
       />
 
       {isModalOpen && (
@@ -123,8 +143,8 @@ const Expense = () => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           editingExpense={editingExpense}
-          gaushalas={gaushalas}
-          kathas={kathas}
+          gaushalaPagination={gaushalaPagination}
+          kathaPagination={kathaPagination}
           key={editingExpense?.id || 'new'}
         />
       )}

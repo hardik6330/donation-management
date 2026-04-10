@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import Pagination from '../../../../components/common/Pagination';
 
 const KartalDhunList = ({ 
   records, 
@@ -11,16 +12,17 @@ const KartalDhunList = ({
   isDeleting, 
   pagination, 
   filters, 
-  filterData,
+  cityPagination,
+  talukaPagination,
+  villagePagination,
   onEdit, 
   onDelete, 
   onFilterChange, 
   onClearFilters, 
   onPageChange,
+  onLimitChange,
   hasPermission 
 }) => {
-  const { cities = [], talukas = [], villages = [] } = filterData || {};
-
   const tableHeaders = [
     { label: 'Kartal Dhun Name' },
     { label: 'Date' },
@@ -38,21 +40,38 @@ const KartalDhunList = ({
       label: 'City', 
       type: 'select', 
       icon: MapPin,
-      options: cities.map(c => ({ value: c.id, label: c.name }))
+      options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
+      isServerSearch: true,
+      onSearchChange: cityPagination.handleSearch,
+      onLoadMore: cityPagination.handleLoadMore,
+      hasMore: cityPagination.hasMore,
+      loading: cityPagination.loading
     },
     { 
       name: 'talukaId', 
       label: 'Taluka', 
       type: 'select', 
       icon: MapPin,
-      options: talukas.map(t => ({ value: t.id, label: t.name }))
+      options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
+      disabled: !filters.cityId,
+      isServerSearch: true,
+      onSearchChange: talukaPagination.handleSearch,
+      onLoadMore: talukaPagination.handleLoadMore,
+      hasMore: talukaPagination.hasMore,
+      loading: talukaPagination.loading
     },
     { 
       name: 'villageId', 
       label: 'Village', 
       type: 'select', 
       icon: MapPin,
-      options: villages.map(v => ({ value: v.id, label: v.name }))
+      options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
+      disabled: !filters.talukaId,
+      isServerSearch: true,
+      onSearchChange: villagePagination.handleSearch,
+      onLoadMore: villagePagination.handleLoadMore,
+      hasMore: villagePagination.hasMore,
+      loading: villagePagination.loading
     },
     { name: 'startDate', label: 'From Date', type: 'date', icon: Calendar },
     { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
@@ -105,29 +124,12 @@ const KartalDhunList = ({
         ))}
       </AdminTable>
 
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <p className="text-sm text-gray-500">
-            Showing <span className="font-bold">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> records
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={filters.page === 1}
-              onClick={() => onPageChange(filters.page - 1)}
-              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-bold transition disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              disabled={filters.page === pagination.totalPages}
-              onClick={() => onPageChange(filters.page + 1)}
-              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-bold transition disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination 
+        pagination={pagination}
+        filters={filters}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+      />
     </div>
   );
 };

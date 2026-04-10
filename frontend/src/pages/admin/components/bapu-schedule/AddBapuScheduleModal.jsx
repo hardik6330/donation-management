@@ -1,9 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddBapuScheduleMutation,
-  useUpdateBapuScheduleMutation,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery
+  useUpdateBapuScheduleMutation
 } from '../../../../services/apiSlice';
 import { Calendar, X, ChevronDown, Loader2, Clock, MapPin, User, Phone, Edit, Tag } from 'lucide-react';
 import { toast } from 'react-toastify';
@@ -19,12 +17,18 @@ const eventTypeOptions = [
   { id: 'Personal', name: 'Personal' }
 ];
 
-const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
+const AddBapuScheduleModal = ({ 
+  isOpen, 
+  onClose, 
+  editingSchedule,
+  cityPagination,
+  talukaPagination,
+  villagePagination,
+  setModalState
+}) => {
   const [addSchedule, { isLoading: isAdding }] = useAddBapuScheduleMutation();
   const [updateSchedule, { isLoading: isUpdating }] = useUpdateBapuScheduleMutation();
   const isLoading = isAdding || isUpdating;
-
-  const { data: citiesData } = useGetCitiesQuery();
 
   // Initial state logic moved here
   const getInitialState = () => {
@@ -104,12 +108,9 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
-  const { data: talukasData } = useGetSubLocationsQuery(addForm.cityId, { skip: !addForm.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(addForm.talukaId, { skip: !addForm.talukaId });
-
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
+  const cities = cityPagination.items;
+  const talukas = talukaPagination.items;
+  const villages = villagePagination.items;
 
   // Focus effect remains
   useEffect(() => {
@@ -137,18 +138,23 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
     if (name === 'cityName') {
       setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
       setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
+      cityPagination.handleSearch(value);
       setActiveAddDropdown('cityName');
       return;
     }
     if (name === 'talukaName') {
       setAddDropdownLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
       setAddForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, talukaId: '' }));
+      talukaPagination.handleSearch(value);
       setActiveAddDropdown('talukaName');
       return;
     }
     if (name === 'villageName') {
       setAddDropdownLabels(prev => ({ ...prev, villageName: value }));
       setAddForm(prev => ({ ...prev, villageId: '' }));
+      villagePagination.handleSearch(value);
       setActiveAddDropdown('villageName');
       return;
     }
@@ -163,9 +169,14 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
     } else if (field === 'cityId') {
       setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
+      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
+      talukaPagination.reset();
+      villagePagination.reset();
     } else if (field === 'talukaId') {
       setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
+      setModalState(prev => ({ ...prev, talukaId: id }));
+      villagePagination.reset();
     } else if (field === 'villageId') {
       setAddForm(prev => ({ ...prev, villageId: id }));
       setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
@@ -265,6 +276,10 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
             required
             inputRef={cityRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={cityPagination.handleLoadMore}
+            hasMore={cityPagination.hasMore}
+            loading={cityPagination.loading}
           />
 
           <SearchableDropdown
@@ -281,6 +296,10 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
             disabled={!addDropdownLabels.cityName}
             inputRef={talukaRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={talukaPagination.handleLoadMore}
+            hasMore={talukaPagination.hasMore}
+            loading={talukaPagination.loading}
           />
 
           <SearchableDropdown
@@ -297,6 +316,10 @@ const AddBapuScheduleModal = ({ isOpen, onClose, editingSchedule }) => {
             disabled={!addDropdownLabels.talukaName}
             inputRef={villageRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={villagePagination.handleLoadMore}
+            hasMore={villagePagination.hasMore}
+            loading={villagePagination.loading}
           />
 
           <FormInput

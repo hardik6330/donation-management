@@ -92,7 +92,7 @@ export const logoutUser = async (req, res) => {
 export const getUsers = async (req, res) => {
   try {
     const users = await User.findAll();
-    return sendSuccess(res, users, 'Users fetched successfully');
+    return sendSuccess(res, users, 'All users records fetched successfully');
   } catch (error) {
     return sendError(res, 'Error fetching users', 500, error);
   }

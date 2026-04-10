@@ -4,7 +4,14 @@ import AddLocationModal from './AddLocationModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetCitiesQuery, useGetSubLocationsQuery, useDeleteLocationMutation } from '../../../../services/apiSlice';
+import { 
+  useGetCitiesQuery, 
+  useGetSubLocationsQuery, 
+  useDeleteLocationMutation,
+  useLazyGetCitiesQuery,
+  useLazyGetSubLocationsQuery
+} from '../../../../services/apiSlice';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 import { ChevronRight, Home } from 'lucide-react';
 
@@ -15,37 +22,94 @@ const Location = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingLocation, setEditingLocation] = useState(null);
 
+  const [filters, setFilters] = useState({
+    search: '',
+    page: 1,
+    limit: 10
+  });
+
   // Breadcrumb navigation state
   const [breadcrumb, setBreadcrumb] = useState([]); // [{ id, name, type }]
   const currentParent = breadcrumb.length > 0 ? breadcrumb[breadcrumb.length - 1] : null;
 
   // API calls
-  const { data: citiesData, isLoading: citiesLoading } = useGetCitiesQuery();
+  const { data: citiesData, isLoading: citiesLoading } = useGetCitiesQuery(filters, { skip: !!currentParent });
   const { data: subLocationsData, isLoading: subLoading } = useGetSubLocationsQuery(
-    currentParent?.id,
+    { parentId: currentParent?.id, ...filters },
     { skip: !currentParent }
   );
   const [deleteLocation, { isLoading: isDeleting }] = useDeleteLocationMutation();
 
-  const cities = citiesData?.data || [];
-  const subLocations = subLocationsData?.data || [];
+  // Dropdown Paginations for Modal
+  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
+  const [triggerGetCities] = useLazyGetCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities, { fields: 'id,name' });
 
-  const locations = currentParent ? subLocations : cities;
+  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
+  const talukaPagination = useDropdownPagination(triggerGetTalukas, { 
+    fields: 'id,name', 
+    additionalParams: { parentId: modalState.cityId },
+    skip: !modalState.cityId
+  });
+
+  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
+  const villagePagination = useDropdownPagination(triggerGetVillages, { 
+    fields: 'id,name', 
+    additionalParams: { parentId: modalState.talukaId },
+    skip: !modalState.talukaId
+  });
+
+  const locationsData = currentParent ? subLocationsData : citiesData;
+  const locations = locationsData?.data?.data || [];
   const isLoading = currentParent ? subLoading : citiesLoading;
+
+  const pagination = {
+    currentPage: locationsData?.data?.currentPage || 1,
+    totalPages: locationsData?.data?.totalPages || 1,
+    totalData: locationsData?.data?.totalData || 0,
+    limit: locationsData?.data?.limit || 10
+  };
 
   // Determine what type of children we're viewing
   const currentLevel = breadcrumb.length === 0 ? 'city' : breadcrumb.length === 1 ? 'taluka' : 'village';
   const canDrillDown = currentLevel !== 'village';
 
   const handleDrillDown = (location) => {
+    setFilters(prev => ({ ...prev, page: 1, search: '' }));
     setBreadcrumb(prev => [...prev, { id: location.id, name: location.name, type: location.type }]);
   };
 
   const handleBreadcrumbClick = (index) => {
+    setFilters(prev => ({ ...prev, page: 1, search: '' }));
     if (index === -1) {
       setBreadcrumb([]);
     } else {
       setBreadcrumb(prev => prev.slice(0, index + 1));
+    }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      search: '',
+      page: 1,
+      limit: 10
+    });
+  };
+
+  const handlePageChange = (newPage) => {
+    setFilters(prev => ({ ...prev, page: newPage }));
+  };
+
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
     }
   };
 
@@ -119,10 +183,18 @@ const Location = () => {
       <LocationList
         locations={locations}
         isLoading={isLoading}
+        isDeleting={isDeleting}
+        currentLevel={currentLevel}
+        canDrillDown={canDrillDown}
+        pagination={pagination}
+        filters={filters}
+        onView={handleDrillDown}
         onEdit={handleEdit}
         onDelete={handleDelete}
-        onView={handleDrillDown}
-        canViewSub={canDrillDown}
+        onFilterChange={handleFilterChange}
+        onClearFilters={clearFilters}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
         hasPermission={hasPermission}
       />
 
@@ -133,6 +205,10 @@ const Location = () => {
           editingData={editingLocation}
           parentId={currentParent?.id}
           level={currentLevel}
+          cityPagination={cityPagination}
+          talukaPagination={talukaPagination}
+          villagePagination={villagePagination}
+          setModalState={setModalState}
           key={editingLocation?.id || 'new'}
         />
       )}

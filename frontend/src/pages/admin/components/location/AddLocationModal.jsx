@@ -1,20 +1,24 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   useAddCombinedMasterDataMutation,
-  useUpdateLocationMutation,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery
+  useUpdateLocationMutation
 } from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
 import { MapPin, Plus, Loader2, CheckCircle2, Edit } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
 
-const AddLocationModal = ({ isOpen, onClose, editingData }) => {
+const AddLocationModal = ({ 
+  isOpen, 
+  onClose, 
+  editingData,
+  cityPagination,
+  talukaPagination,
+  villagePagination,
+  setModalState
+}) => {
   const [addCombinedMaster, { isLoading: isAdding }] = useAddCombinedMasterDataMutation();
   const [updateLocation, { isLoading: isUpdatingLocation }] = useUpdateLocationMutation();
   const isLoading = isAdding || isUpdatingLocation;
-
-  const { data: citiesData } = useGetCitiesQuery();
 
   const getInitialState = () => {
     if (editingData) {
@@ -44,12 +48,17 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
   const villageRef = useRef(null);
   const submitRef = useRef(null);
 
-  const { data: talukasData } = useGetSubLocationsQuery(formData.cityId, { skip: !formData.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(formData.talukaId, { skip: !formData.talukaId });
+  const cities = cityPagination.items;
+  const talukas = talukaPagination.items;
+  const villages = villagePagination.items;
 
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
+  // Handle scroll for each dropdown
+  const handleScroll = (e, pagination) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    if (scrollHeight - scrollTop <= clientHeight + 10 && !pagination.loading && pagination.hasMore) {
+      pagination.handleLoadMore();
+    }
+  };
 
   // Close dropdowns on click outside
   useEffect(() => {
@@ -82,6 +91,9 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
         talukaId: '',
         village: ''
       }));
+      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
+      talukaPagination.reset();
+      villagePagination.reset();
     } else if (name === 'taluka') {
       setFormData(prev => ({
         ...prev,
@@ -89,6 +101,8 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
         talukaId: id,
         village: ''
       }));
+      setModalState(prev => ({ ...prev, talukaId: id }));
+      villagePagination.reset();
     } else if (name === 'village') {
       setFormData(prev => ({ ...prev, village: value }));
     }
@@ -108,7 +122,8 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
         talukaId: '',
         village: ''
       }));
-      setActiveDropdown('city');
+      setModalState(prev => ({ ...prev, cityId: selectedCity ? selectedCity.id : '', talukaId: '' }));
+      cityPagination.handleSearch(value);
       return;
     }
 
@@ -120,12 +135,14 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
         talukaId: selectedTaluka ? selectedTaluka.id : '',
         village: ''
       }));
-      setActiveDropdown('taluka');
+      setModalState(prev => ({ ...prev, talukaId: selectedTaluka ? selectedTaluka.id : '' }));
+      talukaPagination.handleSearch(value);
       return;
     }
 
     if (name === 'village') {
       setFormData(prev => ({ ...prev, village: value }));
+      villagePagination.handleSearch(value);
       setActiveDropdown('village');
       return;
     }
@@ -161,17 +178,19 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
 
   if (!isOpen) return null;
 
-  const renderDropdown = (name, items, valueField = 'name', idField = 'id') => {
+  const renderDropdown = (name, pagination, valueField = 'name', idField = 'id') => {
+    const items = pagination.items;
     const filteredItems = items.filter(item =>
       item[valueField].toLowerCase().includes((formData[name] || '').toLowerCase())
     );
 
-    if (activeDropdown !== name || filteredItems.length === 0 || editingData) return null;
+    if (activeDropdown !== name || (filteredItems.length === 0 && !pagination.loading) || editingData) return null;
 
     return (
       <div
         className="absolute z-[110] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
         onClick={(e) => e.stopPropagation()}
+        onScroll={(e) => handleScroll(e, pagination)}
       >
         {filteredItems.map((item) => (
           <button
@@ -183,6 +202,11 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
             {item[valueField]}
           </button>
         ))}
+        {pagination.loading && (
+          <div className="flex justify-center p-2">
+            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+          </div>
+        )}
       </div>
     );
   };
@@ -197,9 +221,6 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
     >
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-4">
-          {/* <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
-            <MapPin className="w-4 h-4" /> {editingData ? 'Location Details' : 'Add New Location'}
-          </div> */}
           <div className={`grid grid-cols-1 ${editingData ? 'sm:grid-cols-1' : 'sm:grid-cols-3'} gap-4`}>
             <div className="space-y-2 relative">
               <label className="text-xs font-bold text-gray-500 uppercase">City / Location Name</label>
@@ -215,7 +236,7 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
                 placeholder="Ex: Bhavnagar"
               />
-              {renderDropdown('city', cities)}
+              {renderDropdown('city', cityPagination)}
             </div>
             
             {!editingData && (
@@ -235,7 +256,7 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
                     placeholder="Ex: Ghogha"
                   />
-                  {renderDropdown('taluka', talukas)}
+                  {renderDropdown('taluka', talukaPagination)}
                 </div>
                 <div className="space-y-2 relative">
                   <label className="text-xs font-bold text-gray-500 uppercase">Village</label>
@@ -252,7 +273,7 @@ const AddLocationModal = ({ isOpen, onClose, editingData }) => {
                     className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
                     placeholder="Ex: Rampar"
                   />
-                  {renderDropdown('village', villages)}
+                  {renderDropdown('village', villagePagination)}
                 </div>
               </>
             )}

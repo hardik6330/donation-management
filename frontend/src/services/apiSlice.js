@@ -188,10 +188,18 @@ export const apiSlice = createApi({
     }),
     // Master Data Endpoints
     getCities: builder.query({
-      query: () => '/master/cities',
+      query: (params) => ({
+        url: '/master/cities',
+        params,
+      }),
+      providesTags: ['Cities'],
     }),
     getSubLocations: builder.query({
-      query: (parentId) => `/master/sub-locations/${parentId}`,
+      query: ({ parentId, ...params }) => ({
+        url: `/master/sub-locations/${parentId}`,
+        params,
+      }),
+      providesTags: ['Cities'],
     }),
     getCategories: builder.query({
       query: (params) => ({
@@ -519,10 +527,15 @@ export const {
   useGetAllDonationsQuery,
   useGetDonorsQuery,
   useGetCitiesQuery,
+  useLazyGetCitiesQuery,
   useGetSubLocationsQuery,
+  useLazyGetSubLocationsQuery,
   useGetCategoriesQuery,
+  useLazyGetCategoriesQuery,
   useGetGaushalasQuery,
+  useLazyGetGaushalasQuery,
   useGetKathasQuery,
+  useLazyGetKathasQuery,
   useAddLocationMasterMutation,
   useUpdateLocationMutation,
   useDeleteLocationMutation,

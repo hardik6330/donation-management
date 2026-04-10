@@ -77,7 +77,7 @@ export const getAllExpenses = async (req, res) => {
     });
 
     const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
-    return sendSuccess(res, response, 'Expenses fetched successfully');
+    return sendSuccess(res, response, 'All expenses records fetched successfully');
   } catch (error) {
     return sendError(res, 'Failed to fetch expenses', 500, error);
   }

@@ -1,12 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   useCreateOrderMutation,
-  useGetUserByMobileQuery,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery,
-  useGetGaushalasQuery,
-  useGetKathasQuery,
-  useGetCategoriesQuery
+  useGetUserByMobileQuery
 } from '../../../../services/apiSlice';
 import {
   Loader2, IndianRupee, Plus, Phone, User,
@@ -19,10 +14,17 @@ import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 
-const AddDonationModal = ({ isOpen, onClose }) => {
+const AddDonationModal = ({ 
+  isOpen, 
+  onClose,
+  cityPagination,
+  talukaPagination,
+  villagePagination,
+  gaushalaPagination,
+  kathaPagination,
+  categoryPagination
+}) => {
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
-  const { data: categoriesData } = useGetCategoriesQuery();
-  const { data: citiesData } = useGetCitiesQuery();
 
   const [addForm, setAddForm] = useState({
     mobileNumber: '',
@@ -70,20 +72,14 @@ const AddDonationModal = ({ isOpen, onClose }) => {
   const amountRef = useRef(null);
   const submitRef = useRef(null);
 
-  const { data: talukasData } = useGetSubLocationsQuery(addForm.cityId, { skip: !addForm.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery(addForm.talukaId, { skip: !addForm.talukaId });
+  const cities = cityPagination.items;
+  const talukas = talukaPagination.items;
+  const villages = villagePagination.items;
+  const gaushalas = gaushalaPagination.items;
+  const kathas = kathaPagination.items;
+  const categories = categoryPagination.items;
 
-  // Dynamic filtering for gaushalas/kathas based on selected location in modal
   const selectedLocationId = addForm.villageId || addForm.talukaId || addForm.cityId;
-  const { data: gaushalasData } = useGetGaushalasQuery({ locationId: selectedLocationId, fetchAll: 'true' }, { skip: !selectedLocationId });
-  const { data: kathasData } = useGetKathasQuery({ locationId: selectedLocationId, status: 'active', fetchAll: 'true' }, { skip: !selectedLocationId });
-
-  const cities = citiesData?.data || [];
-  const talukas = talukasData?.data || [];
-  const villages = villagesData?.data || [];
-  const gaushalas = gaushalasData?.data?.rows || [];
-  const kathas = kathasData?.data?.rows || [];
-  const categories = categoriesData?.data || [];
 
   const { data: existingUser } = useGetUserByMobileQuery(addForm.mobileNumber, {
     skip: addForm.mobileNumber.length !== 10 || !isOpen,

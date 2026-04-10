@@ -57,7 +57,7 @@ export const seedRoles = async () => {
 export const getAllRoles = async (req, res) => {
   try {
     const roles = await Role.findAll({ order: [['name', 'ASC']] });
-    return sendSuccess(res, roles);
+    return sendSuccess(res, roles, 'All roles records fetched successfully');
   } catch (error) {
     return sendError(res, 'Failed to fetch roles', 500, error);
   }
