@@ -35,19 +35,20 @@ const Gaushala = () => {
   const [deleteGaushala, { isLoading: isDeleting }] = useDeleteGaushalaMutation();
 
   // Dropdown Paginations
+  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
   const [triggerGetCities] = useLazyGetCitiesQuery();
   const cityPagination = useDropdownPagination(triggerGetCities);
 
   const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
   const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.cityId },
-    skip: !filters.cityId
+    additionalParams: { parentId: filters.cityId || modalState.cityId },
+    skip: !(filters.cityId || modalState.cityId)
   });
 
   const [triggerGetVillages] = useLazyGetSubLocationsQuery();
   const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.talukaId },
-    skip: !filters.talukaId
+    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
+    skip: !(filters.talukaId || modalState.talukaId)
   });
 
   const gaushalas = gaushalasData?.data?.rows || [];
@@ -145,13 +146,14 @@ const Gaushala = () => {
         hasPermission={hasPermission}
       />
 
-      <AddGaushalaModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <AddGaushalaModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         editingGaushala={editingGaushala}
         cityPagination={cityPagination}
         talukaPagination={talukaPagination}
         villagePagination={villagePagination}
+        setModalState={setModalState}
         key={editingGaushala?.id || 'new'}
       />
 

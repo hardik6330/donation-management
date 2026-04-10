@@ -9,13 +9,14 @@ import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 
-const AddGaushalaModal = ({ 
-  isOpen, 
-  onClose, 
+const AddGaushalaModal = ({
+  isOpen,
+  onClose,
   editingGaushala,
   cityPagination,
   talukaPagination,
-  villagePagination
+  villagePagination,
+  setModalState
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -87,6 +88,7 @@ const AddGaushalaModal = ({
         villageId: '',
         villageName: ''
       }));
+      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
       talukaPagination.reset();
       villagePagination.reset();
     } else if (field === 'taluka') {
@@ -97,6 +99,7 @@ const AddGaushalaModal = ({
         villageId: '',
         villageName: ''
       }));
+      setModalState(prev => ({ ...prev, talukaId: id }));
       villagePagination.reset();
     } else if (field === 'village') {
       setFormData(prev => ({
@@ -113,9 +116,11 @@ const AddGaushalaModal = ({
 
     if (name === 'cityName') {
       setFormData(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
       setActiveDropdown('cityName');
     } else if (name === 'talukaName') {
       setFormData(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, talukaId: '' }));
       setActiveDropdown('talukaName');
     } else if (name === 'villageName') {
       setFormData(prev => ({ ...prev, villageName: value, villageId: '' }));

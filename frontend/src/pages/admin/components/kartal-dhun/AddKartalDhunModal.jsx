@@ -10,13 +10,14 @@ import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 
-const AddKartalDhunModal = ({ 
-  isOpen, 
-  onClose, 
+const AddKartalDhunModal = ({
+  isOpen,
+  onClose,
   editingRecord = null,
   cityPagination,
   talukaPagination,
-  villagePagination
+  villagePagination,
+  setModalState
 }) => {
   const [addRecord, { isLoading: isAdding }] = useAddKartalDhunMutation();
   const [updateRecord, { isLoading: isUpdating }] = useUpdateKartalDhunMutation();
@@ -76,11 +77,13 @@ const AddKartalDhunModal = ({
     const { name, value } = e.target;
     if (name === 'cityName') {
       setForm(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', talukaName: '', villageId: '', villageName: '' }));
+      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
       setActiveDropdown('cityName');
       return;
     }
     if (name === 'talukaName') {
       setForm(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '', villageName: '' }));
+      setModalState(prev => ({ ...prev, talukaId: '' }));
       setActiveDropdown('talukaName');
       return;
     }
@@ -95,10 +98,12 @@ const AddKartalDhunModal = ({
   const handleDropdownSelect = (field, id, name) => {
     if (field === 'cityId') {
       setForm(prev => ({ ...prev, cityId: id, cityName: name, talukaId: '', talukaName: '', villageId: '', villageName: '' }));
+      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
       talukaPagination.reset();
       villagePagination.reset();
     } else if (field === 'talukaId') {
       setForm(prev => ({ ...prev, talukaId: id, talukaName: name, villageId: '', villageName: '' }));
+      setModalState(prev => ({ ...prev, talukaId: id }));
       villagePagination.reset();
     } else if (field === 'villageId') {
       setForm(prev => ({ ...prev, villageId: id, villageName: name }));

@@ -14,15 +14,16 @@ import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 
-const AddDonationModal = ({ 
-  isOpen, 
+const AddDonationModal = ({
+  isOpen,
   onClose,
   cityPagination,
   talukaPagination,
   villagePagination,
   gaushalaPagination,
   kathaPagination,
-  categoryPagination
+  categoryPagination,
+  setModalState
 }) => {
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
 
@@ -141,12 +142,14 @@ const AddDonationModal = ({
     if (name === 'cityName') {
       setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
       setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
       setActiveAddDropdown('cityName');
       return;
     }
     if (name === 'talukaName') {
       setAddDropdownLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
       setAddForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, talukaId: '' }));
       setActiveAddDropdown('talukaName');
       return;
     }
@@ -196,9 +199,14 @@ const AddDonationModal = ({
     if (field === 'cityId') {
       setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
+      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
+      talukaPagination.reset();
+      villagePagination.reset();
     } else if (field === 'talukaId') {
       setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
+      setModalState(prev => ({ ...prev, talukaId: id }));
+      villagePagination.reset();
     } else if (field === 'villageId') {
       setAddForm(prev => ({ ...prev, villageId: id }));
       setAddDropdownLabels(prev => ({ ...prev, villageName: name }));

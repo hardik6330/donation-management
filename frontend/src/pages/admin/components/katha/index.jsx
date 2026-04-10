@@ -34,19 +34,20 @@ const Katha = () => {
   const [deleteKatha, { isLoading: isDeleting }] = useDeleteKathaMutation();
 
   // Dropdown Paginations
+  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
   const [triggerGetCities] = useLazyGetCitiesQuery();
   const cityPagination = useDropdownPagination(triggerGetCities);
 
   const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
   const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.cityId },
-    skip: !filters.cityId
+    additionalParams: { parentId: filters.cityId || modalState.cityId },
+    skip: !(filters.cityId || modalState.cityId)
   });
 
   const [triggerGetVillages] = useLazyGetSubLocationsQuery();
   const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.talukaId },
-    skip: !filters.talukaId
+    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
+    skip: !(filters.talukaId || modalState.talukaId)
   });
 
   const kathas = kathasData?.data?.rows || [];
@@ -144,13 +145,14 @@ const Katha = () => {
         hasPermission={hasPermission}
       />
 
-      <AddKathaModal 
+      <AddKathaModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         editingKatha={editingKatha}
         cityPagination={cityPagination}
         talukaPagination={talukaPagination}
         villagePagination={villagePagination}
+        setModalState={setModalState}
       />
 
       <DeleteConfirmationModal

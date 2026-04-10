@@ -10,13 +10,14 @@ import SearchableDropdown from '../../../../components/common/SearchableDropdown
 import FormInput from '../../../../components/common/FormInput';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 
-const AddKathaModal = ({ 
-  isOpen, 
-  onClose, 
+const AddKathaModal = ({
+  isOpen,
+  onClose,
   editingKatha,
   cityPagination,
   talukaPagination,
-  villagePagination
+  villagePagination,
+  setModalState
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -98,6 +99,7 @@ const AddKathaModal = ({
         villageId: '',
         villageName: ''
       }));
+      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
       talukaPagination.reset();
       villagePagination.reset();
     } else if (field === 'taluka') {
@@ -108,6 +110,7 @@ const AddKathaModal = ({
         villageId: '',
         villageName: ''
       }));
+      setModalState(prev => ({ ...prev, talukaId: id }));
       villagePagination.reset();
     } else if (field === 'village') {
       setFormData(prev => ({
@@ -129,9 +132,11 @@ const AddKathaModal = ({
     }
     if (name === 'cityName') {
       setFormData(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
       setActiveDropdown('cityName');
     } else if (name === 'talukaName') {
       setFormData(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '' }));
+      setModalState(prev => ({ ...prev, talukaId: '' }));
       setActiveDropdown('talukaName');
     } else if (name === 'villageName') {
       setFormData(prev => ({ ...prev, villageName: value, villageId: '' }));

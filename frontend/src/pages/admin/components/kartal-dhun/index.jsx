@@ -36,19 +36,20 @@ const KartalDhun = () => {
   const [deleteRecord, { isLoading: isDeleting }] = useDeleteKartalDhunMutation();
 
   // Dropdown Paginations
+  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
   const [triggerGetCities] = useLazyGetCitiesQuery();
   const cityPagination = useDropdownPagination(triggerGetCities);
 
   const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
   const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.cityId },
-    skip: !filters.cityId
+    additionalParams: { parentId: filters.cityId || modalState.cityId },
+    skip: !(filters.cityId || modalState.cityId)
   });
 
   const [triggerGetVillages] = useLazyGetSubLocationsQuery();
   const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.talukaId },
-    skip: !filters.talukaId
+    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
+    skip: !(filters.talukaId || modalState.talukaId)
   });
 
   const records = listData?.data?.rows || [];
@@ -161,13 +162,14 @@ const KartalDhun = () => {
         villagePagination={villagePagination}
       />
 
-      <AddKartalDhunModal 
+      <AddKartalDhunModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         editingRecord={editingRecord}
         cityPagination={cityPagination}
         talukaPagination={talukaPagination}
         villagePagination={villagePagination}
+        setModalState={setModalState}
       />
 
       <DeleteConfirmationModal
