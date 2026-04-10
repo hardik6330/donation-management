@@ -24,15 +24,15 @@ const ExpenseList = ({
   kathaPagination
 }) => {
   const tableHeaders = [
-    { label: 'Description' },
-    { label: 'Category' },
-    { label: 'Gaushala/Katha' },
-    { label: 'Amount', className: 'text-right' },
-    { label: 'Payment Mode', className: 'text-center' },
     { label: 'Date' },
+    { label: 'Category' },
+    { label: 'Amount', className: 'text-right' },
+    { label: 'Gaushala/Katha' },
+    { label: 'Payment Mode', className: 'text-center' },
+    { label: 'Description' },
     { label: 'Actions' }
   ];
-
+  
   const filterFields = [
     { name: 'category', label: 'Category', placeholder: 'Search category...' },
     {
@@ -96,8 +96,8 @@ const ExpenseList = ({
               {new Date(expense.date).toLocaleDateString('en-IN')}
             </td>
             <td className="p-4 px-6 font-bold text-gray-800">{expense.category}</td>
-            <td className="p-4 px-6 text-blue-600 font-bold">
-              <div className="flex items-center gap-0.5">
+            <td className="p-4 px-6 text-blue-600 font-bold text-right">
+              <div className="flex items-center justify-end gap-0.5">
                 <IndianRupee className="w-3.5 h-3.5" />
                 {Number(expense.amount).toLocaleString('en-IN')}
               </div>
