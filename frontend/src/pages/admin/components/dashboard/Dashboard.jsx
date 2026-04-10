@@ -32,7 +32,7 @@ const Dashboard = () => {
       <div className="bg-blue-600 p-8 rounded-2xl text-white relative overflow-hidden shadow-xl shadow-blue-200">
         <div className="relative z-10 max-w-lg">
           <h2 className="text-2xl font-bold mb-2">{getGreeting()}, {user.name || 'Admin'}</h2>
-          <p className="opacity-90 text-sm leading-relaxed">Manage your donations, track donors, and organize your categories and locations with ease. Your hard work makes our community stronger.</p>
+          <p className="opacity-90 text-sm leading-relaxed">Manage your Shree Sarveshwar Gaudham donations, track donors, and organize your categories and locations with ease. Your hard work makes our community stronger.</p>
         </div>
         <div className="absolute right-[-20px] bottom-[-20px] opacity-10 rotate-12">
           <HandCoins className="w-64 h-64" />

@@ -5,6 +5,7 @@ export const getStatusColor = (status) => {
     completed: 'text-green-600',
     paid: 'text-green-600',
     active: 'text-green-600',
+    partially_paid: 'text-orange-600',
     pending: 'text-yellow-600',
     scheduled: 'text-blue-600',
     upcoming: 'text-blue-600',
@@ -33,7 +34,8 @@ export const getPaymentModeColor = (mode) => {
     cash: 'text-blue-600',
     online: 'text-purple-600',
     pay_later: 'text-orange-600',
-    check: 'text-orange-600',
+    cheque: 'text-teal-600',
+    partially_paid: 'text-amber-600',
   };
   return colors[mode] || 'text-gray-500';
 };

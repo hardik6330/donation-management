@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import logo from '../../../assets/logo.png';
 import { 
   LayoutDashboard, 
   HandCoins, 
@@ -33,7 +34,7 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
     { id: 'gaushala', label: 'Gaushala', icon: Building2, path: '/admin/gaushala', show: hasPermission('gaushala') },
     { id: 'katha', label: 'Katha', icon: Mic2, path: '/admin/katha', show: hasPermission('katha') },
     { id: 'mandal', label: 'Mandal', icon: UsersRound, path: '/admin/mandal', show: hasPermission('mandal') },
-    { id: 'kartal-dhun', label: 'Kartal Dhun', icon: Music, path: '/admin/kartal-dhun', show: hasPermission('kartalDhun') },
+    { id: 'kartal-dhun', label: 'Dhun Mandal', icon: Music, path: '/admin/kartal-dhun', show: hasPermission('kartalDhun') },
     { id: 'bapu-schedule', label: 'Bapu Events', icon: Calendar, path: '/admin/bapu-schedule', show: hasPermission('bapuSchedule') },
     { id: 'category', label: 'Category', icon: Tags, path: '/admin/category', show: hasPermission('category') },
     { id: 'location', label: 'Location', icon: MapPin, path: '/admin/location', show: hasPermission('location') },
@@ -60,11 +61,12 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
         lg:translate-x-0 lg:sticky lg:top-0 lg:h-screen lg:z-30
       `}>
         <div className="p-6 border-b border-gray-100 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
+          <div className="flex items-center gap-3">
+            <img src={logo} alt="Admin" className="w-14 h-14 object-contain shrink-0" />
+            {/* <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
               <HandCoins className="text-white w-5 h-5" />
-            </div>
-            <span className="font-bold text-gray-800 text-lg tracking-tight">Admin Panel</span>
+            </div> */}
+            <span className="font-bold text-gray-800 text-lg leading-none tracking-tight">Admin Panel</span>
           </div>
           <button onClick={() => setIsOpen(false)} className="lg:hidden text-gray-500 hover:bg-gray-100 p-1 rounded-md transition">
             <X className="w-6 h-6" />

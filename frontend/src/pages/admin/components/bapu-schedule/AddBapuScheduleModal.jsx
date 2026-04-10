@@ -3,7 +3,7 @@ import {
   useAddBapuScheduleMutation,
   useUpdateBapuScheduleMutation
 } from '../../../../services/apiSlice';
-import { Calendar, X, ChevronDown, Loader2, Clock, MapPin, User, Phone, Edit, Tag } from 'lucide-react';
+import { Calendar, X, ChevronDown, Loader2, Clock, MapPin, User, Phone, Edit, Tag, IndianRupee } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
@@ -58,6 +58,7 @@ const AddBapuScheduleModal = ({
         eventType: editingSchedule.eventType || 'Padhramani',
         contactPerson: editingSchedule.contactPerson || '',
         mobileNumber: editingSchedule.mobileNumber || '',
+        amount: editingSchedule.amount || '',
         description: editingSchedule.description || '',
         status: editingSchedule.status || 'scheduled'
       };
@@ -71,6 +72,7 @@ const AddBapuScheduleModal = ({
       eventType: 'Padhramani',
       contactPerson: '',
       mobileNumber: '',
+      amount: '',
       description: '',
       status: 'scheduled'
     };
@@ -105,6 +107,7 @@ const AddBapuScheduleModal = ({
   const villageRef = useRef(null);
   const contactRef = useRef(null);
   const mobileRef = useRef(null);
+  const amountRef = useRef(null);
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
@@ -336,9 +339,20 @@ const AddBapuScheduleModal = ({
             type="tel"
             value={addForm.mobileNumber}
             onChange={(e) => setAddForm(prev => ({ ...prev, mobileNumber: e.target.value }))}
-            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
+            onKeyDown={(e) => handleKeyDown(e, amountRef)}
             inputRef={mobileRef}
             icon={Phone}
+          />
+
+          <FormInput
+            label="Amount"
+            type="number"
+            value={addForm.amount}
+            onChange={(e) => setAddForm(prev => ({ ...prev, amount: e.target.value }))}
+            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
+            inputRef={amountRef}
+            icon={IndianRupee}
+            placeholder="Enter amount (optional)"
           />
         </div>
 

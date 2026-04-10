@@ -35,6 +35,25 @@ const initDB = async (force = false) => {
         const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
         await sequelize.sync(syncOptions);
         console.log('✅ Database synchronized (Tables created/updated)');
+
+        // Update ENUMs and add new columns for partially_paid feature
+        try {
+          await sequelize.query("ALTER TABLE Donations MODIFY COLUMN paymentMode ENUM('online','cash','pay_later','cheque','partially_paid') NOT NULL DEFAULT 'online'");
+          await sequelize.query("ALTER TABLE Donations MODIFY COLUMN status ENUM('pending','completed','failed','partially_paid') DEFAULT 'pending'");
+          await sequelize.query("ALTER TABLE Donations ADD COLUMN IF NOT EXISTS paidAmount FLOAT DEFAULT NULL");
+          await sequelize.query("ALTER TABLE Donations ADD COLUMN IF NOT EXISTS remainingAmount FLOAT DEFAULT NULL");
+          console.log('✅ Donations table updated with partially_paid support');
+        } catch (enumErr) {
+          console.log('ℹ️ Donations table update skipped:', enumErr.message);
+        }
+
+        try {
+          await sequelize.query("ALTER TABLE BapuSchedules ADD COLUMN IF NOT EXISTS amount FLOAT DEFAULT NULL");
+          console.log('✅ BapuSchedules table updated with amount support');
+        } catch (bapuErr) {
+          console.log('ℹ️ BapuSchedules table update skipped:', bapuErr.message);
+        }
+
         await seedRoles();
         await seedAdmin();
       } else {

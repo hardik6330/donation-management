@@ -21,13 +21,23 @@ export const Donation = sequelize.define('Donation', {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('pending', 'completed', 'failed'),
+    type: DataTypes.ENUM('pending', 'completed', 'failed', 'partially_paid'),
     defaultValue: 'pending',
   },
   paymentMode: {
-    type: DataTypes.ENUM('online', 'cash', 'pay_later'),
+    type: DataTypes.ENUM('online', 'cash', 'pay_later', 'cheque', 'partially_paid'),
     defaultValue: 'online',
     allowNull: false,
+  },
+  paidAmount: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: null,
+  },
+  remainingAmount: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: null,
   },
   razorpay_order_id: {
     type: DataTypes.STRING,

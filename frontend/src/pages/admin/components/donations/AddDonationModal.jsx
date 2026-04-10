@@ -43,6 +43,7 @@ const AddDonationModal = ({
     companyName: '',
     referenceName: '',
     amount: '',
+    paidAmount: '',
     paymentMode: 'cash',
   });
 
@@ -71,6 +72,7 @@ const AddDonationModal = ({
   const kathaRef = useRef(null);
   const referenceRef = useRef(null);
   const amountRef = useRef(null);
+  const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
 
   const cities = cityPagination.items;
@@ -183,7 +185,7 @@ const AddDonationModal = ({
       return;
     }
 
-    if (name === 'amount') {
+    if (name === 'amount' || name === 'paidAmount') {
       const rawValue = value.replace(/,/g, '');
       if (rawValue === '' || /^\d+$/.test(rawValue)) {
         const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
@@ -220,7 +222,7 @@ const AddDonationModal = ({
       setAddForm(prev => ({ ...prev, kathaId: id, gaushalaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, kathaName: name, gaushalaName: '' }));
     } else if (field === 'paymentMode') {
-      setAddForm(prev => ({ ...prev, paymentMode: id }));
+      setAddForm(prev => ({ ...prev, paymentMode: id, paidAmount: '' }));
       setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
     }
     setActiveAddDropdown(null);
@@ -248,10 +250,26 @@ const AddDonationModal = ({
 
     const rawAmount = addForm.amount.toString().replace(/,/g, '');
 
+    if (addForm.paymentMode === 'partially_paid') {
+      const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
+      if (!rawPaid || Number(rawPaid) <= 0) {
+        toast.error('Please enter the paid amount');
+        paidAmountRef.current?.focus();
+        return;
+      }
+      if (Number(rawPaid) >= Number(rawAmount)) {
+        toast.error('Paid amount must be less than total donation amount');
+        paidAmountRef.current?.focus();
+        return;
+      }
+    }
+
     try {
+      const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
       await createDonation({
         ...addForm,
-        amount: rawAmount
+        amount: rawAmount,
+        paidAmount: addForm.paymentMode === 'partially_paid' ? Number(rawPaid) : undefined,
       }).unwrap();
       toast.success('Donation added successfully');
       resetAddForm();
@@ -278,6 +296,7 @@ const AddDonationModal = ({
       companyName: '',
       referenceName: '',
       amount: '',
+      paidAmount: '',
       paymentMode: 'cash',
     });
     setAddDropdownLabels({
@@ -493,6 +512,9 @@ const AddDonationModal = ({
                   value={addDropdownLabels.paymentModeName}
                   items={[
                     { id: 'cash', name: 'Cash' },
+                    { id: 'online', name: 'Online' },
+                    { id: 'cheque', name: 'Cheque' },
+                    { id: 'partially_paid', name: 'Partially Pay' },
                     { id: 'pay_later', name: 'Pay Later' }
                   ]}
                   onChange={handleAddInputChange}
@@ -511,11 +533,44 @@ const AddDonationModal = ({
                 placeholder="0"
                 value={addForm.amount}
                 onChange={handleAddInputChange}
-                onKeyDown={(e) => handleKeyDown(e, submitRef)}
+                onKeyDown={(e) => handleKeyDown(e, addForm.paymentMode === 'partially_paid' ? paidAmountRef : submitRef)}
                 inputRef={amountRef}
                 icon={IndianRupee}
                 className="donation-amount-field"
               />
+
+              {addForm.paymentMode === 'partially_paid' && (
+                <>
+                  <FormInput
+                    label="Paid Amount"
+                    name="paidAmount"
+                    required
+                    placeholder="0"
+                    value={addForm.paidAmount}
+                    onChange={handleAddInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, submitRef)}
+                    inputRef={paidAmountRef}
+                    icon={IndianRupee}
+                  />
+                  {addForm.amount && addForm.paidAmount && (() => {
+                    const total = Number(addForm.amount.toString().replace(/,/g, ''));
+                    const paid = Number(addForm.paidAmount.toString().replace(/,/g, ''));
+                    const remaining = total - paid;
+                    if (remaining > 0) {
+                      return (
+                        <div className="flex items-center justify-between px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                          <span className="text-xs font-semibold text-orange-700">Remaining</span>
+                          <span className="text-sm font-bold text-orange-600 flex items-center gap-0.5">
+                            <IndianRupee className="w-3 h-3" />
+                            {remaining.toLocaleString('en-IN')}
+                          </span>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </>
+              )}
             </div>
           </div>
         </div>

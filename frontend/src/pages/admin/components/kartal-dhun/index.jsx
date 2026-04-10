@@ -139,9 +139,9 @@ const KartalDhun = () => {
   return (
     <div className="space-y-6">
       <AdminPageHeader 
-        title="Kartal Dhun Management" 
-        subtitle="Manage and track kartal dhun records"
-        buttonText={hasPermission('kartalDhun', 'entry') ? "Add Record" : null}
+        title="Dhun Mandal Management" 
+        subtitle="Manage and track dhun mandal records"
+        buttonText={hasPermission('kartalDhun', 'entry') ? "Add Dhun Mandal Record" : null}
         onButtonClick={handleAdd}
       />
 

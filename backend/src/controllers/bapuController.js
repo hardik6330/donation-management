@@ -118,7 +118,7 @@ export const getBapuSchedules = async (req, res) => {
 // Add new schedule
 export const addBapuSchedule = async (req, res) => {
   try {
-    const { date, time, city, taluka, village, locationId, eventType, contactPerson, mobileNumber, description } = req.body;
+    const { date, time, city, taluka, village, locationId, eventType, contactPerson, mobileNumber, description, amount } = req.body;
     
     let finalLocationId = locationId;
     
@@ -136,6 +136,7 @@ export const addBapuSchedule = async (req, res) => {
       contactPerson,
       mobileNumber,
       description,
+      amount: amount ? Number(amount) : null,
       status: 'scheduled'
     });
 

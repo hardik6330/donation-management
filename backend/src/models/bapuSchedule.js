@@ -39,6 +39,11 @@ export const BapuSchedule = sequelize.define('BapuSchedule', {
     type: DataTypes.TEXT,
     allowNull: true,
   },
+  amount: {
+    type: DataTypes.FLOAT,
+    allowNull: true,
+    defaultValue: null,
+  },
   status: {
     type: DataTypes.ENUM('scheduled', 'completed', 'cancelled'),
     defaultValue: 'scheduled',

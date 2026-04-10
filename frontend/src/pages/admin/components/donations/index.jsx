@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import DonationList from './DonationList';
 import AddDonationModal from './AddDonationModal';
+import EditPartialPaymentModal from './EditPartialPaymentModal';
+import AddPartialPaymentModal from './AddPartialPaymentModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import {
@@ -17,6 +19,8 @@ import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 const Donation = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPartialDonation, setEditingPartialDonation] = useState(null);
+  const [addingPartialDonation, setAddingPartialDonation] = useState(null);
   const [searchParams] = useSearchParams();
 
   const [filters, setFilters] = useState({
@@ -35,7 +39,7 @@ const Donation = () => {
     page: 1,
     limit: 10,
     fetchAll: false,
-    fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,'
+    fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,'
   });
 
   // API calls
@@ -130,7 +134,7 @@ const Donation = () => {
       page: 1,
       limit: 10,
       fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,village,district'
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,village,district'
     });
     cityPagination.reset();
     talukaPagination.reset();
@@ -158,6 +162,14 @@ const Donation = () => {
     }
   };
 
+  const handleEditPartialPayment = (donation) => {
+    setEditingPartialDonation(donation);
+  };
+
+  const handleAddPartialPayment = (donation) => {
+    setAddingPartialDonation(donation);
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader 
@@ -183,6 +195,8 @@ const Donation = () => {
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
         onDownloadSlip={handleDownloadSlip}
+        onEditPartialPayment={handleEditPartialPayment}
+        onAddPartialPayment={handleAddPartialPayment}
         hasPermission={hasPermission} 
       />
 
@@ -197,6 +211,22 @@ const Donation = () => {
           kathaPagination={kathaPagination}
           categoryPagination={categoryPagination}
           setModalState={setModalState}
+        />
+      )}
+
+      {editingPartialDonation && (
+        <EditPartialPaymentModal
+          isOpen={!!editingPartialDonation}
+          donation={editingPartialDonation}
+          onClose={() => setEditingPartialDonation(null)}
+        />
+      )}
+
+      {addingPartialDonation && (
+        <AddPartialPaymentModal
+          isOpen={!!addingPartialDonation}
+          donation={addingPartialDonation}
+          onClose={() => setAddingPartialDonation(null)}
         />
       )}
     </div>

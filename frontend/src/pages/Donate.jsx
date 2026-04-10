@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   useCreateOrderMutation,
-  useVerifyPaymentMutation,
+  // useVerifyPaymentMutation, // Razorpay commented out
   useGetUserByMobileQuery,
   useGetCitiesQuery,
   useGetSubLocationsQuery,
@@ -15,14 +15,13 @@ import { toast } from 'react-toastify';
 import confetti from 'canvas-confetti';
 
 // Reusable dropdown for Donate page
-const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false }) => {
+const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false, onDisabledClick }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [search, setSearch] = useState('');
+  const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [width, setWidth] = useState(0);
   const ref = useRef(null);
   const listRef = useRef(null);
-  const searchRef = useRef(null);
 
   const selectedItem = items.find(i => i.id === value);
 
@@ -37,20 +36,35 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
     }
   }, [isOpen]);
 
-  const filtered = items.filter(i => i.name.toLowerCase().includes(search.toLowerCase()));
+  const filtered = items.filter((item) => item.name.toLowerCase().includes(query.toLowerCase()));
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setHighlightIndex(filtered.length > 0 ? 0 : -1);
+  }, [isOpen, query, items.length]);
+
+  useEffect(() => {
+    if (!isOpen || highlightIndex < 0 || !listRef.current) return;
+    const activeOption = listRef.current.querySelector(`[data-index="${highlightIndex}"]`);
+    if (activeOption) {
+      activeOption.scrollIntoView({ block: 'nearest' });
+    }
+  }, [highlightIndex, isOpen]);
 
   const handleToggle = () => {
     if (!disabled) {
       setIsOpen(!isOpen);
-      setSearch('');
+      setQuery('');
       setHighlightIndex(-1);
+    } else if (onDisabledClick) {
+      onDisabledClick();
     }
   };
 
   const handleSelect = (item) => {
     onChange(item.id);
     setIsOpen(false);
-    setSearch('');
+    setQuery('');
   };
 
   const handleKeyDown = (e) => {
@@ -59,9 +73,14 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
         e.preventDefault();
         if (!disabled) {
           setIsOpen(true);
-          setSearch('');
+          setQuery('');
           setHighlightIndex(-1);
         }
+      } else if (e.key.length === 1 && !disabled) {
+        e.preventDefault();
+        setIsOpen(true);
+        setQuery(e.key);
+        setHighlightIndex(0);
       }
       return;
     }
@@ -73,9 +92,12 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
       setHighlightIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (highlightIndex >= 0 && filtered[highlightIndex]) handleSelect(filtered[highlightIndex]);
+      if (filtered.length === 0) return;
+      const selectedIndex = highlightIndex >= 0 ? highlightIndex : 0;
+      handleSelect(filtered[selectedIndex]);
     } else if (e.key === 'Escape') {
       setIsOpen(false);
+      setQuery('');
     }
   };
 
@@ -93,14 +115,34 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
           ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white'}
         `}
       >
-        <span className={selectedItem ? 'text-gray-800' : 'text-gray-400'}>
-          {selectedItem?.name || placeholder}
-        </span>
+        {isOpen ? (
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setHighlightIndex(0);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={handleKeyDown}
+            autoFocus
+            placeholder={selectedItem?.name || placeholder}
+            className="w-full bg-transparent text-gray-800 placeholder:text-gray-400 outline-none"
+          />
+        ) : (
+          <span className={selectedItem ? 'text-gray-800' : 'text-gray-400'}>
+            {selectedItem?.name || placeholder}
+          </span>
+        )}
         <div className="flex items-center gap-1 text-gray-400">
           {value && !disabled && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onClear(); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClear();
+                setQuery('');
+              }}
               className="hover:text-red-500 transition-colors p-0.5"
             >
               <X className="w-3.5 h-3.5" />
@@ -111,25 +153,12 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
       </div>
 
       {isOpen && (
-        <div className="absolute z-[120] mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" style={{ width }}>
-          {items.length > 5 && (
-            <div className="p-2 border-b border-gray-50">
-              <input
-                ref={searchRef}
-                type="text"
-                placeholder="Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={handleKeyDown}
-                autoFocus
-                className="w-full px-3 py-1.5 bg-gray-50 border border-gray-100 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-              />
-            </div>
-          )}
+        <div className="absolute z-120 mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" style={{ width }}>
           <div ref={listRef} className="max-h-48 overflow-y-auto custom-scrollbar">
             {filtered.map((item, index) => (
               <button
                 key={item.id}
+                data-index={index}
                 type="button"
                 onClick={() => handleSelect(item)}
                 className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b border-gray-50 last:border-0
@@ -168,11 +197,29 @@ const Donate = () => {
     }, 250);
   };
 
+  // Refs for Fast Entry
+  const mobileRef = useRef(null);
+  const nameRef = useRef(null);
+  const emailRef = useRef(null);
+  const addressRef = useRef(null);
+  const villageRef = useRef(null);
+  const districtRef = useRef(null);
+  const companyRef = useRef(null);
+  const referenceRef = useRef(null);
+  const amountRef = useRef(null);
+  const paidAmountRef = useRef(null);
+  const submitRef = useRef(null);
+
   const [formData, setFormData] = useState({
     mobileNumber: '', name: '', email: '', address: '', village: '', district: '',
     cityId: '', talukaId: '', villageId: '', categoryId: '', gaushalaId: '', kathaId: '',
-    companyName: '', referenceName: '', amount: '', paymentMode: 'online',
+    companyName: '', referenceName: '', amount: '', paymentMode: 'online', paidAmount: '',
   });
+
+  // Fast Entry: Focus first field on mount
+  useEffect(() => {
+    if (mobileRef.current) mobileRef.current.focus();
+  }, []);
 
   const { data: categoriesData } = useGetCategoriesQuery({ fetchAll: true });
   const { data: citiesData } = useGetCitiesQuery({ fetchAll: true });
@@ -215,7 +262,7 @@ const Donate = () => {
   }, [existingUser]);
 
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation();
-  const [verifyPayment, { isLoading: isVerifying }] = useVerifyPaymentMutation();
+  // const [verifyPayment, { isLoading: isVerifying }] = useVerifyPaymentMutation(); // Razorpay commented out
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -225,7 +272,7 @@ const Donate = () => {
       setFormData(prev => ({ ...prev, [name]: cleaned }));
       return;
     }
-    if (name === 'amount') {
+    if (name === 'amount' || name === 'paidAmount') {
       const rawValue = value.replace(/,/g, '');
       if (rawValue === '' || /^\d+$/.test(rawValue)) {
         const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
@@ -233,67 +280,114 @@ const Donate = () => {
       }
       return;
     }
+    if (name === 'paymentMode') {
+      setFormData(prev => ({ ...prev, paymentMode: value, paidAmount: '' }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const loadRazorpayScript = () => {
-    return new Promise((resolve) => {
-      const script = document.createElement('script');
-      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => resolve(false);
-      document.body.appendChild(script);
-    });
+  const handleKeyDown = (e, nextRef) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (nextRef?.current) nextRef.current.focus();
+    }
   };
+
+  // --- Razorpay script loader (commented out) ---
+  // const loadRazorpayScript = () => {
+  //   return new Promise((resolve) => {
+  //     const script = document.createElement('script');
+  //     script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+  //     script.onload = () => resolve(true);
+  //     script.onerror = () => resolve(false);
+  //     document.body.appendChild(script);
+  //   });
+  // };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const rawAmount = formData.amount.toString().replace(/,/g, '');
-    if (!rawAmount || Number(rawAmount) <= 0) {
+    const totalAmount = Number(rawAmount);
+    if (!rawAmount || totalAmount <= 0) {
       toast.warning('Please enter a valid donation amount');
       return;
     }
-    try {
-      const response = await createOrder({ ...formData, amount: Number(rawAmount) }).unwrap();
-      if (formData.paymentMode === 'cash' || formData.paymentMode === 'pay_later') {
-        const msg = formData.paymentMode === 'cash'
-          ? 'Donation Recorded Successfully!'
-          : 'Donation Intent Recorded! We will contact you for payment.';
-        toast.success(msg);
-        fireFireworks();
-        setTimeout(() => navigate('/'), 5000);
+    if (!formData.categoryId && !formData.gaushalaId && !formData.kathaId) {
+      toast.warning('Please select at least one: Category, Gaushala, or Active Katha');
+      return;
+    }
+    if (formData.paymentMode === 'partially_paid') {
+      const rawPaid = formData.paidAmount.toString().replace(/,/g, '');
+      const paidAmount = Number(rawPaid);
+      const minimumPaidAmount = Math.ceil(totalAmount * 0.2);
+      if (!rawPaid || paidAmount <= 0) {
+        toast.warning('Please enter the paid amount');
         return;
       }
-      const order = response.data.order;
-      const donationId = response.data.donationId;
-      const razorpay_key_id = response.data.razorpay_key_id;
-      const res = await loadRazorpayScript();
-      if (!res) { toast.error('Razorpay SDK failed to load.'); return; }
-      const options = {
-        key: razorpay_key_id, amount: order.amount, currency: order.currency,
-        name: 'Donation Management System', description: formData.cause, order_id: order.id,
-        handler: async (response) => {
-          try {
-            await verifyPayment({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              donationId,
-            }).unwrap();
-            toast.success('Donation Successful! Thank you for your support.');
-            fireFireworks();
-            setTimeout(() => navigate('/'), 5000);
-          } catch (err) {
-            toast.error(err?.data?.message || 'Payment verification failed.');
-          }
-        },
-        prefill: { name: formData.name, email: formData.email },
-        theme: { color: '#2563eb' },
-      };
-      const rzp = new window.Razorpay(options);
-      rzp.open();
+      if (paidAmount < minimumPaidAmount) {
+        toast.warning(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
+        return;
+      }
+      if (paidAmount === totalAmount) {
+        toast.warning('This is partial payment. Paid amount must be less than total amount.');
+        return;
+      }
+      if (paidAmount > totalAmount) {
+        toast.warning('Paid amount cannot be greater than total donation amount');
+        return;
+      }
+    }
+
+    try {
+      const rawPaid = formData.paidAmount.toString().replace(/,/g, '');
+      await createOrder({
+        ...formData,
+        amount: Number(rawAmount),
+        paidAmount: formData.paymentMode === 'partially_paid' ? Number(rawPaid) : undefined,
+      }).unwrap();
+      const msg = formData.paymentMode === 'pay_later'
+        ? 'Donation Intent Recorded! We will contact you for payment.'
+        : formData.paymentMode === 'partially_paid'
+          ? 'Partial Donation Recorded Successfully!'
+          : 'Donation Recorded Successfully!';
+      toast.success(msg);
+      fireFireworks();
+      setTimeout(() => navigate('/'), 5000);
+
+      // --- Razorpay checkout flow (commented out) ---
+      // if (formData.paymentMode === 'online') {
+      //   const order = response.data.order;
+      //   const donationId = response.data.donationId;
+      //   const razorpay_key_id = response.data.razorpay_key_id;
+      //   const res = await loadRazorpayScript();
+      //   if (!res) { toast.error('Razorpay SDK failed to load.'); return; }
+      //   const options = {
+      //     key: razorpay_key_id, amount: order.amount, currency: order.currency,
+      //     name: 'Donation Management System', description: formData.cause, order_id: order.id,
+      //     handler: async (response) => {
+      //       try {
+      //         await verifyPayment({
+      //           razorpay_order_id: response.razorpay_order_id,
+      //           razorpay_payment_id: response.razorpay_payment_id,
+      //           razorpay_signature: response.razorpay_signature,
+      //           donationId,
+      //         }).unwrap();
+      //         toast.success('Donation Successful! Thank you for your support.');
+      //         fireFireworks();
+      //         setTimeout(() => navigate('/'), 5000);
+      //       } catch (err) {
+      //         toast.error(err?.data?.message || 'Payment verification failed.');
+      //       }
+      //     },
+      //     prefill: { name: formData.name, email: formData.email },
+      //     theme: { color: '#2563eb' },
+      //   };
+      //   const rzp = new window.Razorpay(options);
+      //   rzp.open();
+      // }
     } catch (err) {
-      toast.error(err?.data?.message || 'Failed to initiate payment.');
+      toast.error(err?.data?.message || 'Failed to record donation.');
     }
   };
 
@@ -301,7 +395,7 @@ const Donate = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2 sm:p-4">
       <div className="max-w-2xl w-full bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden my-4">
         <div className="bg-blue-600 p-4 sm:p-6 text-white text-center">
-          <h1 className="text-xl sm:text-2xl font-bold">Support Our Cause</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Support Shree Sarveshwar Gaudham</h1>
           <p className="text-sm opacity-90">Your contribution makes a difference in our community</p>
         </div>
 
@@ -317,34 +411,34 @@ const Donate = () => {
                   <Phone className="w-4 h-4" /> Mobile Number
                 </label>
                 <div className="relative">
-                  <input required type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange}
+                  <input ref={mobileRef} required type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, nameRef)}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="9876543210" />
                   {isCheckingUser && <div className="absolute right-3 top-3"><Loader2 className="w-4 h-4 animate-spin text-blue-600" /></div>}
                 </div>
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4" /> Full Name</label>
-                <input required name="name" value={formData.name} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="John Doe" />
+                <input ref={nameRef} required name="name" value={formData.name} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, emailRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="John Doe" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Mail className="w-4 h-4" /> Email Address</label>
-                <input required type="email" name="email" value={formData.email} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="john@example.com" />
+                <input ref={emailRef} required type="email" name="email" value={formData.email} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, addressRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="john@example.com" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><HomeIcon className="w-4 h-4" /> Address</label>
-                <input name="address" value={formData.address} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Street name, house no." />
+                <input ref={addressRef} name="address" value={formData.address} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, villageRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Street name, house no." />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><MapPin className="w-4 h-4" /> Village</label>
-                <input name="village" value={formData.village} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter Village Name" />
+                <input ref={villageRef} name="village" value={formData.village} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, districtRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter Village Name" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><MapPin className="w-4 h-4" /> District</label>
-                <input name="district" value={formData.district} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter District Name" />
+                <input ref={districtRef} name="district" value={formData.district} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, companyRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter District Name" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Building className="w-4 h-4" /> Company Name (Optional)</label>
-                <input name="companyName" value={formData.companyName} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Business/Org name" />
+                <input ref={companyRef} name="companyName" value={formData.companyName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, referenceRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Business/Org name" />
               </div>
             </div>
           </div>
@@ -373,20 +467,26 @@ const Donate = () => {
                 onClear={() => setFormData(prev => ({ ...prev, categoryId: '' }))}
               />
               <DonateDropdown label="Gaushala" icon={Building2} value={formData.gaushalaId} items={gaushalas}
-                placeholder={isFetchingGaushalas ? 'Loading...' : !filterLocationId ? 'Select Location First' : gaushalas.length === 0 ? 'No Gaushalas' : 'Select Gaushala (Optional)'}
+                placeholder={isFetchingGaushalas ? 'Loading...' : !formData.cityId ? 'Select City First' : !filterLocationId ? 'Select Location First' : gaushalas.length === 0 ? 'No Gaushalas' : 'Select Gaushala (Optional)'}
                 disabled={!!formData.kathaId || !filterLocationId || isFetchingGaushalas || gaushalas.length === 0}
+                onDisabledClick={() => {
+                  if (!formData.cityId) toast.info('Please select city first');
+                }}
                 onChange={(id) => setFormData(prev => ({ ...prev, gaushalaId: id }))}
                 onClear={() => setFormData(prev => ({ ...prev, gaushalaId: '' }))}
               />
               <DonateDropdown label="Active Katha" icon={Mic2} value={formData.kathaId} items={kathas}
-                placeholder={isFetchingKathas ? 'Loading...' : !filterLocationId ? 'Select Location First' : kathas.length === 0 ? 'No Kathas' : 'Select Katha (Optional)'}
+                placeholder={isFetchingKathas ? 'Loading...' : !formData.cityId ? 'Select City First' : !filterLocationId ? 'Select Location First' : kathas.length === 0 ? 'No Kathas' : 'Select Katha (Optional)'}
                 disabled={!!formData.gaushalaId || !filterLocationId || isFetchingKathas || kathas.length === 0}
+                onDisabledClick={() => {
+                  if (!formData.cityId) toast.info('Please select city first');
+                }}
                 onChange={(id) => setFormData(prev => ({ ...prev, kathaId: id }))}
                 onClear={() => setFormData(prev => ({ ...prev, kathaId: '' }))}
               />
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4" /> Reference Name</label>
-                <input name="referenceName" value={formData.referenceName} onChange={handleInputChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter reference person name" />
+                <input ref={referenceRef} name="referenceName" value={formData.referenceName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, amountRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter reference person name" />
               </div>
             </div>
 
@@ -395,7 +495,7 @@ const Donate = () => {
                 <CreditCard className="w-4 h-4" /> Payment Mode
               </label>
               <div className="flex flex-wrap gap-4">
-                {[{ value: 'online', label: 'Online' }, { value: 'cash', label: 'Cash' }, { value: 'pay_later', label: 'Pay Later' }].map(mode => (
+                {[{ value: 'online', label: 'UPI' }, { value: 'cash', label: 'Cash' }, { value: 'cheque', label: 'Cheque' }, { value: 'partially_paid', label: 'Partially Pay' }, { value: 'pay_later', label: 'Pay Later' }].map(mode => (
                   <label key={mode.value} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
                     formData.paymentMode === mode.value ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
                   }`}>
@@ -410,14 +510,52 @@ const Donate = () => {
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                 <IndianRupee className="w-4 h-4" /> Donation Amount (INR)
               </label>
-              <input required type="text" name="amount" value={formData.amount} onChange={handleInputChange}
+              <input ref={amountRef} required type="text" name="amount" value={formData.amount} onChange={handleInputChange}
+                onKeyDown={(e) => handleKeyDown(e, formData.paymentMode === 'partially_paid' ? paidAmountRef : submitRef)}
                 className="w-full px-4 py-3 text-2xl font-bold border border-blue-300 bg-blue-50 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="0" />
             </div>
+
+            {formData.paymentMode === 'partially_paid' && (
+              <div className="space-y-3">
+                <div className="space-y-2">
+                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <IndianRupee className="w-4 h-4" /> Paid Amount (INR)
+                  </label>
+                  <input ref={paidAmountRef} required type="text" name="paidAmount" value={formData.paidAmount} onChange={handleInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, submitRef)}
+                    className="w-full px-4 py-3 text-xl font-bold border border-green-300 bg-green-50 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition" placeholder="0" />
+                </div>
+              {formData.amount && Number(formData.amount.toString().replace(/,/g, '')) > 0 && (
+                <p className="text-xs text-gray-500">
+                  Minimum paid amount is 20% (
+                  ₹{Math.ceil(Number(formData.amount.toString().replace(/,/g, '')) * 0.2).toLocaleString('en-IN')}
+                  ) of total donation.
+                </p>
+              )}
+                {formData.amount && formData.paidAmount && (() => {
+                  const total = Number(formData.amount.toString().replace(/,/g, ''));
+                  const paid = Number(formData.paidAmount.toString().replace(/,/g, ''));
+                  const remaining = total - paid;
+                  if (remaining > 0) {
+                    return (
+                      <div className="flex items-center justify-between px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl">
+                        <span className="text-sm font-semibold text-orange-700">Remaining Amount</span>
+                        <span className="text-lg font-bold text-orange-600 flex items-center gap-0.5">
+                          <IndianRupee className="w-4 h-4" />
+                          {remaining.toLocaleString('en-IN')}
+                        </span>
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
           </div>
 
-          <button type="submit" disabled={isCreatingOrder || isVerifying}
+          <button ref={submitRef} type="submit" disabled={isCreatingOrder}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-200 transition duration-200 flex items-center justify-center gap-2 disabled:opacity-50">
-            {(isCreatingOrder || isVerifying) ? <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</> : 'Contribute Now'}
+            {isCreatingOrder ? <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</> : 'Contribute Now'}
           </button>
         </form>
       </div>

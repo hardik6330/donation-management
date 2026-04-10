@@ -144,10 +144,10 @@ const AddKartalDhunModal = ({
   const isLoading = isAdding || isUpdating;
 
   return (
-    <AdminModal isOpen={isOpen} onClose={onClose} title={editingRecord ? "Edit Kartal Dhun" : "Add Kartal Dhun Income"} icon={editingRecord ? <Edit /> : <MusicIcon />} maxWidth="max-w-2xl">
+    <AdminModal isOpen={isOpen} onClose={onClose} title={editingRecord ? "Edit Dhun Mandal" : "Add Dhun Mandal Income"} icon={editingRecord ? <Edit /> : <MusicIcon />} maxWidth="max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
-        <FormInput label="Kartal Dhun Name" name="name" placeholder="E.g. Navratri Dhun" value={form.name} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, amountRef)} inputRef={nameRef} icon={Tag} required />
-
+        <FormInput label="Dhun Mandal Name" name="name" placeholder="E.g. Navratri Dhun Mandal" value={form.name} onChange={handleChange} onKeyDown={(e) => handleKeyDown(e, amountRef)} inputRef={nameRef} icon={Tag} required />
+          
         <div className="grid grid-cols-2 gap-4">
           <CustomDatePicker
             label="Date"

@@ -1,7 +1,8 @@
 import React from 'react';
 import { useGetQRCodeQuery } from '../services/apiSlice';
-import { QrCode, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import logo from '../assets/logo.png';
 
 const Home = () => {
   const { data, isLoading, error } = useGetQRCodeQuery();
@@ -9,7 +10,10 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-8">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 sm:p-8 text-center">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Donate for a Cause</h1>
+        <div className="flex justify-center mb-4 sm:mb-5">
+          <img src={logo} alt="Shree Sarveshwar Gaudham" className="w-16 h-16 sm:w-20 sm:h-20 object-contain" />
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Donate for Shree Sarveshwar Gaudham</h1>
         <p className="text-sm sm:text-base text-gray-600 mb-6 sm:mb-8">Scan the QR code to make a donation and support our community.</p>
 
         <div className="relative inline-block p-4 bg-gray-100 rounded-xl mb-6 sm:mb-8 w-full sm:w-auto">

@@ -24,7 +24,7 @@ const KartalDhunList = ({
   hasPermission 
 }) => {
   const tableHeaders = [
-    { label: 'Kartal Dhun Name' },
+    { label: 'Dhun Mandal Name' },
     { label: 'Date' },
     { label: 'Amount (₹)' },
     { label: 'City' },

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard, Trash2 } from 'lucide-react';
+import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard, Trash2, Edit, PlusCircle } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
@@ -17,6 +17,8 @@ const DonationList = ({
   kathaPagination,
   categoryPagination,
   onDelete,
+  onEditPartialPayment,
+  onAddPartialPayment,
   onDownloadSlip, 
   onFilterChange, 
   onClearFilters, 
@@ -125,6 +127,7 @@ const DonationList = ({
       options: [
         { value: 'pending', label: 'Pending' },
         { value: 'completed', label: 'Completed' },
+        { value: 'partially_paid', label: 'Partially Paid' },
         { value: 'failed', label: 'Failed' }
       ]
     },
@@ -174,15 +177,25 @@ const DonationList = ({
                 {donation.paymentMode}
               </span>
             </td>
-            <td className="p-4 px-6 text-right text-blue-600 font-bold">
-              <div className="flex items-center justify-end gap-0.5">
+            <td className="p-4 px-6 text-right font-bold">
+              <div className="flex items-center justify-end gap-0.5 text-blue-600">
                 <IndianRupee className="w-3.5 h-3.5" />
                 {Number(donation.amount).toLocaleString('en-IN')}
               </div>
+              {donation.status === 'partially_paid' && (
+                <div className="mt-1 space-y-0.5">
+                  <div className="flex items-center justify-end gap-0.5 text-green-600 text-[10px]">
+                    Paid: ₹{Number(donation.paidAmount || 0).toLocaleString('en-IN')}
+                  </div>
+                  <div className="flex items-center justify-end gap-0.5 text-orange-600 text-[10px]">
+                    Rem: ₹{Number(donation.remainingAmount || 0).toLocaleString('en-IN')}
+                  </div>
+                </div>
+              )}
             </td>
             <td className="p-4 px-6 text-center">
               <span className={`text-xs font-bold uppercase ${getStatusColor(donation.status)}`}>
-                {donation.status}
+                {donation.status === 'partially_paid' ? 'Partial' : donation.status}
               </span>
             </td>
             <td className="p-4 px-6 text-sm text-gray-500">
@@ -197,6 +210,24 @@ const DonationList = ({
                     title="Download Slip"
                   >
                     <FileDown className="w-4 h-4" />
+                  </button>
+                )}
+                {donation.status === 'partially_paid' && hasPermission('donations', 'entry') && (
+                  <button
+                    onClick={() => onAddPartialPayment(donation)}
+                    className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="Add Partial Payment"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                  </button>
+                )}
+                {donation.status === 'partially_paid' && hasPermission('donations', 'entry') && (
+                  <button
+                    onClick={() => onEditPartialPayment(donation)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Edit Partial Payment"
+                  >
+                    <Edit className="w-4 h-4" />
                   </button>
                 )}
                 {/* {hasPermission('donations', 'full') && (

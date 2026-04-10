@@ -1,5 +1,5 @@
 import React from 'react';
-import { Calendar, Phone, Clock, CheckCircle2, Trash2, Tag, MapPin, Edit } from 'lucide-react';
+import { Calendar, Phone, Clock, CheckCircle2, Trash2, Tag, MapPin, Edit, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
@@ -30,6 +30,7 @@ const BapuScheduleList = ({
     { label: 'Taluka' },
     { label: 'Village' },
     { label: 'Contact' },
+    { label: 'Amount', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
   ];
@@ -161,6 +162,16 @@ const BapuScheduleList = ({
                   {schedule.mobileNumber}
                 </div>
               </div>
+            </td>
+            <td className="p-4 px-6 text-right">
+              {schedule.amount ? (
+                <div className="inline-flex items-center gap-0.5 text-sm font-bold text-blue-700">
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  {Number(schedule.amount).toLocaleString('en-IN')}
+                </div>
+              ) : (
+                <span className="text-sm text-gray-400">-</span>
+              )}
             </td>
             <td className="p-4 px-6 text-center">
               <span className={`text-xs font-bold uppercase ${getStatusColor(schedule.status)}`}>

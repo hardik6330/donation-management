@@ -32,7 +32,7 @@ const AdminLayout = () => {
 
         <footer className="bg-white border-t border-gray-100 p-4 sm:px-8 text-center sm:text-left shrink-0">
           <p className="text-xs sm:text-sm text-gray-500">
-            © {new Date().getFullYear()} Donation Management System. Built with ❤️ for community support.
+            © {new Date().getFullYear()} Shree Sarveshwar Gaudham Donation Management. Built with ❤️ for community support.
           </p>
         </footer>
       </div>

@@ -1,5 +1,56 @@
 import PDFDocument from 'pdfkit';
 import cloudinary from '../config/cloudinary.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const SLIP_TEMPLATE_CANDIDATES = [
+  // Primary expected location
+  path.resolve(__dirname, '../../../frontend/src/assets/slip.jpg'),
+  // Supported fallback formats at same location
+  path.resolve(__dirname, '../../../frontend/src/assets/slip.jpeg'),
+  path.resolve(__dirname, '../../../frontend/src/assets/slip.png'),
+  // Optional fallback when backend is run from different root layout
+  path.resolve(__dirname, '../../../src/assets/slip.jpg')
+];
+
+const numberToWords = (num) => {
+  const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
+    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+
+  const belowThousand = (n) => {
+    let out = '';
+    if (n >= 100) {
+      out += `${ones[Math.floor(n / 100)]} hundred `;
+      n %= 100;
+    }
+    if (n >= 20) {
+      out += `${tens[Math.floor(n / 10)]} `;
+      n %= 10;
+    }
+    if (n > 0) out += ones[n];
+    return out.trim();
+  };
+
+  if (!Number.isFinite(num) || num <= 0) return 'zero';
+
+  const crore = Math.floor(num / 10000000);
+  const lakh = Math.floor((num % 10000000) / 100000);
+  const thousand = Math.floor((num % 100000) / 1000);
+  const rest = num % 1000;
+
+  const parts = [];
+  if (crore) parts.push(`${belowThousand(crore)} crore`);
+  if (lakh) parts.push(`${belowThousand(lakh)} lakh`);
+  if (thousand) parts.push(`${belowThousand(thousand)} thousand`);
+  if (rest) parts.push(belowThousand(rest));
+
+  return parts.join(' ').trim();
+};
 
 /**
  * Generate a donation slip PDF buffer
@@ -15,6 +66,85 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
 
     const W = doc.page.width;   // 595
     const H = doc.page.height;  // 842
+
+    const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+    if (slipTemplatePath) {
+      const donorName = (user?.name || '-').toUpperCase();
+      const donorAddress = ([user?.address, user?.village, user?.district].filter(Boolean).join(', ') || '-').toUpperCase();
+      const paymentModeLabel = (paymentMode || 'online').replace('_', ' ').toUpperCase();
+      const receiptDate = (paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')).toUpperCase();
+      const amountValue = Number(amount || 0);
+      const amountText = amountValue.toLocaleString('en-IN');
+      const amountInWords = `${numberToWords(Math.floor(amountValue))} rupees only`.toUpperCase();
+      const receiptNo = (donationId?.toString().slice(-8) || '-').toUpperCase();
+
+      // Render template without distortion (keep aspect ratio) and then place text
+      // relative to the fitted image area for consistent alignment.
+      const templateImage = doc.openImage(slipTemplatePath);
+      const scale = Math.min(W / templateImage.width, H / templateImage.height);
+      const drawW = templateImage.width * scale;
+      const drawH = templateImage.height * scale;
+      const drawX = (W - drawW) / 2;
+      const drawY = (H - drawH) / 2;
+
+      doc.image(templateImage, drawX, drawY, { width: drawW, height: drawH });
+
+      const px = (n) => drawX + drawW * n;
+      const py = (n) => drawY + drawH * n;
+      const fs = (n) => Math.max(9, drawW * n);
+      const normalizedMode = (paymentMode || '').toLowerCase();
+      const isCash = normalizedMode === 'cash';
+      const isCheque = normalizedMode === 'cheque' || normalizedMode === 'check';
+      const isOnline = normalizedMode === 'online' || normalizedMode === 'upi';
+
+      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.015))
+        .text(receiptNo, px(0.12), py(0.305), { width: drawW * 0.18, align: 'center' });
+
+      // Date in left-side "તા." field area (inside the line, not outside template)
+      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
+        .text(receiptDate, px(0.242), py(0.410), { width: drawW * 0.18, align: 'left', lineBreak: false });
+
+      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.017))
+        .text(donorName, px(0.255), py(0.455), { width: drawW * 0.24, lineBreak: false });
+
+      doc.fillColor('#1f2937').font('Helvetica').fontSize(fs(0.014))
+        .text(donorAddress, px(0.265), py(0.510), { width: drawW * 0.50, lineBreak: false });
+
+      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.013))
+        .text(amountInWords, px(0.395), py(0.570), {
+          width: drawW * 0.46,
+          height: drawW * 0.06,
+          lineBreak: true,
+          lineGap: 1
+        });
+
+      // Payment mode checkbox check mark (vector for reliable rendering)
+      const drawCheckMark = (cx, cy, size) => {
+        doc
+          .save()
+          .lineWidth(Math.max(1.2, size * 0.16))
+          .strokeColor('#1f2937')
+          .lineCap('round')
+          .moveTo(cx - size * 0.45, cy + size * 0.05)
+          .lineTo(cx - size * 0.12, cy + size * 0.38)
+          .lineTo(cx + size * 0.48, cy - size * 0.34)
+          .stroke()
+          .restore();
+      };
+
+      const checkY = py(0.628);
+      const checkSize = drawW * 0.015;
+      if (isCash) drawCheckMark(px(0.640), checkY, checkSize);      // રોકડા
+      if (isCheque) drawCheckMark(px(0.730), checkY, checkSize);    // ચેક
+      if (isOnline) drawCheckMark(px(0.802), checkY, checkSize);    // ઓનલાઈન
+
+      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.020))
+        .text(`${amountText}`, px(0.725), py(0.705), { width: drawW * 0.20, align: 'center' });
+
+      doc.end();
+      return;
+    }
+
     const M = 50;               // margin
     const CW = W - M * 2;       // content width
     const col2X = M + CW / 2 + 10;
