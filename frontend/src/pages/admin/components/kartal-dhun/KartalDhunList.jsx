@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  Search, Edit, Trash2, Calendar, MapPin
+  Search, Edit, Trash2, Calendar, MapPin, IndianRupee
 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
@@ -26,7 +26,7 @@ const KartalDhunList = ({
   const tableHeaders = [
     { label: 'Dhun Mandal Name' },
     { label: 'Date' },
-    { label: 'Amount (₹)' },
+    { label: 'Amount (₹)', className: 'text-right' },
     { label: 'City' },
     { label: 'Taluka' },
     { label: 'Village' },
@@ -77,8 +77,6 @@ const KartalDhunList = ({
     { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
   ];
 
-  const inr = (val) => Number(val).toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 });
-
   return (
     <div className="space-y-6">
       <FilterSection 
@@ -93,7 +91,12 @@ const KartalDhunList = ({
           <tr key={record.id} className="hover:bg-gray-50 transition-colors">
             <td className="px-6 py-4 text-sm font-semibold text-gray-900">{record.name}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{record.date ? new Date(record.date).toLocaleDateString('en-IN') : '-'}</td>
-            <td className="px-6 py-4 text-sm font-bold text-green-700">{inr(record.amount)}</td>
+            <td className="px-6 py-4 text-right">
+              <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(record.amount || 0).toLocaleString('en-IN')}
+              </div>
+            </td>
             <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.city || '-'}</td>
             <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.taluka || '-'}</td>
             <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.village || '-'}</td>

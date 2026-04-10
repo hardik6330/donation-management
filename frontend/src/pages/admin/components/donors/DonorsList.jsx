@@ -67,7 +67,7 @@ const DonorsList = ({
     { label: 'Village' },
     { label: 'Company Name' },
     { label: 'Donations', className: 'text-center' },
-    { label: 'Total Amount', className: 'text-center' },
+    { label: 'Total Amount', className: 'text-right' },
   ];
 
   return (
@@ -129,8 +129,11 @@ const DonorsList = ({
                 {donor.donationCount}
               </span>
             </td>
-            <td className="p-4 px-6 text-center font-bold text-blue-600">
-              ₹{donor.totalDonated?.toLocaleString()}
+            <td className="p-4 px-6 text-right">
+              <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(donor.totalDonated || 0).toLocaleString('en-IN')}
+              </div>
             </td>
           </tr>
         ))}

@@ -90,7 +90,7 @@ const MandalPaymentPage = () => {
     { label: 'Mobile' },
     { label: 'Mandal' },
     { label: 'Location' },
-    { label: 'Amount' },
+    { label: 'Amount', className: 'text-right' },
     { label: 'Status' },
     { label: 'Paid Date' },
     { label: 'Action' },
@@ -158,7 +158,12 @@ const MandalPaymentPage = () => {
             <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.mobileNumber}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.mandal?.name || '-'}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.location?.name || '-'}</td>
-            <td className="px-6 py-4 text-sm font-semibold text-gray-800">{inr(payment.amount)}</td>
+            <td className="px-6 py-4 text-right">
+              <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(payment.amount || 0).toLocaleString('en-IN')}
+              </div>
+            </td>
             <td className="px-6 py-4">
               <span className={`text-xs font-bold uppercase ${getStatusColor(payment.status)}`}>
                 {payment.status}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit, Trash2, Search } from 'lucide-react';
+import { Edit, Trash2, Search, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
@@ -23,7 +23,7 @@ const CategoryList = ({
   const tableHeaders = [
     { label: 'Category Name' },
     { label: 'Description' },
-    { label: 'Total Donation', className: 'text-center' },
+    { label: 'Total Donation', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
   ];
@@ -50,8 +50,11 @@ const CategoryList = ({
           <tr key={cat.id} className="hover:bg-gray-50 transition">
             <td className="p-4 px-6 font-bold text-gray-800">{cat.name}</td>
             <td className="p-4 px-6 text-sm text-gray-500">{cat.description || '-'}</td>
-            <td className="p-4 px-6 text-center font-bold text-blue-600">
-              ₹{Number(cat.totalDonation || 0).toLocaleString('en-IN')}
+            <td className="p-4 px-6 text-right">
+              <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(cat.totalDonation || 0).toLocaleString('en-IN')}
+              </div>
             </td>
             <td className="p-4 px-6 flex justify-center items-center">
               <label className="relative inline-flex items-center cursor-pointer group">

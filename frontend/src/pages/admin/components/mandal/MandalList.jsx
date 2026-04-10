@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Edit, Trash2, CheckCircle, XCircle, Receipt, Calendar } from 'lucide-react';
+import { Search, Edit, Trash2, CheckCircle, XCircle, Receipt, Calendar, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import { getActiveHoverColor, getActiveLabel } from '../../../../utils/tableUtils';
@@ -29,7 +29,7 @@ const MandalList = ({
 
   const tableHeaders = [
     { label: 'Mandal Name' },
-    { label: 'Price (₹)' },
+    { label: 'Price (₹)', className: 'text-right' },
     { label: 'Type' },
     { label: 'Members' },
     { label: 'Current Month' },
@@ -54,7 +54,12 @@ const MandalList = ({
         {mandals.map((mandal) => (
           <tr key={mandal.id} className="hover:bg-gray-50 transition-colors">
             <td className="px-6 py-4 text-sm font-semibold text-gray-900 uppercase">{mandal.name}</td>
-            <td className="px-6 py-4 text-sm text-gray-700 font-bold">₹{mandal.price}</td>
+            <td className="px-6 py-4 text-right">
+              <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
+                <IndianRupee className="w-3.5 h-3.5" />
+                {Number(mandal.price || 0).toLocaleString('en-IN')}
+              </div>
+            </td>
             <td className="px-6 py-4 text-xs font-bold uppercase text-gray-500">{mandal.mandalType}</td>
             <td className="px-6 py-4 text-sm text-gray-700 font-semibold">{mandal.memberCount || 0} Members</td>
             <td className="px-6 py-4 text-xs font-medium text-gray-500">{getDisplayMonth(filters.month)}</td>
