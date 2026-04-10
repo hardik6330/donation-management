@@ -356,16 +356,45 @@ export const getDonations = async (req, res) => {
 
 export const getDonors = async (req, res) => {
   try {
-    const { search, name, mobileNumber, city, minAmount, maxAmount } = req.query;
+    const {
+      search,
+      name,
+      mobileNumber,
+      cityId,
+      talukaId,
+      villageId,
+      minAmount,
+      maxAmount
+    } = req.query;
     const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
+    const donorWhere = { isAdmin: false };
 
-    const { donorWhere } = await buildDonationFilter({ search, name, mobileNumber, city }, '');
+    if (search) {
+      donorWhere[Op.or] = [
+        { name: { [Op.like]: `%${search}%` } },
+        { email: { [Op.like]: `%${search}%` } },
+        { mobileNumber: { [Op.like]: `%${search}%` } }
+      ];
+    }
+
+    if (name) {
+      donorWhere.name = { [Op.like]: `%${name}%` };
+    }
+
+    if (mobileNumber) {
+      donorWhere.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
+    }
+
+    if (villageId) {
+      donorWhere.villageId = villageId;
+    } else if (talukaId) {
+      donorWhere.talukaId = talukaId;
+    } else if (cityId) {
+      donorWhere.cityId = cityId;
+    }
 
     const { count, rows: donors } = await User.findAndCountAll({
-      where: {
-        ...donorWhere,
-        isAdmin: false
-      },
+      where: donorWhere,
       attributes: {
         include: [
           [
