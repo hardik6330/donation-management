@@ -290,24 +290,36 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
 };
 
 /**
- * Upload PDF buffer to Cloudinary and return the secure URL
+ * Upload a donation slip buffer to Cloudinary
  */
-export const uploadSlipToCloudinary = (pdfBuffer, donorName, mobileNumber, donationId) => {
+export const uploadSlipToCloudinary = async (pdfBuffer, donorName, mobileNumber, donationId) => {
   return new Promise((resolve, reject) => {
     const folderName = `donation-slips/${donorName.replace(/\s+/g, '_')}_${mobileNumber}`;
+    const uploadOptions = {
+      folder: folderName,
+      public_id: `slip_${donationId}`,
+      resource_type: 'raw',
+      format: 'pdf',
+      overwrite: true,
+      timeout: 60000, // 60 seconds timeout
+    };
 
     const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: 'raw',
-        folder: folderName,
-        public_id: `slip_${donationId}`,
-        overwrite: true,
-      },
+      uploadOptions,
       (error, result) => {
-        if (error) return reject(error);
+        if (error) {
+          console.error(`[Cloudinary] ❌ Stream Upload Error for Donation ${donationId}:`, error);
+          return reject(error);
+        }
         resolve(result.secure_url);
       }
     );
+
+    // Add error listener to the stream itself
+    uploadStream.on('error', (err) => {
+      console.error(`[Cloudinary] ❌ Stream Pipe Error for Donation ${donationId}:`, err);
+      reject(err);
+    });
 
     uploadStream.end(pdfBuffer);
   });
