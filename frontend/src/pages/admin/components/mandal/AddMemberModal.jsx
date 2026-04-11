@@ -4,23 +4,19 @@ import {
   useUpdateMandalMemberMutation,
   useGetMandalsQuery
 } from '../../../../services/mandalApi';
-import {
-  useGetCitiesQuery
-} from '../../../../services/masterApi';
 import { Loader2, Plus, User, Phone, UsersRound, MapPin, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 
-const AddMemberModal = ({ isOpen, onClose, editingMember = null }) => {
+const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination }) => {
   const [addMember, { isLoading: isAdding }] = useAddMandalMemberMutation();
   const [updateMember, { isLoading: isUpdating }] = useUpdateMandalMemberMutation();
-  const { data: mandalsData } = useGetMandalsQuery({ fetchAll: true });
-  const { data: citiesData } = useGetCitiesQuery({ fetchAll: true });
-
-  const mandals = mandalsData?.data?.data || [];
-  const cities = citiesData?.data?.data || [];
+  const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true' });
+  
+  const mandals = mandalsData?.data?.rows || [];
+  const cities = cityPagination.items;
 
   const nameRef = useRef(null);
   const mobileRef = useRef(null);
@@ -129,13 +125,24 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null }) => {
             placeholder="Select City"
             value={form.cityName}
             items={cities}
-            onChange={handleChange}
-            onSelect={(id, name) => { setForm(prev => ({ ...prev, locationId: id, cityName: name })); setActiveDropdown(null); }}
+            onChange={(e) => {
+              setForm(prev => ({ ...prev, cityName: e.target.value, locationId: '' }));
+              setActiveDropdown('cityName');
+              cityPagination.handleSearch(e.target.value);
+            }}
+            onSelect={(id, name) => { 
+              setForm(prev => ({ ...prev, locationId: id, cityName: name })); 
+              setActiveDropdown(null); 
+            }}
             onKeyDown={(e) => handleKeyDown(e, submitRef)}
             isActive={activeDropdown === 'cityName'}
             setActive={setActiveDropdown}
             inputRef={cityRef}
             icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={cityPagination.handleLoadMore}
+            hasMore={cityPagination.hasMore}
+            loading={cityPagination.loading}
           />
         </div>
         <div className="pt-4 flex items-center gap-3">

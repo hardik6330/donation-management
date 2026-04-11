@@ -5,6 +5,8 @@ import {
   useUpdateMandalMemberMutation,
   useGetMandalsQuery
 } from '../../../../services/mandalApi';
+import { useLazyGetCitiesQuery } from '../../../../services/masterApi';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import {
   Search, Edit, Trash2, CheckCircle, XCircle, UsersRound, IndianRupee
 } from 'lucide-react';
@@ -34,6 +36,13 @@ const MandalMemberList = () => {
   const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true' });
   const [deleteMember, { isLoading: isDeleting }] = useDeleteMandalMemberMutation();
   const [updateMember] = useUpdateMandalMemberMutation();
+
+  const [triggerGetCities] = useLazyGetCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities, {
+    dataKey: 'data',
+    rowsKey: 'data',
+    limit: 20
+  });
 
   const members = membersData?.data?.rows || [];
   const pagination = {
@@ -167,6 +176,7 @@ const MandalMemberList = () => {
         onClose={() => setIsAddModalOpen(false)}
         editingData={editingMember}
         mandals={mandals}
+        cityPagination={cityPagination}
       />
 
       <DeleteConfirmationModal
