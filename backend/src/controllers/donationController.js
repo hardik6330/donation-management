@@ -10,9 +10,9 @@ import { sequelize } from '../config/db.js';
 import { FRONTEND_URL } from '../config/env.js';
 // import { RAZORPAY_KEY_SECRET, RAZORPAY_KEY_ID } from '../config/env.js';
 import { Op } from 'sequelize';
-import { sendEmail, getDonationEmailTemplate } from '../utils/emailService.js';
-import { sendDetailedDonationSMS } from '../utils/smsService.js';
-import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/donationSlip.js';
+import { sendEmail, getDonationEmailTemplate } from '../services/email.service.js';
+import { sendDetailedDonationSMS } from '../services/sms.service.js';
+import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../services/donationSlip.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 
 // 1. QR Code Generate Karo

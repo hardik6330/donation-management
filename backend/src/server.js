@@ -10,8 +10,8 @@ import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.middleware.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { sendError } from './utils/apiResponse.js';
-import { seedAdmin } from './controllers/userController.js';
-import { seedRoles } from './controllers/roleController.js';
+import { seedAdmin } from './seeders/admin.seeder.js';
+import { seedRoles } from './seeders/roles.seeder.js';
 import { NODE_ENV, FRONTEND_URL, PORT } from './config/env.js';
 // Load env vars
 

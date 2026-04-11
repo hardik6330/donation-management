@@ -192,3 +192,52 @@ export const getUserByMobile = asyncHandler(async (req, res) => {
   }
   return sendSuccess(res, user, 'User found successfully');
 });
+
+// Initial Admin Creation (Seed)
+export const seedAdmin = async () => {
+  try {
+    const adminEmail = ADMIN_EMAIL || 'admin@example.com';
+    const adminPassword = ADMIN_PASSWORD || 'Admin@123';
+    const adminMobile = ADMIN_MOBILE || '9876543210';
+
+    const adminExists = await User.findOne({ where: { email: adminEmail } });
+    if (!adminExists) {
+      // 1. Find the 'Admin' or 'Super Admin' role
+      let adminRole = await Role.findOne({ 
+        where: { 
+          name: { [Op.or]: ['Admin', 'Super Admin'] } 
+        } 
+      });
+
+      // 2. If role doesn't exist, create 'Admin' role with full permissions
+      if (!adminRole) {
+        console.log('ℹ️ Admin role not found, creating one...');
+        const MODULES = ['dashboard', 'donations', 'donors', 'expenses', 'sevaks', 'gaushala', 'katha', 'mandal', 'kartalDhun', 'bapuSchedule', 'category', 'location', 'users'];
+        const fullPerms = {};
+        MODULES.forEach(m => { fullPerms[m] = 'full'; });
+        
+        adminRole = await Role.create({ 
+          name: 'Admin', 
+          permissions: fullPerms, 
+          description: 'Full access to all modules' 
+        });
+      }
+
+      const hashedPassword = bcrypt.hashSync(adminPassword, 10);
+      await User.create({
+        name: 'Super Admin',
+        email: adminEmail,
+        mobileNumber: adminMobile,
+        password: hashedPassword,
+        isAdmin: true,
+        roleId: adminRole ? adminRole.id : null,
+        created_by: 'System',
+      });
+      console.log(`✅ Initial Admin created successfully with role: ${adminRole.name}`);
+    } else {
+      console.log('ℹ️ Admin already exists, skipping creation');
+    }
+  } catch (error) {
+    console.error('❌ Error seeding admin:', error.message);
+  }
+};
