@@ -1,4 +1,5 @@
 import React from 'react';
+import { handleFormNavigation } from '../../utils/formNavigation';
 
 const FormInput = ({ 
   label, 
@@ -16,6 +17,20 @@ const FormInput = ({
 }) => {
   const isTextarea = type === 'textarea';
   const Component = isTextarea ? 'textarea' : 'input';
+
+  const handleKeyDownInternal = (e) => {
+    // Only use default navigation if not handled by onKeyDown prop
+    let handled = false;
+    if (onKeyDown) {
+      onKeyDown(e);
+      // If the user's custom onKeyDown already called preventDefault, we assume it's handled
+      if (e.defaultPrevented) handled = true;
+    }
+
+    if (!handled) {
+      handleFormNavigation(e);
+    }
+  };
 
   return (
     <div className={`space-y-1.5 ${className}`}>
@@ -37,7 +52,7 @@ const FormInput = ({
           placeholder={placeholder}
           value={value}
           onChange={onChange}
-          onKeyDown={onKeyDown}
+          onKeyDown={handleKeyDownInternal}
           className={`w-full ${Icon && !isTextarea ? 'pl-10' : 'px-4'} py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition ${isTextarea ? 'resize-none' : ''}`}
         />
       </div>

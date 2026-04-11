@@ -46,7 +46,7 @@ const Donation = () => {
   const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(filters);
   
   // Dropdown Paginations
-  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
+  const [modalState, setModalState] = useState({ cityId: '', talukaId: '', villageId: '' });
   const [triggerGetCities] = useLazyGetCitiesQuery();
   const cityPagination = useDropdownPagination(triggerGetCities);
 
@@ -64,13 +64,17 @@ const Donation = () => {
 
   const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
   const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, {
-    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+    additionalParams: { 
+      locationId: modalState.villageId || modalState.talukaId || modalState.cityId || filters.villageId || filters.talukaId || filters.cityId 
+    },
     rowsKey: 'rows'
   });
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
   const kathaPagination = useDropdownPagination(triggerGetKathas, {
-    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+    additionalParams: { 
+      locationId: modalState.villageId || modalState.talukaId || modalState.cityId || filters.villageId || filters.talukaId || filters.cityId 
+    },
     rowsKey: 'rows'
   });
 

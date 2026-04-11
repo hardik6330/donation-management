@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown } from 'lucide-react';
+import { handleFormNavigation } from '../../utils/formNavigation';
 
 const SearchableDropdown = ({
   label,
@@ -117,8 +118,17 @@ const SearchableDropdown = ({
         return;
       }
     }
-    // Forward to parent handler (fast entry)
-    if (onKeyDown) onKeyDown(e);
+
+    // Use common navigation logic
+    let handled = false;
+    if (onKeyDown) {
+      onKeyDown(e);
+      if (e.defaultPrevented) handled = true;
+    }
+
+    if (!handled) {
+      handleFormNavigation(e);
+    }
   };
 
   const containerRef = useRef(null);

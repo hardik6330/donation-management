@@ -162,6 +162,12 @@ const AddBapuScheduleModal = ({
       return;
     }
 
+    if (name === 'mobileNumber') {
+      const cleaned = value.replace(/\D/g, '').slice(0, 10);
+      setAddForm(prev => ({ ...prev, [name]: cleaned }));
+      return;
+    }
+
     setAddForm(prev => ({ ...prev, [name]: value }));
   };
 
@@ -336,9 +342,11 @@ const AddBapuScheduleModal = ({
 
           <FormInput
             label="Mobile Number"
+            name="mobileNumber"
             type="tel"
+            placeholder="10-digit mobile number"
             value={addForm.mobileNumber}
-            onChange={(e) => setAddForm(prev => ({ ...prev, mobileNumber: e.target.value }))}
+            onChange={handleAddInputChange}
             onKeyDown={(e) => handleKeyDown(e, amountRef)}
             inputRef={mobileRef}
             icon={Phone}

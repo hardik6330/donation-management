@@ -151,14 +151,20 @@ export const addBapuSchedule = async (req, res) => {
 export const updateBapuSchedule = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateData = req.body;
+    const { city, taluka, village, locationId, ...rest } = req.body;
 
     const schedule = await BapuSchedule.findByPk(id);
     if (!schedule) {
       return sendError(res, 'Schedule not found', 404);
     }
 
-    await schedule.update(updateData);
+    let finalLocationId = locationId;
+    if (city) {
+      const location = await findOrCreateLocationStructure(city, taluka, village);
+      if (location) finalLocationId = location.id;
+    }
+
+    await schedule.update({ ...rest, locationId: finalLocationId });
     return sendSuccess(res, schedule, 'Schedule updated successfully');
   } catch (error) {
     console.error('❌ [updateBapuSchedule] Error:', error);

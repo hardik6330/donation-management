@@ -92,10 +92,8 @@ const LocationList = ({
       </AdminTable>
 
       <Pagination 
-        currentPage={pagination.currentPage}
-        totalPages={pagination.totalPages}
-        totalData={pagination.totalData}
-        limit={filters.limit}
+        pagination={pagination}
+        filters={filters}
         onPageChange={onPageChange}
         onLimitChange={onLimitChange}
       />

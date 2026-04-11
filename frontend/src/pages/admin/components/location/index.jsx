@@ -33,8 +33,8 @@ const Location = () => {
   const currentParent = breadcrumb.length > 0 ? breadcrumb[breadcrumb.length - 1] : null;
 
   // API calls
-  const { data: citiesData, isLoading: citiesLoading } = useGetCitiesQuery(filters, { skip: !!currentParent });
-  const { data: subLocationsData, isLoading: subLoading } = useGetSubLocationsQuery(
+  const { data: citiesData, isFetching: citiesLoading } = useGetCitiesQuery(filters, { skip: !!currentParent });
+  const { data: subLocationsData, isFetching: subLoading } = useGetSubLocationsQuery(
     { parentId: currentParent?.id, ...filters },
     { skip: !currentParent }
   );

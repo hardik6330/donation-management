@@ -8,14 +8,17 @@ const FilterDropdown = ({ field, value, onChange }) => {
   const [search, setSearch] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const listRef = useRef(null);
-  const searchRef = useRef(null);
   const triggerRef = useRef(null);
 
   const selectedLabel = field.options.find(opt => opt.value === value)?.label || '';
 
   // Close on click outside
   useEffect(() => {
-    const handleClick = () => setIsOpen(false);
+    const handleClick = (e) => {
+      if (triggerRef.current && !triggerRef.current.contains(e.target)) {
+        setIsOpen(false);
+      }
+    };
     if (isOpen) {
       window.addEventListener('click', handleClick);
       return () => window.removeEventListener('click', handleClick);
@@ -30,12 +33,11 @@ const FilterDropdown = ({ field, value, onChange }) => {
   }, [search, field.onSearchChange]);
 
   // "All" option + filtered options combined for keyboard nav
-  const filtered = field.isServerSearch 
+  const allItems = field.isServerSearch 
     ? field.options 
     : field.options.filter(opt =>
         opt.label.toLowerCase().includes(search.toLowerCase())
       );
-  const allItems = filtered;
 
   const handleScroll = (e) => {
     if (!field.onLoadMore || !field.hasMore || field.loading) return;
@@ -46,7 +48,8 @@ const FilterDropdown = ({ field, value, onChange }) => {
     }
   };
 
-  const toggleDropdown = () => {
+  const toggleDropdown = (e) => {
+    e.stopPropagation();
     setIsOpen(!isOpen);
     setSearch('');
     setHighlightIndex(-1);
@@ -55,6 +58,7 @@ const FilterDropdown = ({ field, value, onChange }) => {
   const handleSearchChange = (e) => {
     setSearch(e.target.value);
     setHighlightIndex(-1);
+    if (!isOpen) setIsOpen(true);
   };
 
   // Scroll highlighted item into view
@@ -76,46 +80,52 @@ const FilterDropdown = ({ field, value, onChange }) => {
     e.stopPropagation();
     onChange({ target: { name: field.name, value: '' } });
     setSearch('');
+    setIsOpen(false);
   };
 
   const handleKeyDown = (e) => {
-    if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        setIsOpen(true);
-      }
-      return;
-    }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setHighlightIndex(prev => (prev < allItems.length - 1 ? prev + 1 : 0));
+      if (!isOpen) {
+        setIsOpen(true);
+      } else {
+        setHighlightIndex(prev => (prev < allItems.length - 1 ? prev + 1 : 0));
+      }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setHighlightIndex(prev => (prev > 0 ? prev - 1 : allItems.length - 1));
+      if (isOpen) {
+        setHighlightIndex(prev => (prev > 0 ? prev - 1 : allItems.length - 1));
+      }
     } else if (e.key === 'Enter') {
-      e.preventDefault();
-      if (highlightIndex >= 0) {
+      if (isOpen && highlightIndex >= 0) {
+        e.preventDefault();
         handleSelect(allItems[highlightIndex].value);
+      } else if (!isOpen) {
+        setIsOpen(true);
       }
     } else if (e.key === 'Escape') {
       setIsOpen(false);
       setHighlightIndex(-1);
-      triggerRef.current?.focus();
     }
   };
 
   return (
     <div className="relative" onClick={(e) => e.stopPropagation()}>
       <div
-        ref={triggerRef}
-        tabIndex={0}
-        onClick={toggleDropdown}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm cursor-pointer flex items-center justify-between transition ${isOpen ? 'ring-2 ring-blue-500' : ''} ${field.disabled ? 'opacity-50 pointer-events-none' : ''}`}
+        className={`w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm flex items-center justify-between transition ${isOpen ? 'ring-2 ring-blue-500 bg-white' : ''} ${field.disabled ? 'opacity-50 pointer-events-none' : ''}`}
       >
-        <span className={selectedLabel ? 'text-gray-800' : 'text-gray-400'}>
-          {selectedLabel || field.placeholder || `All ${field.label}`}
-        </span>
+        <input
+          ref={triggerRef}
+          type="text"
+          autoComplete="off"
+          placeholder={selectedLabel || field.placeholder || `All ${field.label}`}
+          value={isOpen ? search : (selectedLabel || '')}
+          onChange={handleSearchChange}
+          onKeyDown={handleKeyDown}
+          onFocus={() => setIsOpen(true)}
+          onClick={() => setIsOpen(true)}
+          className="bg-transparent border-none outline-none w-full text-inherit placeholder:text-gray-800 focus:placeholder:text-gray-400 cursor-text"
+        />
         <div className="flex items-center gap-1 text-gray-400">
           {value && (
             <button
@@ -126,7 +136,10 @@ const FilterDropdown = ({ field, value, onChange }) => {
               <X className="w-3 h-3" />
             </button>
           )}
-          <ChevronDown className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown 
+            className={`w-4 h-4 transition-transform cursor-pointer ${isOpen ? 'rotate-180' : ''}`} 
+            onClick={toggleDropdown}
+          />
         </div>
       </div>
 
@@ -153,7 +166,7 @@ const FilterDropdown = ({ field, value, onChange }) => {
                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
               </div>
             )}
-            {filtered.length === 0 && !field.loading && (
+            {allItems.length === 0 && !field.loading && (
               <div className="px-4 py-3 text-sm text-gray-400 text-center">No results</div>
             )}
           </div>

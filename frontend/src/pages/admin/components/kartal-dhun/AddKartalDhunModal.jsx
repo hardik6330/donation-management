@@ -190,7 +190,7 @@ const AddKartalDhunModal = ({
             onKeyDown={(e) => handleKeyDown(e, villageRef)}
             isActive={activeDropdown === 'talukaName'}
             setActive={setActiveDropdown}
-            disabled={!form.cityId}
+            disabled={!form.cityName}
             inputRef={talukaRef}
             icon={MapPin}
             isServerSearch={true}
@@ -209,7 +209,7 @@ const AddKartalDhunModal = ({
             onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
             isActive={activeDropdown === 'villageName'}
             setActive={setActiveDropdown}
-            disabled={!form.talukaId}
+            disabled={!form.talukaName}
             inputRef={villageRef}
             icon={MapPin}
             isServerSearch={true}

@@ -58,6 +58,14 @@ const AddDonationModal = ({
   });
   const [activeAddDropdown, setActiveAddDropdown] = useState(null);
 
+  const handleSetActiveAddDropdown = (name) => {
+    if ((name === 'gaushalaName' || name === 'kathaName') && !addForm.cityId) {
+      toast.warn('Pela City select karo');
+      return;
+    }
+    setActiveAddDropdown(name);
+  };
+
   // Refs for Fast Entry
   const mobileRef = useRef(null);
   const nameRef = useRef(null);
@@ -71,6 +79,7 @@ const AddDonationModal = ({
   const gaushalaRef = useRef(null);
   const kathaRef = useRef(null);
   const referenceRef = useRef(null);
+  const paymentModeRef = useRef(null);
   const amountRef = useRef(null);
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
@@ -81,8 +90,6 @@ const AddDonationModal = ({
   const gaushalas = gaushalaPagination.items;
   const kathas = kathaPagination.items;
   const categories = categoryPagination.items;
-
-  const selectedLocationId = addForm.villageId || addForm.talukaId || addForm.cityId;
 
   const { data: existingUser } = useGetUserByMobileQuery(addForm.mobileNumber, {
     skip: addForm.mobileNumber.length !== 10 || !isOpen,
@@ -144,20 +151,21 @@ const AddDonationModal = ({
     if (name === 'cityName') {
       setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
       setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
+      setModalState(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
       setActiveAddDropdown('cityName');
       return;
     }
     if (name === 'talukaName') {
       setAddDropdownLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
       setAddForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, talukaId: '' }));
+      setModalState(prev => ({ ...prev, talukaId: '', villageId: '' }));
       setActiveAddDropdown('talukaName');
       return;
     }
     if (name === 'villageName') {
       setAddDropdownLabels(prev => ({ ...prev, villageName: value }));
       setAddForm(prev => ({ ...prev, villageId: '' }));
+      setModalState(prev => ({ ...prev, villageId: '' }));
       setActiveAddDropdown('villageName');
       return;
     }
@@ -212,6 +220,7 @@ const AddDonationModal = ({
     } else if (field === 'villageId') {
       setAddForm(prev => ({ ...prev, villageId: id }));
       setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
+      setModalState(prev => ({ ...prev, villageId: id }));
     } else if (field === 'categoryId') {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
@@ -270,6 +279,9 @@ const AddDonationModal = ({
         ...addForm,
         amount: rawAmount,
         paidAmount: addForm.paymentMode === 'partially_paid' ? Number(rawPaid) : undefined,
+        cityName: addDropdownLabels.cityName,
+        talukaName: addDropdownLabels.talukaName,
+        villageName: addDropdownLabels.villageName,
       }).unwrap();
       toast.success('Donation added successfully');
       resetAddForm();
@@ -407,7 +419,7 @@ const AddDonationModal = ({
                   onSelect={(id, name) => handleAddDropdownSelect('cityId', id, name)}
                   onKeyDown={(e) => handleKeyDown(e, talukaRef)}
                   isActive={activeAddDropdown === 'cityName'}
-                  setActive={setActiveAddDropdown}
+                  setActive={handleSetActiveAddDropdown}
                   required
                   inputRef={cityRef}
                   icon={MapPin}
@@ -422,8 +434,8 @@ const AddDonationModal = ({
                   onSelect={(id, name) => handleAddDropdownSelect('talukaId', id, name)}
                   onKeyDown={(e) => handleKeyDown(e, villageRef_add)}
                   isActive={activeAddDropdown === 'talukaName'}
-                  setActive={setActiveAddDropdown}
-                  disabled={!addForm.cityId}
+                  setActive={handleSetActiveAddDropdown}
+                  disabled={!addDropdownLabels.cityName}
                   inputRef={talukaRef}
                   icon={MapPin}
                 />
@@ -440,8 +452,8 @@ const AddDonationModal = ({
                   onSelect={(id, name) => handleAddDropdownSelect('villageId', id, name)}
                   onKeyDown={(e) => handleKeyDown(e, categoryRef)}
                   isActive={activeAddDropdown === 'villageName'}
-                  setActive={setActiveAddDropdown}
-                  disabled={!addForm.talukaId}
+                  setActive={handleSetActiveAddDropdown}
+                  disabled={!addDropdownLabels.talukaName}
                   inputRef={villageRef_add}
                   icon={MapPin}
                 />
@@ -453,9 +465,23 @@ const AddDonationModal = ({
                   items={categories}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('categoryId', id, name)}
-                  onKeyDown={(e) => handleKeyDown(e, gaushalaRef)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const isGaushalaEmpty = !addForm.cityId || gaushalas.length === 0 || !!addForm.kathaId;
+                      const isKathaEmpty = !addForm.cityId || kathas.length === 0 || !!addForm.gaushalaId;
+
+                      if (!isGaushalaEmpty) {
+                        gaushalaRef.current?.focus();
+                      } else if (!isKathaEmpty) {
+                        kathaRef.current?.focus();
+                      } else {
+                        referenceRef.current?.focus();
+                      }
+                    }
+                  }}
                   isActive={activeAddDropdown === 'categoryName'}
-                  setActive={setActiveAddDropdown}
+                  setActive={handleSetActiveAddDropdown}
                   inputRef={categoryRef}
                   icon={Tag}
                 />
@@ -470,10 +496,20 @@ const AddDonationModal = ({
                   items={gaushalas}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('gaushalaId', id, name)}
-                  onKeyDown={(e) => handleKeyDown(e, kathaRef)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      const isKathaEmpty = !addForm.cityId || kathas.length === 0 || !!addForm.gaushalaId;
+                      if (!isKathaEmpty) {
+                        kathaRef.current?.focus();
+                      } else {
+                        referenceRef.current?.focus();
+                      }
+                    }
+                  }}
                   isActive={activeAddDropdown === 'gaushalaName'}
-                  setActive={setActiveAddDropdown}
-                  disabled={!selectedLocationId || gaushalas.length === 0 || !!addForm.kathaId}
+                  setActive={handleSetActiveAddDropdown}
+                  disabled={!!addForm.kathaId || (!!addForm.cityId && gaushalas.length === 0)}
                   inputRef={gaushalaRef}
                   icon={Building2}
                 />
@@ -487,8 +523,8 @@ const AddDonationModal = ({
                   onSelect={(id, name) => handleAddDropdownSelect('kathaId', id, name)}
                   onKeyDown={(e) => handleKeyDown(e, referenceRef)}
                   isActive={activeAddDropdown === 'kathaName'}
-                  setActive={setActiveAddDropdown}
-                  disabled={!selectedLocationId || kathas.length === 0 || !!addForm.gaushalaId}
+                  setActive={handleSetActiveAddDropdown}
+                  disabled={!!addForm.gaushalaId || (!!addForm.cityId && kathas.length === 0)}
                   inputRef={kathaRef}
                   icon={Tag}
                 />
@@ -501,7 +537,7 @@ const AddDonationModal = ({
                   placeholder="Reference name"
                   value={addForm.referenceName}
                   onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, amountRef)}
+                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef)}
                   inputRef={referenceRef}
                   icon={User}
                 />
@@ -519,8 +555,10 @@ const AddDonationModal = ({
                   ]}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('paymentMode', id, name)}
+                  onKeyDown={(e) => handleKeyDown(e, amountRef)}
                   isActive={activeAddDropdown === 'paymentModeName'}
-                  setActive={setActiveAddDropdown}
+                  setActive={handleSetActiveAddDropdown}
+                  inputRef={paymentModeRef}
                   required
                   icon={CreditCard}
                 />

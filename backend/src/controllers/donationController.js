@@ -7,6 +7,7 @@ import { Location } from '../models/location.js';
 import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
+import { findOrCreateLocationStructure } from '../utils/locationHelper.js';
 // import { razorpay } from '../config/razorpay.js';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
@@ -51,8 +52,18 @@ export const createDonationOrder = async (req, res) => {
       mobileNumber, 
       paymentMode,
       referenceName,
-      paidAmount
+      paidAmount,
+      cityName,
+      talukaName,
+      villageName
     } = req.body;
+
+    // 0. Handle Dynamic Location Creation
+    let targetLocationId = villageId || talukaId || cityId;
+    if (!targetLocationId && cityName) {
+      const newLoc = await findOrCreateLocationStructure(cityName, talukaName, villageName);
+      if (newLoc) targetLocationId = newLoc.id;
+    }
 
     // 1. Generate Cause String based on Category, Location, and Katha
     let causeString = '';
@@ -70,8 +81,6 @@ export const createDonationOrder = async (req, res) => {
       if (katha) kathaName = katha.name;
     }
 
-    // Determine the most specific location provided (Village > Taluka > City)
-    const targetLocationId = villageId || talukaId || cityId;
     if (targetLocationId) {
       const location = await Location.findByPk(targetLocationId, {
         include: [{ 
