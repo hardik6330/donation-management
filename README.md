@@ -5,6 +5,8 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 ## 🚀 Recent Updates & Features
 
 - **Improved Admin Dashboard**: Sticky header, footer, and sidebar with scrollable content area.
+- **Enhanced Security**: Centralized authentication with `useAuth` hook and strict route protection (`ProtectedRoute` & `GuestRoute`).
+- **Global Error Handling**: Integrated `<ErrorBoundary>` to catch and display render crashes gracefully.
 - **Enhanced Donation Tracking**: Added `paymentDate` field to track actual payment receipt date.
 - **Advanced Filtering**: Support for Min/Max amount range and category-wise filtering in admin records.
 - **Instant Category Management**: Toggle category status (Active/Inactive) directly from the list.
