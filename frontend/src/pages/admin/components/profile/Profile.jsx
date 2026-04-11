@@ -1,8 +1,10 @@
 import React from 'react';
 import { Users, Settings } from 'lucide-react';
+import { useAuth } from '../../../../context/AuthContext';
 
 const Profile = () => {
-  const user = JSON.parse(localStorage.getItem('user')) || { name: 'Administrator' };
+  const { user: authUser } = useAuth();
+  const user = authUser || { name: 'Administrator' };
 
   return (
     <div className="space-y-6">

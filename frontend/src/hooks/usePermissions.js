@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 
 /**
  * Custom hook to manage and check user permissions across the application.
  */
 const usePermissions = () => {
-  const user = useMemo(() => JSON.parse(localStorage.getItem('user')) || {}, []);
-  const perms = useMemo(() => user.role?.permissions || {}, [user]);
+  const { user } = useAuth();
+  const perms = useMemo(() => user?.role?.permissions || {}, [user]);
 
   /**
    * Check if the current user has required permission level for a module.

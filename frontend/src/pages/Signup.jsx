@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useRegisterMutation } from '../services/apiSlice';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Loader2, ArrowRight, Phone } from 'lucide-react';
@@ -12,24 +12,6 @@ const Signup = () => {
   });
   const [register, { isLoading }] = useRegisterMutation();
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.isAdmin) {
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
-      } catch (err) {
-        console.error('Error parsing user data:', err);
-      }
-    }
-  }, [navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;

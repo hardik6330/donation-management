@@ -1,47 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLoginMutation } from '../services/apiSlice';
-import { useNavigate, Link } from 'react-router-dom';
-import { Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'react-toastify';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [login, { isLoading }] = useLoginMutation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const userStr = localStorage.getItem('user');
-    
-    if (token && userStr) {
-      try {
-        const user = JSON.parse(userStr);
-        if (user.isAdmin) {
-          navigate('/admin/dashboard', { replace: true });
-        } else {
-          navigate('/', { replace: true });
-        }
-      } catch (err) {
-        console.error('Error parsing user data:', err);
-      }
-    }
-  }, [navigate]);
+  const [loginMutation, { isLoading }] = useLoginMutation();
+  const { login } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const result = await login({ email, password }).unwrap();
-      localStorage.setItem('token', result.data.accessToken);
-      localStorage.setItem('user', JSON.stringify(result.data.user));
+      const result = await loginMutation({ email, password }).unwrap();
+      login(result.data.user, result.data.accessToken);
       toast.success('Login Successful!');
-      
-      if (result.data.user.isAdmin) {
-        navigate('/admin/dashboard');
-      } else {
-        navigate('/');
-      }
     } catch (err) {
       const errorMsg = err?.data?.message || 'Login failed';
       toast.error(errorMsg);

@@ -1,5 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import ProtectedRoute from './components/auth/ProtectedRoute';
+import GuestRoute from './components/auth/GuestRoute';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Home from './pages/Home';
 import Donate from './pages/Donate';
 import Login from './pages/Login';
@@ -27,51 +31,76 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/donate" element={<Donate />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Navigate to="dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="donations" element={<DonationList />} />
-            <Route path="donors" element={<DonorsList />} />
-            <Route path="gaushala" element={<GaushalaList />} />
-            <Route path="katha" element={<KathaList />} />
-            <Route path="bapu-schedule" element={<BapuScheduleList />} />
-            <Route path="expenses" element={<ExpenseList />} />
-            <Route path="sevaks" element={<SevakList />} />
-            <Route path="mandal" element={<MandalList />} />
-            <Route path="mandal-members" element={<MandalMemberList />} />
-            <Route path="mandal-payments" element={<MandalPaymentPage />} />
-            <Route path="kartal-dhun" element={<KartalDhunList />} />
-            <Route path="roles" element={<RoleList />} />
-            <Route path="system-users" element={<SystemUserList />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="category" element={<CategoryList />} />
-            <Route path="location" element={<LocationList />} />
-          </Route>
-        </Routes>
-        <ToastContainer 
-          position="top-center" 
-          autoClose={3000} 
-          transition={Slide}  
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-      </div>
-    </Router>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/donate" element={<Donate />} />
+              <Route 
+                path="/login" 
+                element={
+                  <GuestRoute>
+                    <Login />
+                  </GuestRoute>
+                } 
+              />
+              <Route 
+                path="/signup" 
+                element={
+                  <GuestRoute>
+                    <Signup />
+                  </GuestRoute>
+                } 
+              />
+              
+              {/* Admin Routes */}
+              <Route 
+                path="/admin" 
+                element={
+                  <ProtectedRoute>
+                    <AdminLayout />
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<Dashboard />} />
+                <Route path="donations" element={<DonationList />} />
+                <Route path="donors" element={<DonorsList />} />
+                <Route path="gaushala" element={<GaushalaList />} />
+                <Route path="katha" element={<KathaList />} />
+                <Route path="bapu-schedule" element={<BapuScheduleList />} />
+                <Route path="expenses" element={<ExpenseList />} />
+                <Route path="sevaks" element={<SevakList />} />
+                <Route path="mandal" element={<MandalList />} />
+                <Route path="mandal-members" element={<MandalMemberList />} />
+                <Route path="mandal-payments" element={<MandalPaymentPage />} />
+                <Route path="kartal-dhun" element={<KartalDhunList />} />
+                <Route path="roles" element={<RoleList />} />
+                <Route path="system-users" element={<SystemUserList />} />
+                <Route path="profile" element={<Profile />} />
+                <Route path="category" element={<CategoryList />} />
+                <Route path="location" element={<LocationList />} />
+              </Route>
+            </Routes>
+            <ToastContainer 
+              position="top-center" 
+              autoClose={3000} 
+              transition={Slide}  
+              hideProgressBar={false}
+              newestOnTop={false}
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+              theme="light"
+            />
+          </div>
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
 

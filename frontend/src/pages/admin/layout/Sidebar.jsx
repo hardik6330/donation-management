@@ -21,9 +21,11 @@ import {
   FileText
 } from 'lucide-react';
 import usePermissions from '../../../hooks/usePermissions';
+import { useAuth } from '../../../context/AuthContext';
 
-const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const { hasPermission } = usePermissions();
+  const { logout } = useAuth();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', show: hasPermission('dashboard') },
@@ -122,7 +124,7 @@ const Sidebar = ({ isOpen, setIsOpen, onLogout }) => {
 
             {/* Logout Button */}
             <button
-              onClick={onLogout}
+              onClick={logout}
               className="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold text-red-500 hover:bg-red-50 transition-all group"
             >
               <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />

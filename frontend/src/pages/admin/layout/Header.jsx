@@ -1,8 +1,10 @@
 import React from 'react';
-import { Menu, User, Bell } from 'lucide-react';
+import { Menu, User } from 'lucide-react';
+import { useAuth } from '../../../context/AuthContext';
 
 const Header = ({ setIsSidebarOpen }) => {
-  const user = JSON.parse(localStorage.getItem('user')) || { name: 'Admin' };
+  const { user } = useAuth();
+  const userName = user?.name || 'Admin';
 
   return (
     <header className="bg-white border-b border-gray-100 h-16 sm:h-20 flex items-center justify-between px-4 sm:px-8 sticky top-0 z-30 shadow-sm backdrop-blur-md bg-white/80">
@@ -23,7 +25,7 @@ const Header = ({ setIsSidebarOpen }) => {
          */}
         <div className="flex items-center gap-2 sm:gap-3 pl-3 sm:pl-6 border-l border-gray-100">
           <div className="text-right hidden sm:block">
-            <p className="text-sm font-bold text-gray-800">{user.name}</p>
+            <p className="text-sm font-bold text-gray-800">{userName}</p>
             <p className="text-[10px] text-gray-500 uppercase font-semibold">Administrator</p>
           </div>
           <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600">
