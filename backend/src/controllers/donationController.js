@@ -335,6 +335,7 @@ export const getDonors = asyncHandler(async (req, res) => {
     search,
     name,
     mobileNumber,
+    district,
     cityId,
     talukaId,
     villageId,
@@ -360,12 +361,23 @@ export const getDonors = asyncHandler(async (req, res) => {
     donorWhere.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
   }
 
-  if (villageId) {
-    donorWhere.villageId = villageId;
-  } else if (talukaId) {
-    donorWhere.talukaId = talukaId;
-  } else if (cityId) {
-    donorWhere.cityId = cityId;
+  if (district) {
+    donorWhere.district = { [Op.like]: `%${district}%` };
+  }
+
+  if (villageId || talukaId || cityId) {
+    const targetId = villageId || talukaId || cityId;
+    const location = await Location.findByPk(targetId);
+    if (location) {
+      if (location.type === 'village') {
+        donorWhere.village = location.name;
+      } else {
+        // For taluka or city, we'll search in district for now as per user's request
+        // or we could be more specific if needed. 
+        // User specifically said "direct je district che ae search karvanu"
+        donorWhere.district = location.name;
+      }
+    }
   }
 
   const { count, rows: donors } = await User.findAndCountAll({

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Search, Phone, MapPin, MapPinHouse, Building2, IndianRupee } from 'lucide-react';
+import { Search, Phone, MapPin, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 
@@ -8,9 +8,6 @@ const DonorsList = ({
   isLoading, 
   filters, 
   pagination, 
-  cityPagination,
-  talukaPagination,
-  villagePagination,
   onFilterChange, 
   onClearFilters, 
   onPageChange 
@@ -18,44 +15,7 @@ const DonorsList = ({
   const filterFields = [
     { name: 'name', label: 'Donor Name', icon: Search, placeholder: 'Search by name...' },
     { name: 'mobileNumber', label: 'Mobile Number', icon: Phone, placeholder: 'Search by mobile...' },
-    { 
-      name: 'cityId', 
-      label: 'City', 
-      type: 'select', 
-      icon: MapPin,
-      options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
-      isServerSearch: true,
-      onSearchChange: cityPagination.handleSearch,
-      onLoadMore: cityPagination.handleLoadMore,
-      hasMore: cityPagination.hasMore,
-      loading: cityPagination.loading
-    },
-    { 
-      name: 'talukaId', 
-      label: 'Taluka', 
-      type: 'select', 
-      icon: MapPinHouse,
-      options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
-      disabled: !filters.cityId,
-      isServerSearch: true,
-      onSearchChange: talukaPagination.handleSearch,
-      onLoadMore: talukaPagination.handleLoadMore,
-      hasMore: talukaPagination.hasMore,
-      loading: talukaPagination.loading
-    },
-    { 
-      name: 'villageId', 
-      label: 'Village', 
-      type: 'select', 
-      icon: Building2,
-      options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
-      disabled: !filters.talukaId,
-      isServerSearch: true,
-      onSearchChange: villagePagination.handleSearch,
-      onLoadMore: villagePagination.handleLoadMore,
-      hasMore: villagePagination.hasMore,
-      loading: villagePagination.loading
-    },
+    { name: 'district', label: 'District', icon: MapPin, placeholder: 'Search by district name...' },
     { name: 'minAmount', label: 'Min Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 0' },
     { name: 'maxAmount', label: 'Max Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 10000+' },
   ];
