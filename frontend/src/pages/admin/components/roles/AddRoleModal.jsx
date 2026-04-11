@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
   useAddRoleMutation,
   useUpdateRoleMutation,
-} from '../../../../services/apiSlice';
+} from '../../../../services/roleApi';
 import { Shield, Plus, Loader2, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';

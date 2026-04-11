@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useRegisterMutation } from '../services/apiSlice';
+import { useRegisterMutation } from '../services/authApi';
 import { useNavigate, Link } from 'react-router-dom';
 import { User, Mail, Loader2, ArrowRight, Phone } from 'lucide-react';
 import { toast } from 'react-toastify';

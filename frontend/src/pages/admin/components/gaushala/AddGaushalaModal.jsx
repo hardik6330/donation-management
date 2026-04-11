@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddGaushalaMutation,
   useUpdateGaushalaMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/gaushalaApi';
 import { toast } from 'react-toastify';
 import { handleMutationError } from '../../../../utils/errorHelper';
 import { MapPin, Building2, Plus, Loader2, CheckCircle2, Tag, Edit, Building2Icon } from 'lucide-react';

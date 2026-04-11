@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   useAddSevakMutation,
   useUpdateSevakMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/sevakApi';
 import {
   Loader2, Plus, User, Phone, Mail, MapPin, Globe, Landmark, Edit
 } from 'lucide-react';

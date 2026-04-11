@@ -1,12 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
-  useGetAllDonationsQuery, 
+  useGetAllDonationsQuery
+} from '../../../../services/donationApi';
+import {
   useLazyGetCitiesQuery,
   useLazyGetSubLocationsQuery,
-  useLazyGetGaushalasQuery,
-  useLazyGetKathasQuery,
   useLazyGetCategoriesQuery
-} from '../../../../services/apiSlice';
+} from '../../../../services/masterApi';
+import { useLazyGetGaushalasQuery } from '../../../../services/gaushalaApi';
+import { useLazyGetKathasQuery } from '../../../../services/kathaApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { 
   Search, Calendar, Loader2, IndianRupee, FileDown, 

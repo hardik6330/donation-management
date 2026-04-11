@@ -4,7 +4,7 @@ import AddRoleModal from './AddRoleModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetRolesQuery, useDeleteRoleMutation } from '../../../../services/apiSlice';
+import { useGetRolesQuery, useDeleteRoleMutation } from '../../../../services/roleApi';
 import { toast } from 'react-toastify';
 
 const MODULES = [

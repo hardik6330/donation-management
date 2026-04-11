@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGetAdminStatsQuery } from '../../../../services/apiSlice';
+import { useGetAdminStatsQuery } from '../../../../services/donationApi';
 import { Users, IndianRupee, CreditCard, Trophy, Loader2, HandCoins } from 'lucide-react';
 import Reports from '../reports/Reports';
 import { useAuth } from '../../../../context/AuthContext';

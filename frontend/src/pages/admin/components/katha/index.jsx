@@ -6,10 +6,12 @@ import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { 
   useGetKathasQuery, 
-  useDeleteKathaMutation, 
+  useDeleteKathaMutation
+} from '../../../../services/kathaApi';
+import { 
   useLazyGetCitiesQuery, 
   useLazyGetSubLocationsQuery 
-} from '../../../../services/apiSlice';
+} from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 

@@ -1,14 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useCreateOrderMutation } from '../services/donationApi';
+import { useGetUserByMobileQuery } from '../services/authApi';
 import {
-  useCreateOrderMutation,
-  // useVerifyPaymentMutation, // Razorpay commented out
-  useGetUserByMobileQuery,
   useGetCitiesQuery,
   useGetSubLocationsQuery,
-  useGetCategoriesQuery,
-  useGetGaushalasQuery,
-  useGetKathasQuery
-} from '../services/apiSlice';
+  useGetCategoriesQuery
+} from '../services/masterApi';
+import { useGetGaushalasQuery } from '../services/gaushalaApi';
+import { useGetKathasQuery } from '../services/kathaApi';
 import { IndianRupee, User, Mail, Home as HomeIcon, Building, MapPin, Loader2, Phone, CreditCard, Tag, Mic2, Building2, X, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';

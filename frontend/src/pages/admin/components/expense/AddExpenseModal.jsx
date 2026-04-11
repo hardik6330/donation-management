@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   useAddExpenseMutation,
   useUpdateExpenseMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/expenseApi';
 import {
   Loader2, IndianRupee, Plus, Calendar, Tag, Building2, AlignLeft, CreditCard, Mic2, Edit,
   IndianRupeeIcon

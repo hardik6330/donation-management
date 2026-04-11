@@ -2,10 +2,11 @@ import { useState, useEffect, useRef } from 'react';
 import {
   useAddMandalMemberMutation,
   useUpdateMandalMemberMutation,
-  useGetMandalsQuery,
-  useGetCitiesQuery,
-  useGetSubLocationsQuery
-} from '../../../../services/apiSlice';
+  useGetMandalsQuery
+} from '../../../../services/mandalApi';
+import {
+  useGetCitiesQuery
+} from '../../../../services/masterApi';
 import { Loader2, Plus, User, Phone, UsersRound, MapPin, Edit } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';

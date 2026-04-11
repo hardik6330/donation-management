@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   useAddKartalDhunMutation,
   useUpdateKartalDhunMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/kartalDhunApi';
 import { Loader2, Plus, Tag, Calendar, IndianRupee, MapPin, AlignLeft, Edit, MusicIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';

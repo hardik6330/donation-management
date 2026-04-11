@@ -9,7 +9,7 @@ import {
   useUpdateCategoryMutation, 
   useDeleteCategoryMutation,
   useLazyGetCategoriesQuery
-} from '../../../../services/apiSlice';
+} from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 

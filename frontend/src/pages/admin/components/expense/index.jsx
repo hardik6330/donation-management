@@ -6,10 +6,14 @@ import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { 
   useGetExpensesQuery, 
-  useDeleteExpenseMutation, 
-  useLazyGetGaushalasQuery, 
+  useDeleteExpenseMutation
+} from '../../../../services/expenseApi';
+import { 
+  useLazyGetGaushalasQuery 
+} from '../../../../services/gaushalaApi';
+import { 
   useLazyGetKathasQuery 
-} from '../../../../services/apiSlice';
+} from '../../../../services/kathaApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 

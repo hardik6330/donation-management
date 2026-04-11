@@ -7,14 +7,14 @@ import EditPartialPaymentModal from './EditPartialPaymentModal';
 import AddPartialPaymentModal from './AddPartialPaymentModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import { useGetAllDonationsQuery } from '../../../../services/donationApi';
 import {
-  useGetAllDonationsQuery,
   useLazyGetCitiesQuery,
-  useLazyGetSubLocationsQuery,
-  useLazyGetGaushalasQuery,
-  useLazyGetKathasQuery,
-  useLazyGetCategoriesQuery
-} from '../../../../services/apiSlice';
+  useLazyGetSubLocationsQuery
+} from '../../../../services/masterApi';
+import { useLazyGetGaushalasQuery } from '../../../../services/gaushalaApi';
+import { useLazyGetKathasQuery } from '../../../../services/kathaApi';
+import { useLazyGetCategoriesQuery } from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 
 const Donation = () => {

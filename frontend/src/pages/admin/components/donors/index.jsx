@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import DonorsList from './DonorsList';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { 
-  useGetDonorsQuery, 
+  useGetDonorsQuery
+} from '../../../../services/donationApi';
+import {
   useLazyGetCitiesQuery, 
   useLazyGetSubLocationsQuery 
-} from '../../../../services/apiSlice';
+} from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 
 const Donors = () => {

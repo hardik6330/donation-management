@@ -4,7 +4,7 @@ import AddSevakModal from './AddSevakModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetSevaksQuery, useDeleteSevakMutation, useUpdateSevakMutation } from '../../../../services/apiSlice';
+import { useGetSevaksQuery, useDeleteSevakMutation, useUpdateSevakMutation } from '../../../../services/sevakApi';
 import { toast } from 'react-toastify';
 
 const Sevak = () => {

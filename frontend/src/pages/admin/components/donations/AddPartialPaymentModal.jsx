@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { IndianRupee, Loader2, PlusCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
-import { useUpdateDonationMutation } from '../../../../services/apiSlice';
+import { useUpdateDonationMutation } from '../../../../services/donationApi';
 
 const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();

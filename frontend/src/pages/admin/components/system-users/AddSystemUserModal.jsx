@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   useAddSystemUserMutation,
-  useUpdateSystemUserMutation,
-  useGetRolesQuery
-} from '../../../../services/apiSlice';
+  useUpdateSystemUserMutation
+} from '../../../../services/authApi';
+import { useGetRolesQuery } from '../../../../services/roleApi';
 import { Loader2, Plus, User, Phone, Mail, Lock, Shield, Edit } from 'lucide-react';
 
 import { toast } from 'react-toastify';

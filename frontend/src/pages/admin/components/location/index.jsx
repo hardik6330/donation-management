@@ -10,7 +10,7 @@ import {
   useDeleteLocationMutation,
   useLazyGetCitiesQuery,
   useLazyGetSubLocationsQuery
-} from '../../../../services/apiSlice';
+} from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 import { ChevronRight, Home } from 'lucide-react';

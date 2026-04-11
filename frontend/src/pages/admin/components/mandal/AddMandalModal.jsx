@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   useAddMandalMutation,
   useUpdateMandalMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/mandalApi';
 import { Loader2, Plus, Tag, IndianRupee, Layers, UsersRound, Edit, UsersRoundIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';

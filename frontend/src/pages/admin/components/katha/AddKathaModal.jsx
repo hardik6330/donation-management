@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddKathaMutation,
   useUpdateKathaMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/kathaApi';
 import { toast } from 'react-toastify';
 import { MapPin, Mic2, Plus, Loader2, CheckCircle2, Calendar, Tag, CheckCircle, Edit, Mic2Icon } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';

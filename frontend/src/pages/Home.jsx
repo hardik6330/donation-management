@@ -1,5 +1,5 @@
 import React from 'react';
-import { useGetQRCodeQuery } from '../services/apiSlice';
+import { useGetQRCodeQuery } from '../services/donationApi';
 import { ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png';

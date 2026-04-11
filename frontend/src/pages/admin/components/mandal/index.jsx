@@ -6,7 +6,7 @@ import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { NavLink } from 'react-router-dom';
 import { UsersRound, IndianRupee } from 'lucide-react';
-import { useGetMandalsQuery, useDeleteMandalMutation, useUpdateMandalMutation, useGenerateMandalPaymentsMutation } from '../../../../services/apiSlice';
+import { useGetMandalsQuery, useDeleteMandalMutation, useUpdateMandalMutation, useGenerateMandalPaymentsMutation } from '../../../../services/mandalApi';
 import { toast } from 'react-toastify';
 
 const Mandal = () => {

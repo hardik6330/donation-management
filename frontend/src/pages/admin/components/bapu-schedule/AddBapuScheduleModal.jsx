@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddBapuScheduleMutation,
   useUpdateBapuScheduleMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/bapuApi';
 import { Calendar, X, ChevronDown, Loader2, Clock, MapPin, User, Phone, Edit, Tag, IndianRupee } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';

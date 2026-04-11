@@ -4,7 +4,8 @@ import AddSystemUserModal from './AddSystemUserModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetSystemUsersQuery, useDeleteSystemUserMutation, useGetRolesQuery } from '../../../../services/apiSlice';
+import { useGetSystemUsersQuery, useDeleteSystemUserMutation } from '../../../../services/authApi';
+import { useGetRolesQuery } from '../../../../services/roleApi';
 import { toast } from 'react-toastify';
 
 const SystemUser = () => {

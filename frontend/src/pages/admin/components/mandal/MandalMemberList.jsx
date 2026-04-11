@@ -4,7 +4,7 @@ import {
   useDeleteMandalMemberMutation,
   useUpdateMandalMemberMutation,
   useGetMandalsQuery
-} from '../../../../services/apiSlice';
+} from '../../../../services/mandalApi';
 import {
   Search, Edit, Trash2, CheckCircle, XCircle, UsersRound, IndianRupee
 } from 'lucide-react';

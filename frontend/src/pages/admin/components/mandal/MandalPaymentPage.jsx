@@ -5,7 +5,7 @@ import {
   useUpdateMandalPaymentMutation,
   useGetMandalReportQuery,
   useGetMandalsQuery
-} from '../../../../services/apiSlice';
+} from '../../../../services/mandalApi';
 import {
   Search, Calendar, CheckCircle, XCircle, IndianRupee, UsersRound
 } from 'lucide-react';

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import {
   useAddCombinedMasterDataMutation,
   useUpdateCategoryMutation
-} from '../../../../services/apiSlice';
+} from '../../../../services/masterApi';
 import { toast } from 'react-toastify';
 import { Tag, Plus, Loader2, CheckCircle2, Edit } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
