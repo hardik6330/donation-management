@@ -218,15 +218,33 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         const tasks = [];
 
         const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
-          .then(url => donation.update({ slipUrl: url }))
-          .catch(err => console.error('❌ Cloudinary Upload Error:', err));
+          .then(async url => {
+            console.log(`[Donation ${donation.id}] ✅ Cloudinary upload success: ${url}`);
+            await donation.update({ slipUrl: url });
+          })
+          .catch(err => {
+            console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, {
+              message: err.message,
+              stack: err.stack,
+              details: err
+            });
+          });
         tasks.push(uploadTask);
 
         if (user.email) {
+          console.log(`[Donation ${donation.id}] 📧 Preparing to send email to ${user.email}`);
           const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
           const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
             { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-          ]).catch(err => console.error('❌ Email Error:', err));
+          ])
+          .then(() => console.log(`[Donation ${donation.id}] ✅ Email sent successfully to ${user.email}`))
+          .catch(err => {
+            console.error(`[Donation ${donation.id}] ❌ Email Error for ${user.email}:`, {
+              message: err.message,
+              stack: err.stack,
+              details: err
+            });
+          });
           tasks.push(emailTask);
         }
 
@@ -523,60 +541,88 @@ export const updateDonation = asyncHandler(async (req, res) => {
   if (updateData.status === 'completed' && wasNotCompleted) {
     const donor = await User.findByPk(donation.donorId);
     if (donor) {
-      try {
-        const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null;
-        const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
-
-        const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, donation.paymentMode, donation.paymentDate, gaushala, katha);
-        const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id);
-        await donation.update({ slipUrl: cloudinaryUrl });
-        console.log(`✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
-
-        if (donor.email) {
-          const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
-          await sendEmail(donor.email, 'Donation Completed - Thank You!', emailHtml, [
-            { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+      console.log(`[Donation ${donation.id}] 🔄 Donation marked completed. Starting background tasks...`);
+      // Use IIFE for background execution to prevent Vercel/Server timeouts for the main request
+      (async () => {
+        try {
+          const [gaushala, katha] = await Promise.all([
+            donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null,
+            donation.kathaId ? await Katha.findByPk(donation.kathaId) : null
           ]);
-        }
 
-        // Send SMS notification
-        if (donor.mobileNumber) {
-          const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
-          const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId) : null;
-          const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
+          const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, donation.paymentMode, donation.paymentDate, gaushala, katha);
           
-          let city = '', taluka = '', village = '';
-          const locId = donation.locationId;
-          if (locId) {
-            const loc = await Location.findByPk(locId, {
-              include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
-            });
-            if (loc) {
-              if (loc.type === 'village') {
-                village = loc.name;
-                taluka = loc.parent?.name || '';
-                city = loc.parent?.parent?.name || '';
-              } else if (loc.type === 'taluka') {
-                taluka = loc.name;
-                city = loc.parent?.name || '';
-              } else {
-                city = loc.name;
-              }
-            }
+          const tasks = [];
+
+          const uploadTask = uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id)
+            .then(async cloudinaryUrl => {
+              await donation.update({ slipUrl: cloudinaryUrl });
+              console.log(`[Donation ${donation.id}] ✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
+            })
+            .catch(err => console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err));
+          tasks.push(uploadTask);
+
+          if (donor.email) {
+            console.log(`[Donation ${donation.id}] 📧 Preparing to send email to ${donor.email}`);
+            const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
+            const emailTask = sendEmail(donor.email, 'Donation Completed - Thank You!', emailHtml, [
+              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+            ])
+            .then(() => console.log(`[Donation ${donation.id}] ✅ Email sent successfully to ${donor.email}`))
+            .catch(err => console.error(`[Donation ${donation.id}] ❌ Email Error for ${donor.email}:`, err));
+            tasks.push(emailTask);
           }
 
-          await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
-            category: category?.name,
-            gaushala: gaushala?.name,
-            katha: katha?.name,
-            city,
-            taluka,
-            village
-          });
+          // Send SMS notification
+          if (donor.mobileNumber) {
+            const smsTask = (async () => {
+              try {
+                const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
+                const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId) : null;
+                const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
+                
+                let city = '', taluka = '', village = '';
+                const locId = donation.locationId;
+                if (locId) {
+                  const loc = await Location.findByPk(locId, {
+                    include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+                  });
+                  if (loc) {
+                    if (loc.type === 'village') {
+                      village = loc.name;
+                      taluka = loc.parent?.name || '';
+                      city = loc.parent?.parent?.name || '';
+                    } else if (loc.type === 'taluka') {
+                      taluka = loc.name;
+                      city = loc.parent?.name || '';
+                    } else {
+                      city = loc.name;
+                    }
+                  }
+                }
+
+                await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
+                  category: category?.name,
+                  gaushala: gaushala?.name,
+                  katha: katha?.name,
+                  city,
+                  taluka,
+                  village
+                });
+                console.log(`[Donation ${donation.id}] ✅ SMS sent successfully to ${donor.mobileNumber}`);
+              } catch (err) {
+                console.error(`[Donation ${donation.id}] ❌ SMS Error:`, err);
+              }
+            })();
+            tasks.push(smsTask);
+          }
+          
+          await Promise.all(tasks);
+          console.log(`[Donation ${donation.id}] ✅ All post-update tasks completed.`);
+        } catch (slipError) {
+          console.error(`[Donation ${donation.id}] ❌ Background tasks failed:`, slipError);
         }
-      } catch (slipError) {
-        console.error('❌ Slip generation/upload error (donation still updated):', slipError);
-      }
+      })();
     }
   }
 
