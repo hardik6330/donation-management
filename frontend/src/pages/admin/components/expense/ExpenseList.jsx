@@ -34,7 +34,20 @@ const ExpenseList = ({
   ];
   
   const filterFields = [
-    { name: 'category', label: 'Category', placeholder: 'Search category...' },
+    {
+      name: 'category',
+      label: 'Category',
+      type: 'select',
+      icon: Tag,
+      options: [
+        { value: 'Food', label: 'Food' },
+        { value: 'Medicine', label: 'Medicine' },
+        { value: 'Maintenance', label: 'Maintenance' },
+        { value: 'Salary', label: 'Salary' },
+        { value: 'Utility', label: 'Utility' },
+        { value: 'Other', label: 'Other' },
+      ]
+    },
     {
       name: 'gaushalaId',
       label: 'Gaushala',
