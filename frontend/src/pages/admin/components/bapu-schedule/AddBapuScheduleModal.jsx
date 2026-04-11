@@ -98,15 +98,17 @@ const AddBapuScheduleModal = ({
   const [addForm, setAddForm] = useState(getInitialState);
   const [addDropdownLabels, setAddDropdownLabels] = useState(getInitialLabels);
   const [activeAddDropdown, setActiveAddDropdown] = useState(null);
+  const [errors, setErrors] = useState({});
 
   // Refs for Fast Entry
+  const contactRef = useRef(null);
+  const mobileRef = useRef(null);
+  const dateRef = useRef(null);
   const timeRef = useRef(null);
   const eventTypeRef = useRef(null);
   const cityRef = useRef(null);
   const talukaRef = useRef(null);
   const villageRef = useRef(null);
-  const contactRef = useRef(null);
-  const mobileRef = useRef(null);
   const amountRef = useRef(null);
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
@@ -117,15 +119,29 @@ const AddBapuScheduleModal = ({
 
   // Focus effect remains
   useEffect(() => {
-    if (isOpen && timeRef.current) {
-      timeRef.current.focus();
+    if (isOpen && contactRef.current) {
+      contactRef.current.focus();
     }
   }, [isOpen]);
+
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'mobileNumber') {
+      if (value && value.length !== 10) error = 'Enter exactly 10 digits';
+    } else if (name === 'amount') {
+      if (value && isNaN(value)) error = 'Invalid amount';
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error;
+  };
 
   const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef?.current) nextRef.current.focus();
+      if (nextRef?.current) {
+        if (nextRef.current.focus) nextRef.current.focus();
+        // If it's a dropdown or date picker that needs to be opened, we can handle it here if needed
+      }
     }
   };
 
@@ -165,10 +181,12 @@ const AddBapuScheduleModal = ({
     if (name === 'mobileNumber') {
       const cleaned = value.replace(/\D/g, '').slice(0, 10);
       setAddForm(prev => ({ ...prev, [name]: cleaned }));
+      validateField(name, cleaned);
       return;
     }
 
     setAddForm(prev => ({ ...prev, [name]: value }));
+    validateField(name, value);
   };
 
   const handleAddDropdownSelect = (field, id, name) => {
@@ -200,6 +218,13 @@ const AddBapuScheduleModal = ({
     const isValidEventType = eventTypeOptions.some(opt => opt.id === addForm.eventType);
     if (!isValidEventType) {
       toast.error('Please select an Event Type from the dropdown');
+      return;
+    }
+
+    // Check for validation errors
+    const mobileError = validateField('mobileNumber', addForm.mobileNumber);
+    if (mobileError) {
+      toast.error(mobileError);
       return;
     }
 
@@ -237,14 +262,40 @@ const AddBapuScheduleModal = ({
     >
       <form onSubmit={handleAddSubmit} className="space-y-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <FormInput
+            label="Contact Person"
+            value={addForm.contactPerson}
+            onChange={(e) => setAddForm(prev => ({ ...prev, contactPerson: e.target.value }))}
+            onKeyDown={(e) => handleKeyDown(e, mobileRef)}
+            inputRef={contactRef}
+            icon={User}
+            error={errors.contactPerson}
+          />
+
+          <FormInput
+            label="Mobile Number"
+            name="mobileNumber"
+            type="tel"
+            placeholder="10-digit mobile number"
+            value={addForm.mobileNumber}
+            onChange={handleAddInputChange}
+            onKeyDown={(e) => handleKeyDown(e, dateRef)}
+            inputRef={mobileRef}
+            icon={Phone}
+            error={errors.mobileNumber}
+          />
+
           <CustomDatePicker
             label="Date"
             name="date"
             required
             value={addForm.date}
             onChange={(e) => setAddForm(prev => ({ ...prev, date: e.target.value }))}
+            onKeyDown={(e) => handleKeyDown(e, timeRef)}
+            inputRef={dateRef}
             icon={Calendar}
           />
+
           <FormInput
             label="Time"
             type="time"
@@ -319,7 +370,7 @@ const AddBapuScheduleModal = ({
             items={villages}
             onChange={handleAddInputChange}
             onSelect={(id, name) => handleAddDropdownSelect('villageId', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, contactRef)}
+            onKeyDown={(e) => handleKeyDown(e, amountRef)}
             isActive={activeAddDropdown === 'villageName'}
             setActive={setActiveAddDropdown}
             disabled={!addDropdownLabels.talukaName}
@@ -332,27 +383,6 @@ const AddBapuScheduleModal = ({
           />
 
           <FormInput
-            label="Contact Person"
-            value={addForm.contactPerson}
-            onChange={(e) => setAddForm(prev => ({ ...prev, contactPerson: e.target.value }))}
-            onKeyDown={(e) => handleKeyDown(e, mobileRef)}
-            inputRef={contactRef}
-            icon={User}
-          />
-
-          <FormInput
-            label="Mobile Number"
-            name="mobileNumber"
-            type="tel"
-            placeholder="10-digit mobile number"
-            value={addForm.mobileNumber}
-            onChange={handleAddInputChange}
-            onKeyDown={(e) => handleKeyDown(e, amountRef)}
-            inputRef={mobileRef}
-            icon={Phone}
-          />
-
-          <FormInput
             label="Amount"
             type="number"
             value={addForm.amount}
@@ -361,6 +391,7 @@ const AddBapuScheduleModal = ({
             inputRef={amountRef}
             icon={IndianRupee}
             placeholder="Enter amount (optional)"
+            error={errors.amount}
           />
         </div>
 

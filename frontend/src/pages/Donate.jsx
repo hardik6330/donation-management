@@ -15,7 +15,7 @@ import { toast } from 'react-toastify';
 import confetti from 'canvas-confetti';
 
 // Reusable dropdown for Donate page
-const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false, onDisabledClick }) => {
+const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false, onDisabledClick, inputRef, onKeyDown, defaultName = '' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -24,6 +24,7 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
   const listRef = useRef(null);
 
   const selectedItem = items.find(i => i.id === value);
+  const displayName = selectedItem?.name || defaultName || placeholder;
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -40,7 +41,9 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
 
   useEffect(() => {
     if (!isOpen) return;
-    setHighlightIndex(filtered.length > 0 ? 0 : -1);
+    setTimeout(() => {
+      setHighlightIndex(filtered.length > 0 ? 0 : -1);
+    }, 0);
   }, [isOpen, query, items.length]);
 
   useEffect(() => {
@@ -62,20 +65,22 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
   };
 
   const handleSelect = (item) => {
-    onChange(item.id);
+    onChange(item.id, item.name);
     setIsOpen(false);
     setQuery('');
   };
 
-  const handleKeyDown = (e) => {
+  const handleKeyDownInternal = (e) => {
     if (!isOpen) {
-      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+      if (e.key === 'ArrowDown' || e.key === ' ') {
         e.preventDefault();
         if (!disabled) {
           setIsOpen(true);
           setQuery('');
           setHighlightIndex(-1);
         }
+      } else if (e.key === 'Enter') {
+        if (onKeyDown) onKeyDown(e);
       } else if (e.key.length === 1 && !disabled) {
         e.preventDefault();
         setIsOpen(true);
@@ -107,12 +112,13 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
         {Icon && <Icon className="w-4 h-4" />} {label}
       </label>
       <div
+        ref={inputRef}
         tabIndex={0}
         onClick={handleToggle}
-        onKeyDown={handleKeyDown}
-        className={`w-full px-4 py-2.5 border rounded-xl text-sm cursor-pointer flex items-center justify-between transition
+        onKeyDown={handleKeyDownInternal}
+        className={`w-full px-4 py-2.5 border rounded-xl text-sm cursor-pointer flex items-center justify-between transition outline-none
           ${isOpen ? 'ring-2 ring-blue-500 border-blue-300' : 'border-gray-300'}
-          ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white'}
+          ${disabled ? 'bg-gray-50 text-gray-400 cursor-not-allowed' : 'bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-300'}
         `}
       >
         {isOpen ? (
@@ -124,18 +130,18 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
               setHighlightIndex(0);
             }}
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={handleKeyDown}
+            onKeyDown={handleKeyDownInternal}
             autoFocus
-            placeholder={selectedItem?.name || placeholder}
+            placeholder={selectedItem?.name || defaultName || placeholder}
             className="w-full bg-transparent text-gray-800 placeholder:text-gray-400 outline-none"
           />
         ) : (
-          <span className={selectedItem ? 'text-gray-800' : 'text-gray-400'}>
-            {selectedItem?.name || placeholder}
+          <span className={(selectedItem || defaultName) ? 'text-gray-800' : 'text-gray-400'}>
+            {displayName}
           </span>
         )}
         <div className="flex items-center gap-1 text-gray-400">
-          {value && !disabled && (
+          {(value || defaultName) && !disabled && (
             <button
               type="button"
               onClick={(e) => {
@@ -153,7 +159,7 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
       </div>
 
       {isOpen && (
-        <div className="absolute z-120 mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" style={{ width }}>
+        <div className="absolute z-50 mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-56 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200" style={{ width }}>
           <div ref={listRef} className="max-h-48 overflow-y-auto custom-scrollbar">
             {filtered.map((item, index) => (
               <button
@@ -204,6 +210,12 @@ const Donate = () => {
   const addressRef = useRef(null);
   const villageRef = useRef(null);
   const districtRef = useRef(null);
+  const cityDropdownRef = useRef(null);
+  const talukaDropdownRef = useRef(null);
+  const villageDropdownRef = useRef(null);
+  const categoryDropdownRef = useRef(null);
+  const gaushalaDropdownRef = useRef(null);
+  const kathaDropdownRef = useRef(null);
   const companyRef = useRef(null);
   const referenceRef = useRef(null);
   const amountRef = useRef(null);
@@ -216,9 +228,49 @@ const Donate = () => {
     companyName: '', referenceName: '', amount: '', paymentMode: 'online', paidAmount: '',
   });
 
+  const [formLabels, setFormLabels] = useState({
+    cityName: '',
+    talukaName: '',
+    villageName: '',
+    categoryName: '',
+    gaushalaName: '',
+    kathaName: '',
+  });
+
   // Fast Entry: Focus first field on mount
   useEffect(() => {
     if (mobileRef.current) mobileRef.current.focus();
+
+    // Load last donation details
+    const lastDonation = localStorage.getItem('LAST_DONATION_DETAILS');
+    if (lastDonation) {
+      try {
+        const { 
+          cityId, cityName, 
+          talukaId, talukaName, 
+          villageId, villageName, 
+          categoryId, categoryName 
+        } = JSON.parse(lastDonation);
+        setTimeout(() => {
+          setFormData(prev => ({
+            ...prev,
+            cityId: cityId || prev.cityId,
+            talukaId: talukaId || prev.talukaId,
+            villageId: villageId || prev.villageId,
+            categoryId: categoryId || prev.categoryId,
+          }));
+          setFormLabels(prev => ({
+            ...prev,
+            cityName: cityName || prev.cityName,
+            talukaName: talukaName || prev.talukaName,
+            villageName: villageName || prev.villageName,
+            categoryName: categoryName || prev.categoryName,
+          }));
+        }, 0);
+      } catch (e) {
+        console.error('Error parsing last donation details', e);
+      }
+    }
   }, []);
 
   const { data: categoriesData } = useGetCategoriesQuery({ fetchAll: true });
@@ -346,6 +398,19 @@ const Donate = () => {
         amount: Number(rawAmount),
         paidAmount: formData.paymentMode === 'partially_paid' ? Number(rawPaid) : undefined,
       }).unwrap();
+
+      // Save last donation details for next time
+      localStorage.setItem('LAST_DONATION_DETAILS', JSON.stringify({
+        cityId: formData.cityId,
+        cityName: formLabels.cityName,
+        talukaId: formData.talukaId,
+        talukaName: formLabels.talukaName,
+        villageId: formData.villageId,
+        villageName: formLabels.villageName,
+        categoryId: formData.categoryId,
+        categoryName: formLabels.categoryName,
+      }));
+
       const msg = formData.paymentMode === 'pay_later'
         ? 'Donation Intent Recorded! We will contact you for payment.'
         : formData.paymentMode === 'partially_paid'
@@ -438,7 +503,7 @@ const Donate = () => {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Building className="w-4 h-4" /> Company Name (Optional)</label>
-                <input ref={companyRef} name="companyName" value={formData.companyName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, referenceRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Business/Org name" />
+                <input ref={companyRef} name="companyName" value={formData.companyName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, cityDropdownRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Business/Org name" />
               </div>
             </div>
           </div>
@@ -451,38 +516,102 @@ const Donate = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <DonateDropdown label="City" icon={MapPin} value={formData.cityId} items={cities} placeholder="Select City" required
-                onChange={(id) => setFormData(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }))}
-                onClear={() => setFormData(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }))}
+                inputRef={cityDropdownRef}
+                onKeyDown={(e) => handleKeyDown(e, talukaDropdownRef)}
+                defaultName={formLabels.cityName}
+                onChange={(id, name) => {
+                  setFormData(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }));
+                  setFormLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '', gaushalaName: '', kathaName: '' }));
+                }}
+                onClear={() => {
+                  setFormData(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }));
+                  setFormLabels(prev => ({ ...prev, cityName: '', talukaName: '', villageName: '', gaushalaName: '', kathaName: '' }));
+                }}
               />
               <DonateDropdown label="Taluka" icon={MapPin} value={formData.talukaId} items={talukas} placeholder="Select Taluka" disabled={!formData.cityId}
-                onChange={(id) => setFormData(prev => ({ ...prev, talukaId: id, villageId: '', gaushalaId: '', kathaId: '' }))}
-                onClear={() => setFormData(prev => ({ ...prev, talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }))}
+                inputRef={talukaDropdownRef}
+                onKeyDown={(e) => handleKeyDown(e, villageDropdownRef)}
+                defaultName={formLabels.talukaName}
+                onChange={(id, name) => {
+                  setFormData(prev => ({ ...prev, talukaId: id, villageId: '', gaushalaId: '', kathaId: '' }));
+                  setFormLabels(prev => ({ ...prev, talukaName: name, villageName: '', gaushalaName: '', kathaName: '' }));
+                }}
+                onClear={() => {
+                  setFormData(prev => ({ ...prev, talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }));
+                  setFormLabels(prev => ({ ...prev, talukaName: '', villageName: '', gaushalaName: '', kathaName: '' }));
+                }}
               />
               <DonateDropdown label="Village" icon={MapPin} value={formData.villageId} items={villages} placeholder="Select Village" disabled={!formData.talukaId}
-                onChange={(id) => setFormData(prev => ({ ...prev, villageId: id, gaushalaId: '', kathaId: '' }))}
-                onClear={() => setFormData(prev => ({ ...prev, villageId: '', gaushalaId: '', kathaId: '' }))}
+                inputRef={villageDropdownRef}
+                onKeyDown={(e) => handleKeyDown(e, categoryDropdownRef)}
+                defaultName={formLabels.villageName}
+                onChange={(id, name) => {
+                  setFormData(prev => ({ ...prev, villageId: id, gaushalaId: '', kathaId: '' }));
+                  setFormLabels(prev => ({ ...prev, villageName: name, gaushalaName: '', kathaName: '' }));
+                }}
+                onClear={() => {
+                  setFormData(prev => ({ ...prev, villageId: '', talukaId: '', gaushalaId: '', kathaId: '' }));
+                  setFormLabels(prev => ({ ...prev, villageName: '', gaushalaName: '', kathaName: '' }));
+                }}
               />
               <DonateDropdown label="Category" icon={Tag} value={formData.categoryId} items={categories} placeholder="Select Category" required
-                onChange={(id) => setFormData(prev => ({ ...prev, categoryId: id }))}
-                onClear={() => setFormData(prev => ({ ...prev, categoryId: '' }))}
+                inputRef={categoryDropdownRef}
+                defaultName={formLabels.categoryName}
+                onKeyDown={(e) => {
+                  const hasGaushalas = filterLocationId && gaushalas.length > 0 && !formData.kathaId;
+                  const hasKathas = filterLocationId && kathas.length > 0 && !formData.gaushalaId;
+                  if (hasGaushalas) handleKeyDown(e, gaushalaDropdownRef);
+                  else if (hasKathas) handleKeyDown(e, kathaDropdownRef);
+                  else handleKeyDown(e, referenceRef);
+                }}
+                onChange={(id, name) => {
+                  setFormData(prev => ({ ...prev, categoryId: id }));
+                  setFormLabels(prev => ({ ...prev, categoryName: name }));
+                }}
+                onClear={() => {
+                  setFormData(prev => ({ ...prev, categoryId: '' }));
+                  setFormLabels(prev => ({ ...prev, categoryName: '' }));
+                }}
               />
               <DonateDropdown label="Gaushala" icon={Building2} value={formData.gaushalaId} items={gaushalas}
+                inputRef={gaushalaDropdownRef}
+                defaultName={formLabels.gaushalaName}
+                onKeyDown={(e) => {
+                  const hasKathas = filterLocationId && kathas.length > 0 && !formData.gaushalaId;
+                  if (hasKathas) handleKeyDown(e, kathaDropdownRef);
+                  else handleKeyDown(e, referenceRef);
+                }}
                 placeholder={isFetchingGaushalas ? 'Loading...' : !formData.cityId ? 'Select City First' : !filterLocationId ? 'Select Location First' : gaushalas.length === 0 ? 'No Gaushalas' : 'Select Gaushala (Optional)'}
                 disabled={!!formData.kathaId || !filterLocationId || isFetchingGaushalas || gaushalas.length === 0}
                 onDisabledClick={() => {
                   if (!formData.cityId) toast.info('Please select city first');
                 }}
-                onChange={(id) => setFormData(prev => ({ ...prev, gaushalaId: id }))}
-                onClear={() => setFormData(prev => ({ ...prev, gaushalaId: '' }))}
+                onChange={(id, name) => {
+                  setFormData(prev => ({ ...prev, gaushalaId: id }));
+                  setFormLabels(prev => ({ ...prev, gaushalaName: name }));
+                }}
+                onClear={() => {
+                  setFormData(prev => ({ ...prev, gaushalaId: '' }));
+                  setFormLabels(prev => ({ ...prev, gaushalaName: '' }));
+                }}
               />
               <DonateDropdown label="Active Katha" icon={Mic2} value={formData.kathaId} items={kathas}
+                inputRef={kathaDropdownRef}
+                defaultName={formLabels.kathaName}
+                onKeyDown={(e) => handleKeyDown(e, referenceRef)}
                 placeholder={isFetchingKathas ? 'Loading...' : !formData.cityId ? 'Select City First' : !filterLocationId ? 'Select Location First' : kathas.length === 0 ? 'No Kathas' : 'Select Katha (Optional)'}
                 disabled={!!formData.gaushalaId || !filterLocationId || isFetchingKathas || kathas.length === 0}
                 onDisabledClick={() => {
                   if (!formData.cityId) toast.info('Please select city first');
                 }}
-                onChange={(id) => setFormData(prev => ({ ...prev, kathaId: id }))}
-                onClear={() => setFormData(prev => ({ ...prev, kathaId: '' }))}
+                onChange={(id, name) => {
+                  setFormData(prev => ({ ...prev, kathaId: id }));
+                  setFormLabels(prev => ({ ...prev, kathaName: name }));
+                }}
+                onClear={() => {
+                  setFormData(prev => ({ ...prev, kathaId: '' }));
+                  setFormLabels(prev => ({ ...prev, kathaName: '' }));
+                }}
               />
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4" /> Reference Name</label>

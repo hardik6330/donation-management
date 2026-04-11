@@ -121,8 +121,49 @@ const AddDonationModal = ({
 
   // Fast Entry: Focus first field
   useEffect(() => {
-    if (isOpen && mobileRef.current) {
-      mobileRef.current.focus();
+    if (isOpen) {
+      if (mobileRef.current) mobileRef.current.focus();
+
+      // Load last donation details
+      const lastDonation = localStorage.getItem('LAST_DONATION_DETAILS');
+      if (lastDonation) {
+        try {
+          const { 
+            cityId, cityName, 
+            talukaId, talukaName, 
+            villageId, villageName, 
+            categoryId, categoryName 
+          } = JSON.parse(lastDonation);
+          setTimeout(() => {
+            setAddForm(prev => ({
+              ...prev,
+              cityId: cityId || prev.cityId,
+              talukaId: talukaId || prev.talukaId,
+              villageId: villageId || prev.villageId,
+              categoryId: categoryId || prev.categoryId,
+            }));
+            setAddDropdownLabels(prev => ({
+              ...prev,
+              cityName: cityName || prev.cityName,
+              talukaName: talukaName || prev.talukaName,
+              villageName: villageName || prev.villageName,
+              categoryName: categoryName || prev.categoryName,
+            }));
+            
+            // Also update modal state to fetch sub-locations
+            if (cityId || talukaId || villageId) {
+              setModalState(prev => ({
+                ...prev,
+                cityId: cityId || prev.cityId,
+                talukaId: talukaId || prev.talukaId,
+                villageId: villageId || prev.villageId,
+              }));
+            }
+          }, 0);
+        } catch (e) {
+          console.error('Error parsing last donation details', e);
+        }
+      }
     }
   }, [isOpen]);
 
@@ -307,6 +348,19 @@ const AddDonationModal = ({
         talukaName: addDropdownLabels.talukaName,
         villageName: addDropdownLabels.villageName,
       }).unwrap();
+
+      // Save last donation details for next time
+      localStorage.setItem('LAST_DONATION_DETAILS', JSON.stringify({
+        cityId: addForm.cityId,
+        cityName: addDropdownLabels.cityName,
+        talukaId: addForm.talukaId,
+        talukaName: addDropdownLabels.talukaName,
+        villageId: addForm.villageId,
+        villageName: addDropdownLabels.villageName,
+        categoryId: addForm.categoryId,
+        categoryName: addDropdownLabels.categoryName,
+      }));
+
       toast.success('Donation added successfully');
       resetAddForm();
       onClose();
@@ -316,6 +370,17 @@ const AddDonationModal = ({
   };
 
   const resetAddForm = () => {
+    // Check if we have last used details
+    const lastDonation = localStorage.getItem('LAST_DONATION_DETAILS');
+    let lastDetails = {};
+    if (lastDonation) {
+      try {
+        lastDetails = JSON.parse(lastDonation);
+      } catch (e) {
+        console.error('Error parsing last donation details', e);
+      }
+    }
+
     setAddForm({
       mobileNumber: '',
       name: '',
@@ -323,10 +388,10 @@ const AddDonationModal = ({
       address: '',
       village: '',
       district: '',
-      cityId: '',
-      talukaId: '',
-      villageId: '',
-      categoryId: '',
+      cityId: lastDetails.cityId || '',
+      talukaId: lastDetails.talukaId || '',
+      villageId: lastDetails.villageId || '',
+      categoryId: lastDetails.categoryId || '',
       gaushalaId: '',
       kathaId: '',
       companyName: '',
@@ -336,10 +401,10 @@ const AddDonationModal = ({
       paymentMode: 'cash',
     });
     setAddDropdownLabels({
-      cityName: '',
-      talukaName: '',
-      villageName: '',
-      categoryName: '',
+      cityName: lastDetails.cityName || '',
+      talukaName: lastDetails.talukaName || '',
+      villageName: lastDetails.villageName || '',
+      categoryName: lastDetails.categoryName || '',
       gaushalaName: '',
       kathaName: '',
       paymentModeName: 'Cash'
