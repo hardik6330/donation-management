@@ -1,6 +1,5 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
-import { Location } from './location.js';
 
 export const KartalDhun = sequelize.define('KartalDhun', {
   id: {
@@ -35,5 +34,3 @@ export const KartalDhun = sequelize.define('KartalDhun', {
 }, {
   timestamps: true,
 });
-
-KartalDhun.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });

@@ -1,10 +1,5 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
-import { User } from './user.js';
-import { Location } from './location.js';
-import { Category } from './category.js';
-import { Gaushala } from './gaushala.js';
-import { Katha } from './katha.js';
 
 export const Donation = sequelize.define('Donation', {
   id: {
@@ -104,19 +99,3 @@ export const Donation = sequelize.define('Donation', {
   //   { fields: ['razorpay_order_id'] },
   // ]
 });
-
-// Associations
-User.hasMany(Donation, { foreignKey: 'donorId' });
-Donation.belongsTo(User, { as: 'donor', foreignKey: 'donorId' });
-
-Location.hasMany(Donation, { foreignKey: 'locationId' });
-Donation.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
-
-Category.hasMany(Donation, { foreignKey: 'categoryId' });
-Donation.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
-
-Gaushala.hasMany(Donation, { foreignKey: 'gaushalaId' });
-Donation.belongsTo(Gaushala, { as: 'gaushala', foreignKey: 'gaushalaId' });
-
-Katha.hasMany(Donation, { foreignKey: 'kathaId' });
-Donation.belongsTo(Katha, { as: 'katha', foreignKey: 'kathaId' });

@@ -1,7 +1,5 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
-import { Mandal } from './mandal.js';
-import { Location } from './location.js';
 
 export const MandalMember = sequelize.define('MandalMember', {
   id: {
@@ -47,7 +45,3 @@ export const MandalMember = sequelize.define('MandalMember', {
 }, {
   timestamps: true,
 });
-
-MandalMember.belongsTo(Mandal, { as: 'mandal', foreignKey: 'mandalId' });
-MandalMember.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
-Mandal.hasMany(MandalMember, { as: 'members', foreignKey: 'mandalId' });

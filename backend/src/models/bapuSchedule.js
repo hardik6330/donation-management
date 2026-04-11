@@ -51,7 +51,3 @@ export const BapuSchedule = sequelize.define('BapuSchedule', {
 }, {
   timestamps: true,
 });
-
-import { Location } from './location.js';
-Location.hasMany(BapuSchedule, { foreignKey: 'locationId' });
-BapuSchedule.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });

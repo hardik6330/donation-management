@@ -1,4 +1,4 @@
-import { Location } from '../models/location.js';
+import { Location } from '../models/index.js';
 
 // Helper to clean and format names
 export const formatName = (name) => {

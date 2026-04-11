@@ -27,7 +27,3 @@ export const Gaushala = sequelize.define('Gaushala', {
 }, {
   timestamps: true,
 });
-
-import { Location } from './location.js';
-Location.hasMany(Gaushala, { foreignKey: 'locationId' });
-Gaushala.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });

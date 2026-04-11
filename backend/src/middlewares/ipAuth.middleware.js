@@ -1,5 +1,5 @@
 import { sendError } from '../utils/apiResponse.js';
-import { NODE_ENV,ALLOWED_IPS } from '../config/db.js';
+import { NODE_ENV, ALLOWED_IPS } from '../config/env.js';
 
 /**
  * Middleware to allow requests only from specific IPs

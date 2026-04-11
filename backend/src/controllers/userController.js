@@ -1,9 +1,11 @@
-import { User } from '../models/user.js';
-import { Role } from '../models/role.js';
+import { User, Role } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { sendSuccess, sendError } from '../utils/apiResponse.js';
-import { JWT_SECRET, REFRESH_TOKEN_SECRET,ADMIN_EMAIL,ADMIN_PASSWORD,ADMIN_MOBILE, } from '../config/db.js';
+import { sendSuccess } from '../utils/apiResponse.js';
+import { JWT_SECRET, REFRESH_TOKEN_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_MOBILE } from '../config/env.js';
+import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
+import { Op } from 'sequelize';
 
 
 
@@ -21,201 +23,175 @@ const generateRefreshToken = async (userId) => {
 };
 
 // Override create (Registration)
-export const createUser = async (req, res) => {
-  try {
-    const { name, email, password, address, village, district, companyName, mobileNumber } = req.body;
-    const createdBy = req.user && req.user.id ? req.user.id : 'System';
+export const createUser = asyncHandler(async (req, res) => {
+  const { name, email, password, address, village, district, companyName, mobileNumber } = req.body;
+  const createdBy = req.user && req.user.id ? req.user.id : 'System';
 
-    const hashedPassword = password ? bcrypt.hashSync(password, 10) : undefined;
+  const hashedPassword = password ? bcrypt.hashSync(password, 10) : undefined;
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      address,
-      village,
-      district,
-      companyName,
-      mobileNumber,
-      created_by: createdBy,
-    });
-    
-    return sendSuccess(res, user, 'User created successfully', 201);
-  } catch (error) {
-    return sendError(res, 'Error creating user', 500, error);
-  }
-};
+  const user = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    address,
+    village,
+    district,
+    companyName,
+    mobileNumber,
+    created_by: createdBy,
+  });
+  
+  return sendSuccess(res, user, 'User created successfully', 201);
+});
 
 // Auth specific methods
-export const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({
-      where: { email },
-      include: [{ model: Role, as: 'role' }]
-    });
-    if (!user) {
-      return sendError(res, 'User not found', 404);
+export const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  const user = await User.findOne({
+    where: { email },
+    include: [{ model: Role, as: 'role' }]
+  });
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  const isPasswordValid = user.password ? bcrypt.compareSync(password, user.password) : false;
+  if (!isPasswordValid) {
+    const error = new Error('Invalid password');
+    error.statusCode = 401;
+    throw error;
+  }
+
+  const accessToken = generateAccessToken(user.id);
+  const refreshToken = await generateRefreshToken(user.id);
+
+  return sendSuccess(res, {
+    accessToken,
+    refreshToken,
+    user: {
+      id: user.id,
+      name: user.name,
+      isAdmin: user.isAdmin,
+      roleId: user.roleId,
+      role: user.role
     }
-    const isPasswordValid = user.password ? bcrypt.compareSync(password, user.password) : false;
-    if (!isPasswordValid) {
-      return sendError(res, 'Invalid password', 401);
-    }
+  }, 'Login successful');
+});
 
-    const accessToken = generateAccessToken(user.id);
-    const refreshToken = await generateRefreshToken(user.id);
+export const logoutUser = asyncHandler(async (req, res) => {
+  return sendSuccess(res, null, 'Logged out successfully');
+});
 
-    return sendSuccess(res, {
-      accessToken,
-      refreshToken,
-      user: {
-        id: user.id,
-        name: user.name,
-        isAdmin: user.isAdmin,
-        roleId: user.roleId,
-        role: user.role
-      }
-    }, 'Login successful');
-  } catch (error) {
-    return sendError(res, 'Error logging in', 500, error);
-  }
-};
-
-export const logoutUser = async (req, res) => {
-  try {
-    return sendSuccess(res, null, 'Logged out successfully');
-  } catch (error) {
-    return sendError(res, 'Error logging out', 500, error);
-  }
-};
-
-export const getUsers = async (req, res) => {
-  try {
-    const users = await User.findAll();
-    return sendSuccess(res, users, 'All users records fetched successfully');
-  } catch (error) {
-    return sendError(res, 'Error fetching users', 500, error);
-  }
-};
+export const getUsers = asyncHandler(async (req, res) => {
+  const users = await User.findAll();
+  return sendSuccess(res, users, 'All users records fetched successfully');
+});
 
 
 // ===== SYSTEM USER MANAGEMENT (Admin) =====
-import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
-import { Op } from 'sequelize';
 
-export const getSystemUsers = async (req, res) => {
-  try {
-    const { page, limit } = getPaginationParams(req.query);
-    const { search, roleId } = req.query;
+export const getSystemUsers = asyncHandler(async (req, res) => {
+  const { page, limit } = getPaginationParams(req.query);
+  const { search, roleId } = req.query;
 
-    const where = {};
-    if (search && search.trim() !== '') {
-      where[Op.or] = [
-        { name: { [Op.like]: `%${search}%` } },
-        { email: { [Op.like]: `%${search}%` } },
-        { mobileNumber: { [Op.like]: `%${search}%` } }
-      ];
-    }
-    if (roleId && roleId.trim() !== '') {
-      where.roleId = roleId;
-    }
-
-    const { count, rows } = await User.findAndCountAll({
-      where,
-      attributes: { exclude: ['password'] },
-      include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
-      order: [['createdAt', 'DESC']],
-      limit,
-      offset: (page - 1) * limit
-    });
-
-    const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
-    return sendSuccess(res, response);
-  } catch (error) {
-    return sendError(res, 'Failed to fetch system users', 500, error);
+  const where = {};
+  if (search && search.trim() !== '') {
+    where[Op.or] = [
+      { name: { [Op.like]: `%${search}%` } },
+      { email: { [Op.like]: `%${search}%` } },
+      { mobileNumber: { [Op.like]: `%${search}%` } }
+    ];
   }
-};
-
-export const addSystemUser = async (req, res) => {
-  try {
-    const { name, email, mobileNumber, password, roleId, isAdmin } = req.body;
-    if (!name || !email || !mobileNumber || !password) {
-      return sendError(res, 'Name, Email, Mobile and Password are required', 400);
-    }
-
-    const hashedPassword = bcrypt.hashSync(password, 10);
-    const user = await User.create({
-      name,
-      email,
-      mobileNumber,
-      password: hashedPassword,
-      roleId: roleId || null,
-      isAdmin: isAdmin || false,
-      created_by: req.user?.id || 'System',
-    });
-
-    const result = user.toJSON();
-    delete result.password;
-    return sendSuccess(res, result, 'System user created successfully', 201);
-  } catch (error) {
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return sendError(res, 'User with this email or mobile already exists', 400);
-    }
-    return sendError(res, 'Failed to create system user', 500, error);
+  if (roleId && roleId.trim() !== '') {
+    where.roleId = roleId;
   }
-};
 
-export const updateSystemUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findByPk(id);
-    if (!user) return sendError(res, 'User not found', 404);
+  const { count, rows } = await User.findAndCountAll({
+    where,
+    attributes: { exclude: ['password'] },
+    include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
+    order: [['createdAt', 'DESC']],
+    limit,
+    offset: (page - 1) * limit
+  });
 
-    const { name, email, mobileNumber, password, roleId, isAdmin } = req.body;
-    const updateData = {};
-    if (name) updateData.name = name;
-    if (email) updateData.email = email;
-    if (mobileNumber) updateData.mobileNumber = mobileNumber;
-    if (password) updateData.password = bcrypt.hashSync(password, 10);
-    if (roleId !== undefined) updateData.roleId = roleId || null;
-    if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
+  const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
+  return sendSuccess(res, response);
+});
 
-    await user.update(updateData);
-    const result = user.toJSON();
-    delete result.password;
-    return sendSuccess(res, result, 'User updated successfully');
-  } catch (error) {
-    return sendError(res, 'Failed to update user', 500, error);
+export const addSystemUser = asyncHandler(async (req, res) => {
+  const { name, email, mobileNumber, password, roleId, isAdmin } = req.body;
+
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const user = await User.create({
+    name,
+    email,
+    mobileNumber,
+    password: hashedPassword,
+    roleId: roleId || null,
+    isAdmin: isAdmin || false,
+    created_by: req.user?.id || 'System',
+  });
+
+  const result = user.toJSON();
+  delete result.password;
+  return sendSuccess(res, result, 'System user created successfully', 201);
+});
+
+export const updateSystemUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findByPk(id);
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
   }
-};
 
-export const deleteSystemUser = async (req, res) => {
-  try {
-    const { id } = req.params;
-    if (id === req.user?.id) return sendError(res, 'Cannot delete yourself', 400);
+  const { name, email, mobileNumber, password, roleId, isAdmin } = req.body;
+  const updateData = {};
+  if (name) updateData.name = name;
+  if (email) updateData.email = email;
+  if (mobileNumber) updateData.mobileNumber = mobileNumber;
+  if (password) updateData.password = bcrypt.hashSync(password, 10);
+  if (roleId !== undefined) updateData.roleId = roleId || null;
+  if (isAdmin !== undefined) updateData.isAdmin = isAdmin;
 
-    const user = await User.findByPk(id);
-    if (!user) return sendError(res, 'User not found', 404);
+  await user.update(updateData);
+  const result = user.toJSON();
+  delete result.password;
+  return sendSuccess(res, result, 'User updated successfully');
+});
 
-    await user.destroy();
-    return sendSuccess(res, null, 'User deleted successfully');
-  } catch (error) {
-    return sendError(res, 'Failed to delete user', 500, error);
+export const deleteSystemUser = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  if (id === req.user?.id) {
+    const error = new Error('Cannot delete yourself');
+    error.statusCode = 400;
+    throw error;
   }
-};
 
-export const getUserByMobile = async (req, res) => {
-  try {
-    const { mobileNumber } = req.params;
-    const user = await User.findOne({ where: { mobileNumber } });
-    if (!user) {
-      return sendError(res, 'User not found', 404);
-    }
-    return sendSuccess(res, user, 'User found successfully');
-  } catch (error) {
-    return sendError(res, 'Error fetching user', 500, error);
+  const user = await User.findByPk(id);
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
   }
-};
+
+  await user.destroy();
+  return sendSuccess(res, null, 'User deleted successfully');
+});
+
+export const getUserByMobile = asyncHandler(async (req, res) => {
+  const { mobileNumber } = req.params;
+  const user = await User.findOne({ where: { mobileNumber } });
+  if (!user) {
+    const error = new Error('User not found');
+    error.statusCode = 404;
+    throw error;
+  }
+  return sendSuccess(res, user, 'User found successfully');
+});
 
 // Initial Admin Creation (Seed)
 export const seedAdmin = async () => {

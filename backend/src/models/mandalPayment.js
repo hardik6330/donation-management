@@ -1,6 +1,5 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
-import { MandalMember } from './mandalMember.js';
 
 export const MandalPayment = sequelize.define('MandalPayment', {
   id: {
@@ -48,6 +47,3 @@ export const MandalPayment = sequelize.define('MandalPayment', {
     }
   ]
 });
-
-MandalPayment.belongsTo(MandalMember, { as: 'member', foreignKey: 'memberId' });
-MandalMember.hasMany(MandalPayment, { as: 'payments', foreignKey: 'memberId' });

@@ -4,11 +4,13 @@ import {
   getSystemUsers, addSystemUser, updateSystemUser, deleteSystemUser
 } from '../controllers/userController.js';
 import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { validate } from '../validators/validate.js';
+import { loginSchema, registerSchema } from '../validators/auth.validator.js';
 
 const router = express.Router();
 
-router.post('/register', createUser);
-router.post('/login', loginUser);
+router.post('/register', validate(registerSchema), createUser);
+router.post('/login', validate(loginSchema), loginUser);
 router.post('/logout', logoutUser);
 router.get('/mobile/:mobileNumber', getUserByMobile);
 router.get('/', protect, getUsers);

@@ -5,12 +5,14 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { connectDB, sequelize } from './config/db.js';
+import './models/index.js'; // Register all models & associations before sync
 import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.middleware.js';
+import { errorHandler } from './middlewares/errorHandler.js';
 import { sendError } from './utils/apiResponse.js';
 import { seedAdmin } from './controllers/userController.js';
 import { seedRoles } from './controllers/roleController.js';
-import { NODE_ENV, FRONTEND_URL,PORT } from './config/db.js';
+import { NODE_ENV, FRONTEND_URL, PORT } from './config/env.js';
 // Load env vars
 
 const numCPUs = os.cpus().length;
@@ -97,10 +99,7 @@ app.use((req, res) => {
 });
 
 // Error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  return sendError(res, 'Something broke!', 500, err);
-});
+app.use(errorHandler);
 
 // Only use clustering in local/non-serverless environments
 if (NODE_ENV !== 'production' && cluster.isPrimary) {

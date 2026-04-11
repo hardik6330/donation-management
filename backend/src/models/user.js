@@ -1,6 +1,5 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
-import { Role } from './role.js';
 
 export const User = sequelize.define('User', {
   id: {
@@ -73,5 +72,3 @@ export const User = sequelize.define('User', {
   //   { fields: ['createdAt'] },
   // ]
 });
-
-User.belongsTo(Role, { as: 'role', foreignKey: 'roleId' });

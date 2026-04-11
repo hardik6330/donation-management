@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { Location } from '../models/location.js';
+import { Location } from '../models/index.js';
 
 /**
  * Builds a Sequelize where clause for donations based on query parameters.

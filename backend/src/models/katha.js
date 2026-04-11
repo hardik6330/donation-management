@@ -38,7 +38,3 @@ export const Katha = sequelize.define('Katha', {
 }, {
   timestamps: true,
 });
-
-import { Location } from './location.js';
-Location.hasMany(Katha, { foreignKey: 'locationId' });
-Katha.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });

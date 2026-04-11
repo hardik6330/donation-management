@@ -1,9 +1,10 @@
-import { Role } from '../models/role.js';
-import { sendSuccess, sendError } from '../utils/apiResponse.js';
+import { Role } from '../models/index.js';
+import { sendSuccess } from '../utils/apiResponse.js';
+import { asyncHandler } from '../middlewares/asyncHandler.js';
 
 const MODULES = ['dashboard', 'donations', 'donors', 'expenses', 'sevaks', 'gaushala', 'katha', 'mandal', 'kartalDhun', 'bapuSchedule', 'category', 'location', 'users'];
 
-// Seed default roles
+// Seed default roles (This is a startup script, not a route handler, so no asyncHandler needed)
 export const seedRoles = async () => {
   try {
     // Check if roles exist and permissions are valid
@@ -54,56 +55,49 @@ export const seedRoles = async () => {
   }
 };
 
-export const getAllRoles = async (req, res) => {
-  try {
-    const roles = await Role.findAll({ order: [['name', 'ASC']] });
-    return sendSuccess(res, roles, 'All roles records fetched successfully');
-  } catch (error) {
-    return sendError(res, 'Failed to fetch roles', 500, error);
+export const getAllRoles = asyncHandler(async (req, res) => {
+  const roles = await Role.findAll({ order: [['name', 'ASC']] });
+  return sendSuccess(res, roles, 'All roles records fetched successfully');
+});
+
+export const addRole = asyncHandler(async (req, res) => {
+  const { name, permissions, description } = req.body;
+  if (!name) {
+    const error = new Error('Role name is required');
+    error.statusCode = 400;
+    throw error;
   }
-};
 
-export const addRole = async (req, res) => {
-  try {
-    const { name, permissions, description } = req.body;
-    if (!name) return sendError(res, 'Role name is required', 400);
+  const role = await Role.create({
+    name,
+    permissions: permissions || {},
+    description
+  });
+  return sendSuccess(res, role, 'Role created successfully', 201);
+});
 
-    const role = await Role.create({
-      name,
-      permissions: permissions || {},
-      description
-    });
-    return sendSuccess(res, role, 'Role created successfully', 201);
-  } catch (error) {
-    if (error.name === 'SequelizeUniqueConstraintError') {
-      return sendError(res, 'Role with this name already exists', 400);
-    }
-    return sendError(res, 'Failed to create role', 500, error);
+export const updateRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const role = await Role.findByPk(id);
+  if (!role) {
+    const error = new Error('Role not found');
+    error.statusCode = 404;
+    throw error;
   }
-};
 
-export const updateRole = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const role = await Role.findByPk(id);
-    if (!role) return sendError(res, 'Role not found', 404);
+  await role.update(req.body);
+  return sendSuccess(res, role, 'Role updated successfully');
+});
 
-    await role.update(req.body);
-    return sendSuccess(res, role, 'Role updated successfully');
-  } catch (error) {
-    return sendError(res, 'Failed to update role', 500, error);
+export const deleteRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const role = await Role.findByPk(id);
+  if (!role) {
+    const error = new Error('Role not found');
+    error.statusCode = 404;
+    throw error;
   }
-};
 
-export const deleteRole = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const role = await Role.findByPk(id);
-    if (!role) return sendError(res, 'Role not found', 404);
-
-    await role.destroy();
-    return sendSuccess(res, null, 'Role deleted successfully');
-  } catch (error) {
-    return sendError(res, 'Failed to delete role', 500, error);
-  }
-};
+  await role.destroy();
+  return sendSuccess(res, null, 'Role deleted successfully');
+});

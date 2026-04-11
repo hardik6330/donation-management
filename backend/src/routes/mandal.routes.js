@@ -7,25 +7,27 @@ import {
   generateMonthlyPayments, getMonthlyPayments, updatePayment, getMonthlyReport
 } from '../controllers/mandalPaymentController.js';
 import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { validate } from '../validators/validate.js';
+import { mandalSchema, mandalMemberSchema } from '../validators/mandal.validator.js';
 
 const router = express.Router();
 
 // Mandal (group) CRUD
 router.route('/')
-  .post(protect, adminOnly, addMandal)
+  .post(protect, adminOnly, validate(mandalSchema), addMandal)
   .get(protect, adminOnly, getAllMandals);
 
 router.route('/:id')
-  .put(protect, adminOnly, updateMandal)
+  .put(protect, adminOnly, validate(mandalSchema), updateMandal)
   .delete(protect, adminOnly, deleteMandal);
 
 // Member CRUD
 router.route('/members')
-  .post(protect, adminOnly, addMember)
+  .post(protect, adminOnly, validate(mandalMemberSchema), addMember)
   .get(protect, adminOnly, getAllMembers);
 
 router.route('/members/:id')
-  .put(protect, adminOnly, updateMember)
+  .put(protect, adminOnly, validate(mandalMemberSchema), updateMember)
   .delete(protect, adminOnly, deleteMember);
 
 // Payment endpoints

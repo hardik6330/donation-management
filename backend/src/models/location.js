@@ -33,7 +33,3 @@ export const Location = sequelize.define('Location', {
     }
   ]
 });
-
-// Self-referencing association
-Location.hasMany(Location, { as: 'children', foreignKey: 'parentId' });
-Location.belongsTo(Location, { as: 'parent', foreignKey: 'parentId' });

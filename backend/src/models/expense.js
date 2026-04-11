@@ -48,10 +48,3 @@ export const Expense = sequelize.define('Expense', {
 }, {
   timestamps: true,
 });
-
-import { Gaushala } from './gaushala.js';
-import { Katha } from './katha.js';
-Gaushala.hasMany(Expense, { foreignKey: 'gaushalaId' });
-Expense.belongsTo(Gaushala, { as: 'gaushala', foreignKey: 'gaushalaId' });
-Katha.hasMany(Expense, { foreignKey: 'kathaId' });
-Expense.belongsTo(Katha, { as: 'katha', foreignKey: 'kathaId' });

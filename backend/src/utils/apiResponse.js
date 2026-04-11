@@ -1,4 +1,4 @@
-import { NODE_ENV } from '../config/db.js';
+import { NODE_ENV } from '../config/env.js';
 /**
  * @description Universal response handler for consistent API responses
  */
