@@ -1,6 +1,6 @@
 import express from 'express';
 import { getGaushalas, addGaushala, updateGaushala, deleteGaushala } from '../controllers/gaushalaController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { gaushalaSchema } from '../validators/gaushala.validator.js';
 

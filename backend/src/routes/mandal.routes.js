@@ -6,7 +6,7 @@ import {
 import {
   generateMonthlyPayments, getMonthlyPayments, updatePayment, getMonthlyReport
 } from '../controllers/mandalPaymentController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { mandalSchema, mandalMemberSchema, generatePaymentSchema } from '../validators/mandal.validator.js';
 

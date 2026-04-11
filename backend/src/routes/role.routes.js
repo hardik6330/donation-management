@@ -1,6 +1,6 @@
 import express from 'express';
 import { getAllRoles, addRole, updateRole, deleteRole } from '../controllers/roleController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { roleSchema } from '../validators/role.validator.js';
 

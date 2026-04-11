@@ -1,6 +1,6 @@
 import express from 'express';
 import { getKathas, addKatha, updateKatha, deleteKatha } from '../controllers/kathaController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { kathaSchema } from '../validators/katha.validator.js';
 

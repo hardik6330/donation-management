@@ -7,7 +7,7 @@ import morgan from 'morgan';
 import { connectDB, sequelize } from './config/db.js';
 import './models/index.js'; // Register all models & associations before sync
 import routes from './routes/index.js';
-import { ipAuth } from './middlewares/ipAuth.middleware.js';
+import { ipAuth } from './middlewares/ipAuth.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { sendError } from './utils/apiResponse.js';
 import { seedAdmin } from './seeders/admin.seeder.js';

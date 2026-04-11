@@ -6,7 +6,7 @@ import {
   updateSevak, 
   deleteSevak 
 } from '../controllers/sevakController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { sevakSchema } from '../validators/sevak.validator.js';
 

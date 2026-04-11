@@ -6,7 +6,7 @@ import {
   deleteExpense,
   getExpenseStats 
 } from '../controllers/expenseController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { expenseSchema } from '../validators/expense.validator.js';
 

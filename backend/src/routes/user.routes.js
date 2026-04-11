@@ -3,7 +3,7 @@ import {
   createUser, loginUser, logoutUser, getUsers, getUserByMobile,
   getSystemUsers, addSystemUser, updateSystemUser, deleteSystemUser
 } from '../controllers/userController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { loginSchema, registerSchema, systemUserSchema } from '../validators/auth.validator.js';
 

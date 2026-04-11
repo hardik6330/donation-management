@@ -1,6 +1,6 @@
 import express from 'express';
 import { addKartalDhun, getAllKartalDhun, updateKartalDhun, deleteKartalDhun } from '../controllers/kartalDhunController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { kartalDhunSchema } from '../validators/kartalDhun.validator.js';
 

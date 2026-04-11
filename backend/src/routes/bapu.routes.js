@@ -1,6 +1,6 @@
 import express from 'express';
 import { getBapuSchedules, addBapuSchedule, updateBapuSchedule, deleteBapuSchedule } from '../controllers/bapuController.js';
-import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
 import { bapuScheduleSchema } from '../validators/bapu.validator.js';
 
