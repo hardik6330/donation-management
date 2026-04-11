@@ -9,11 +9,6 @@ export const getAllRoles = asyncHandler(async (req, res) => {
 
 export const addRole = asyncHandler(async (req, res) => {
   const { name, permissions, description } = req.body;
-  if (!name) {
-    const error = new Error('Role name is required');
-    error.statusCode = 400;
-    throw error;
-  }
 
   const role = await Role.create({
     name,

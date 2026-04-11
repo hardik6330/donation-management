@@ -5,7 +5,7 @@ import {
 } from '../controllers/userController.js';
 import { protect, adminOnly } from '../middlewares/auth.middleware.js';
 import { validate } from '../validators/validate.js';
-import { loginSchema, registerSchema } from '../validators/auth.validator.js';
+import { loginSchema, registerSchema, systemUserSchema } from '../validators/auth.validator.js';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ router.get('/', protect, getUsers);
 
 // System User Management (Admin only)
 router.get('/system', protect, adminOnly, getSystemUsers);
-router.post('/system', protect, adminOnly, addSystemUser);
+router.post('/system', protect, adminOnly, validate(systemUserSchema), addSystemUser);
 router.put('/system/:id', protect, adminOnly, updateSystemUser);
 router.delete('/system/:id', protect, adminOnly, deleteSystemUser);
 

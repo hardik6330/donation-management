@@ -7,11 +7,6 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 // Generate unpaid records for all active members for a given month
 export const generateMonthlyPayments = asyncHandler(async (req, res) => {
   const { month, mandalId } = req.body;
-  if (!month || !/^\d{4}-\d{2}$/.test(month)) {
-    const error = new Error('Valid month (YYYY-MM) is required');
-    error.statusCode = 400;
-    throw error;
-  }
 
   const memberWhere = { isActive: true };
   if (mandalId) {

@@ -1,15 +1,17 @@
 import express from 'express';
 import { getAllRoles, addRole, updateRole, deleteRole } from '../controllers/roleController.js';
 import { protect, adminOnly } from '../middlewares/auth.middleware.js';
+import { validate } from '../validators/validate.js';
+import { roleSchema } from '../validators/role.validator.js';
 
 const router = express.Router();
 
 router.route('/')
   .get(protect, adminOnly, getAllRoles)
-  .post(protect, adminOnly, addRole);
+  .post(protect, adminOnly, validate(roleSchema), addRole);
 
 router.route('/:id')
-  .put(protect, adminOnly, updateRole)
+  .put(protect, adminOnly, validate(roleSchema), updateRole)
   .delete(protect, adminOnly, deleteRole);
 
 export default router;

@@ -8,7 +8,7 @@ import {
 } from '../controllers/mandalPaymentController.js';
 import { protect, adminOnly } from '../middlewares/auth.middleware.js';
 import { validate } from '../validators/validate.js';
-import { mandalSchema, mandalMemberSchema } from '../validators/mandal.validator.js';
+import { mandalSchema, mandalMemberSchema, generatePaymentSchema } from '../validators/mandal.validator.js';
 
 const router = express.Router();
 
@@ -31,7 +31,7 @@ router.route('/members/:id')
   .delete(protect, adminOnly, deleteMember);
 
 // Payment endpoints
-router.post('/payments/generate', protect, adminOnly, generateMonthlyPayments);
+router.post('/payments/generate', protect, adminOnly, validate(generatePaymentSchema), generateMonthlyPayments);
 router.get('/payments/report', protect, adminOnly, getMonthlyReport);
 router.get('/payments', protect, adminOnly, getMonthlyPayments);
 router.put('/payments/:id', protect, adminOnly, updatePayment);

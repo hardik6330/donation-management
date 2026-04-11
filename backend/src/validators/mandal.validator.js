@@ -26,3 +26,11 @@ export const mandalMemberSchema = Joi.object({
   joinDate: Joi.date().optional(),
   isActive: Joi.boolean().optional()
 });
+
+export const generatePaymentSchema = Joi.object({
+  month: Joi.string().pattern(/^\d{4}-\d{2}$/).required().messages({
+    'string.pattern.base': 'Month must be in YYYY-MM format',
+    'any.required': 'Month is required'
+  }),
+  mandalId: Joi.string().uuid().optional().allow(null, '')
+});
