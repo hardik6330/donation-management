@@ -8,6 +8,7 @@ import { connectDB, sequelize } from './config/db.js';
 import './models/index.js'; // Register all models & associations before sync
 import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.js';
+import { apiLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { sendError } from './utils/apiResponse.js';
 import { seedAdmin } from './seeders/admin.seeder.js';
@@ -59,6 +60,9 @@ const initDB = async (force = false) => {
 const app = express();
 const port = PORT || 5000;
 
+// Correct client IP behind reverse proxies (e.g. Vercel) for rate limiting
+app.set('trust proxy', 1);
+
 // Start DB Initialization in background immediately on cold start
 initDB().catch(err => console.error('Background DB Init Error:', err));
 
@@ -91,6 +95,7 @@ app.get('/', (req, res) => {
 app.use(ipAuth);
 
 // Routes
+app.use('/api/v1', apiLimiter);
 app.use('/api/v1', routes);
 
 // 404 handler
