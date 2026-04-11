@@ -413,11 +413,11 @@ const Donate = () => {
       const msg = formData.paymentMode === 'pay_later'
         ? 'Donation Intent Recorded! We will contact you for payment.'
         : formData.paymentMode === 'partially_paid'
-          ? 'Partial Donation Recorded Successfully!'
-          : 'Donation Recorded Successfully!';
-      toast.success(msg);
+          ? 'Partial Donation Recorded Successfully! Slip sent to your email.'
+          : 'Donation Recorded Successfully! Slip sent to your email.';
+      toast.success(msg, { autoClose: 5000 });
       fireFireworks();
-      setTimeout(() => navigate('/'), 5000);
+      setTimeout(() => navigate('/'), 6000);
 
       // --- Razorpay checkout flow (commented out) ---
       // if (formData.paymentMode === 'online') {
