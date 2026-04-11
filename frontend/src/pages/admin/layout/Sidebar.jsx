@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import logo from '../../../assets/logo.png';
 import { 
   LayoutDashboard, 
@@ -26,6 +26,7 @@ import { useAuth } from '../../../context/AuthContext';
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { hasPermission } = usePermissions();
   const { logout } = useAuth();
+  const location = useLocation();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', show: hasPermission('dashboard') },
@@ -35,7 +36,14 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { id: 'sevaks', label: 'Sevaks', icon: UserCheck, path: '/admin/sevaks', show: hasPermission('sevaks') },
     { id: 'gaushala', label: 'Gaushala', icon: Building2, path: '/admin/gaushala', show: hasPermission('gaushala') },
     { id: 'katha', label: 'Katha', icon: Mic2, path: '/admin/katha', show: hasPermission('katha') },
-    { id: 'mandal', label: 'Mandal', icon: UsersRound, path: '/admin/mandal', show: hasPermission('mandal') },
+    { 
+      id: 'mandal', 
+      label: 'Mandal', 
+      icon: UsersRound, 
+      path: '/admin/mandal', 
+      show: hasPermission('mandal'),
+      activePaths: ['/admin/mandal', '/admin/mandal-members', '/admin/mandal-payments']
+    },
     { id: 'kartal-dhun', label: 'Dhun Mandal', icon: Music, path: '/admin/kartal-dhun', show: hasPermission('kartalDhun') },
     { id: 'bapu-schedule', label: 'Bapu Events', icon: Calendar, path: '/admin/bapu-schedule', show: hasPermission('bapuSchedule') },
     { id: 'category', label: 'Category', icon: Tags, path: '/admin/category', show: hasPermission('category') },
@@ -45,6 +53,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   ].filter(item => item.show);
 
   const profileItem = { id: 'profile', label: 'Profile', icon: UserCircle, path: '/admin/profile' };
+
+  const checkIsActive = (item) => {
+    if (item.activePaths) {
+      return item.activePaths.some(p => location.pathname.startsWith(p));
+    }
+    return location.pathname === item.path;
+  };
 
   return (
     <>
@@ -76,26 +91,25 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </div>
 
         <nav className="p-4 space-y-2 overflow-y-auto overflow-x-hidden flex-1 scrollbar-hide">
-          {menuItems.map((item) => (
-            <NavLink
-              key={item.id}
-              to={item.path}
-              onClick={() => setIsOpen(false)}
-              className={({ isActive }) => `
-                w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all
-                ${isActive 
-                  ? 'bg-blue-50 text-blue-600 shadow-sm' 
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}
-              `}
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
-                  {item.label}
-                </>
-              )}
-            </NavLink>
-          ))}
+          {menuItems.map((item) => {
+            const isActive = checkIsActive(item);
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                onClick={() => setIsOpen(false)}
+                className={`
+                  w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-semibold transition-all
+                  ${isActive 
+                    ? 'bg-blue-50 text-blue-600 shadow-sm' 
+                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'}
+                `}
+              >
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                {item.label}
+              </NavLink>
+            );
+          })}
         </nav>
 
         {/* Bottom Section: Divider + Profile + Logout */}

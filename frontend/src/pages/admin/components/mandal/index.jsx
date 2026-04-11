@@ -108,6 +108,14 @@ const Mandal = () => {
     setFilters(prev => ({ ...prev, page: newPage }));
   };
 
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, limit: 100, page: 1, fetchAll: true }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: Number(newLimit), page: 1, fetchAll: false }));
+    }
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader 
@@ -141,6 +149,7 @@ const Mandal = () => {
         onFilterChange={handleFilterChange}
         onClearFilters={clearFilters}
         onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
         hasPermission={hasPermission} 
       />
 

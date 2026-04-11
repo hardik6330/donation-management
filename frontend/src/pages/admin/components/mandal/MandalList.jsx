@@ -2,6 +2,7 @@ import React from 'react';
 import { Search, Edit, Trash2, CheckCircle, XCircle, Receipt, Calendar, IndianRupee } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import Pagination from '../../../../components/common/Pagination';
 import { getActiveHoverColor, getActiveLabel } from '../../../../utils/tableUtils';
 
 const MandalList = ({
@@ -19,6 +20,7 @@ const MandalList = ({
   onFilterChange,
   onClearFilters,
   onPageChange,
+  onLimitChange,
   hasPermission
 }) => {
   const getDisplayMonth = (val) => {
@@ -104,29 +106,12 @@ const MandalList = ({
         ))}
       </AdminTable>
 
-      {pagination.totalPages > 1 && (
-        <div className="flex justify-between items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-          <p className="text-sm text-gray-500">
-            Showing <span className="font-bold">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span> mandals
-          </p>
-          <div className="flex gap-2">
-            <button
-              disabled={filters.page === 1}
-              onClick={() => onPageChange(filters.page - 1)}
-              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-bold transition disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              disabled={filters.page === pagination.totalPages}
-              onClick={() => onPageChange(filters.page + 1)}
-              className="px-4 py-2 bg-gray-50 hover:bg-gray-100 rounded-lg text-sm font-bold transition disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        pagination={pagination}
+        filters={filters}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+      />
     </div>
   );
 };

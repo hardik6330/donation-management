@@ -102,9 +102,9 @@ const Category = () => {
 
   const handleLimitChange = (newLimit) => {
     if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+      setFilters(prev => ({ ...prev, limit: 100, page: 1, all: true }));
     } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
+      setFilters(prev => ({ ...prev, limit: Number(newLimit), page: 1, all: false }));
     }
   };
 
@@ -112,7 +112,7 @@ const Category = () => {
     <div className="space-y-6">
       <AdminPageHeader 
         title="Category Management" 
-        subtitle="Add and organize system categories for donations"
+        subtitle="Manage donation categories for categorization"
         buttonText={hasPermission('category', 'entry') ? "Add Category" : null}
         onButtonClick={handleAdd}
       />

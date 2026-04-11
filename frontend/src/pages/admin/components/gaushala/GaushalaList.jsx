@@ -140,14 +140,12 @@ const GaushalaList = ({
         ))}
       </AdminTable>
 
-      {(pagination.totalPages > 1 || pagination.totalData > filters.limit) && (
-        <Pagination
-          pagination={pagination}
-          filters={filters}
-          onPageChange={onPageChange}
-          onLimitChange={onLimitChange}
-        />
-      )}
+      <Pagination
+        pagination={pagination}
+        filters={filters}
+        onPageChange={onPageChange}
+        onLimitChange={onLimitChange}
+      />
     </div>
   );
 };

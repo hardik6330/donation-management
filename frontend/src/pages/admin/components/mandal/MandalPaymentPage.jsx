@@ -16,6 +16,7 @@ import { NavLink } from 'react-router-dom';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
+import Pagination from '../../../../components/common/Pagination';
 import { getStatusColor } from '../../../../utils/tableUtils';
 
 const getCurrentMonth = () => {
@@ -36,7 +37,8 @@ const MandalPaymentPage = () => {
     status: '',
     search: '',
     page: 1,
-    limit: 10
+    limit: 10,
+    fetchAll: false
   });
 
   const debouncedSearch = useDebounce(filters.search, 500);
@@ -74,6 +76,14 @@ const MandalPaymentPage = () => {
   };
 
   const handlePageChange = (page) => setFilters(prev => ({ ...prev, page }));
+
+  const handleLimitChange = (newLimit) => {
+    if (newLimit === 'all') {
+      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
+    } else {
+      setFilters(prev => ({ ...prev, limit: Number(newLimit), fetchAll: false, page: 1 }));
+    }
+  };
 
   const handleGenerate = async () => {
     try {
@@ -193,27 +203,12 @@ const MandalPaymentPage = () => {
         ))}
       </AdminTable>
 
-      {pagination.totalPages > 1 && (
-        <div className="p-4 sm:p-6 border-t flex flex-col sm:flex-row items-center justify-between bg-gray-50 gap-4 rounded-2xl shadow-sm border border-gray-100">
-          <p className="text-xs sm:text-sm text-gray-600 order-2 sm:order-1">
-            Showing <span className="font-bold">{(filters.page - 1) * filters.limit + 1}</span> to <span className="font-bold">{Math.min(filters.page * filters.limit, pagination.totalData)}</span> of <span className="font-bold">{pagination.totalData}</span>
-          </p>
-          <div className="flex items-center gap-1 sm:gap-2 order-1 sm:order-2">
-            <button disabled={pagination.currentPage === 1} onClick={() => handlePageChange(pagination.currentPage - 1)} className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition">Prev</button>
-            <div className="flex items-center gap-1">
-              {[...Array(pagination.totalPages)].map((_, i) => {
-                const p = i + 1;
-                if (pagination.totalPages > 5 && (p < pagination.currentPage - 1 || p > pagination.currentPage + 1) && p !== 1 && p !== pagination.totalPages) {
-                  if (p === pagination.currentPage - 2 || p === pagination.currentPage + 2) return <span key={p} className="text-gray-400">...</span>;
-                  return null;
-                }
-                return <button key={p} onClick={() => handlePageChange(p)} className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-xs sm:text-sm font-bold transition ${pagination.currentPage === p ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}>{p}</button>;
-              })}
-            </div>
-            <button disabled={pagination.currentPage === pagination.totalPages} onClick={() => handlePageChange(pagination.currentPage + 1)} className="px-2 sm:px-4 py-1.5 sm:py-2 bg-white border border-gray-200 rounded-lg text-xs sm:text-sm font-semibold text-gray-600 hover:bg-gray-50 disabled:opacity-50 transition">Next</button>
-          </div>
-        </div>
-      )}
+      <Pagination
+        pagination={pagination}
+        filters={filters}
+        onPageChange={handlePageChange}
+        onLimitChange={handleLimitChange}
+      />
     </div>
   );
 };
