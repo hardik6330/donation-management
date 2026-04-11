@@ -16,6 +16,7 @@ const SearchableDropdown = ({
   disabled = false,
   required = false,
   showClear = true,
+  error = '',
   icon: Icon,
   inputRef,
   onKeyDown,
@@ -149,7 +150,7 @@ const SearchableDropdown = ({
   return (
     <div ref={containerRef} className="space-y-1.5 relative" onClick={(e) => e.stopPropagation()}>
       {label && (
-        <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 flex items-center gap-2">
+        <label className={`text-[10px] font-bold uppercase ml-1 flex items-center gap-2 ${error ? 'text-red-500' : 'text-gray-500'}`}>
           {Icon && <Icon className="w-3 h-3" />} {label} {required && '*'}
         </label>
       )}
@@ -165,7 +166,11 @@ const SearchableDropdown = ({
           onKeyDown={handleKeyDownInternal}
           disabled={disabled}
           autoComplete="off"
-          className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50 pr-8"
+          className={`w-full px-4 py-2.5 rounded-xl text-sm outline-none transition disabled:opacity-50 pr-8 border ${
+            error 
+              ? 'bg-red-50/30 border-red-200 focus:ring-2 focus:ring-red-500' 
+              : 'bg-gray-50 border-gray-100 focus:ring-2 focus:ring-blue-500'
+          }`}
         />
         {!disabled && (showClear ? (
           value && (
@@ -218,6 +223,11 @@ const SearchableDropdown = ({
           document.body
         )}
       </div>
+      {error && (
+        <p className="text-[10px] font-semibold text-red-500 ml-1 mt-0.5 animate-in fade-in slide-in-from-top-1 duration-200">
+          {error}
+        </p>
+      )}
     </div>
   );
 };

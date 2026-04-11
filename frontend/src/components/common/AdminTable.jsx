@@ -1,7 +1,11 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import TableSkeleton from './TableSkeleton';
 
 const AdminTable = ({ headers, children, isLoading, emptyMessage = "No records found." }) => {
+  if (isLoading) {
+    return <TableSkeleton columns={headers.length} rows={8} />;
+  }
+
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="overflow-x-auto">
@@ -19,13 +23,7 @@ const AdminTable = ({ headers, children, isLoading, emptyMessage = "No records f
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {isLoading ? (
-              <tr>
-                <td colSpan={headers.length} className="p-12 text-center">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-                </td>
-              </tr>
-            ) : children.length > 0 ? (
+            {children.length > 0 ? (
               children
             ) : (
               <tr>

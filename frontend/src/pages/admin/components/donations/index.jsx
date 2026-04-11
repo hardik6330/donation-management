@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useDebounce } from '../../../../hooks/useDebounce';
 import DonationList from './DonationList';
 import AddDonationModal from './AddDonationModal';
 import EditPartialPaymentModal from './EditPartialPaymentModal';
@@ -42,8 +43,15 @@ const Donation = () => {
     fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,'
   });
 
+  const debouncedSearch = useDebounce(filters.search, 500);
+
+  const queryFilters = useMemo(() => ({
+    ...filters,
+    search: debouncedSearch
+  }), [filters, debouncedSearch]);
+
   // API calls
-  const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(filters);
+  const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(queryFilters);
   
   // Dropdown Paginations
   const [modalState, setModalState] = useState({ cityId: '', talukaId: '', villageId: '' });

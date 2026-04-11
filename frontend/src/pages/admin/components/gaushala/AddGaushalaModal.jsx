@@ -4,6 +4,7 @@ import {
   useUpdateGaushalaMutation
 } from '../../../../services/apiSlice';
 import { toast } from 'react-toastify';
+import { handleMutationError } from '../../../../utils/errorHelper';
 import { MapPin, Building2, Plus, Loader2, CheckCircle2, Tag, Edit, Building2Icon } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
@@ -28,6 +29,19 @@ const AddGaushalaModal = ({
     villageName: '',
     isActive: true
   });
+
+  const [errors, setErrors] = useState({});
+
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'name' && !value) {
+      error = 'Gaushala name is required';
+    } else if (name === 'cityName' && !value) {
+      error = 'City is required';
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error;
+  };
 
   const [activeDropdown, setActiveDropdown] = useState(null);
 
@@ -91,6 +105,7 @@ const AddGaushalaModal = ({
       setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
       talukaPagination.reset();
       villagePagination.reset();
+      validateField('cityName', name);
     } else if (field === 'taluka') {
       setFormData(prev => ({
         ...prev,
@@ -118,6 +133,7 @@ const AddGaushalaModal = ({
       setFormData(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', villageId: '' }));
       setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
       setActiveDropdown('cityName');
+      validateField(name, value);
     } else if (name === 'talukaName') {
       setFormData(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '' }));
       setModalState(prev => ({ ...prev, talukaId: '' }));
@@ -130,14 +146,20 @@ const AddGaushalaModal = ({
         ...prev,
         [name]: type === 'checkbox' ? checked : value
       }));
+      if (name === 'name') validateField(name, value);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.name) return toast.error('Gaushala name is required');
+    
+    const nameErr = validateField('name', formData.name);
+    const cityErr = validateField('cityName', formData.cityName);
 
-    if (!formData.cityName) return toast.error('Please select or enter a city');
+    if (nameErr || cityErr) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
 
     try {
       const payload = {
@@ -158,7 +180,7 @@ const AddGaushalaModal = ({
       }
       onClose();
     } catch (err) {
-      toast.error(err?.data?.message || `Failed to ${editingGaushala ? 'update' : 'add'} gaushala`);
+      handleMutationError(err, `Failed to ${editingGaushala ? 'update' : 'add'} gaushala`);
     }
   };
 
@@ -183,6 +205,7 @@ const AddGaushalaModal = ({
             placeholder="Ex: Kobdi Gaushala"
             className="sm:col-span-2"
             icon={Tag}
+            error={errors.name}
           />
 
           <SearchableDropdown
@@ -202,6 +225,7 @@ const AddGaushalaModal = ({
             onLoadMore={cityPagination.handleLoadMore}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
+            error={errors.cityName}
           />
 
           <SearchableDropdown

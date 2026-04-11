@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   useGetMandalPaymentsQuery,
   useGenerateMandalPaymentsMutation,
@@ -10,6 +10,8 @@ import {
   Search, Calendar, CheckCircle, XCircle, IndianRupee, UsersRound
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { handleMutationError } from '../../../../utils/errorHelper';
+import { useDebounce } from '../../../../hooks/useDebounce';
 import { NavLink } from 'react-router-dom';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
@@ -37,10 +39,17 @@ const MandalPaymentPage = () => {
     limit: 10
   });
 
-  const { data: paymentsData, isLoading } = useGetMandalPaymentsQuery(filters);
+  const debouncedSearch = useDebounce(filters.search, 500);
+
+  const queryFilters = useMemo(() => ({
+    ...filters,
+    search: debouncedSearch
+  }), [filters, debouncedSearch]);
+
+  const { data: paymentsData, isLoading } = useGetMandalPaymentsQuery(queryFilters);
   const { data: reportData } = useGetMandalReportQuery({ month: filters.month });
   const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true' });
-  const [generatePayments, { isLoading: isGenerating }] = useGenerateMandalPaymentsMutation();
+  const [generatePayments] = useGenerateMandalPaymentsMutation();
   const [updatePayment] = useUpdateMandalPaymentMutation();
 
   const payments = paymentsData?.data?.rows || [];
@@ -71,7 +80,7 @@ const MandalPaymentPage = () => {
       const result = await generatePayments({ month: filters.month }).unwrap();
       toast.success(result.message || `Generated ${result.data?.generated || 0} records`);
     } catch (err) {
-      toast.error(err?.data?.message || 'Failed to generate payments');
+      handleMutationError(err, 'Failed to generate payments');
     }
   };
 
@@ -81,7 +90,7 @@ const MandalPaymentPage = () => {
       await updatePayment({ id: payment.id, status: newStatus }).unwrap();
       toast.success(`Marked as ${newStatus}`);
     } catch (err) {
-      toast.error(err?.data?.message || 'Failed to update payment');
+      handleMutationError(err, 'Failed to update payment');
     }
   };
 
@@ -110,8 +119,8 @@ const MandalPaymentPage = () => {
       <AdminPageHeader
         title="Monthly Collections"
         subtitle={`Mandal payment tracking for ${formatMonth(filters.month)}`}
-        buttonText={null}
-        onButtonClick={null}
+        buttonText="Generate Month"
+        onButtonClick={handleGenerate}
       />
 
       <div className="flex flex-wrap gap-3">

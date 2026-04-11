@@ -10,6 +10,7 @@ import {
   HandCoinsIcon
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { handleMutationError } from '../../../../utils/errorHelper';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
@@ -46,6 +47,29 @@ const AddDonationModal = ({
     paidAmount: '',
     paymentMode: 'cash',
   });
+
+  const [errors, setErrors] = useState({});
+
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'mobileNumber') {
+      if (!value) error = 'Mobile number is required';
+      else if (value.length !== 10) error = 'Enter exactly 10 digits';
+    } else if (name === 'name') {
+      if (!value) error = 'Donor name is required';
+    } else if (name === 'amount') {
+      const amt = Number(value.toString().replace(/,/g, ''));
+      if (!value || amt <= 0) error = 'Enter valid amount';
+    } else if (name === 'paidAmount' && addForm.paymentMode === 'partially_paid') {
+      const total = Number(addForm.amount.toString().replace(/,/g, ''));
+      const paid = Number(value.toString().replace(/,/g, ''));
+      if (!value || paid <= 0) error = 'Enter paid amount';
+      else if (paid >= total) error = 'Paid amount must be less than total';
+    }
+    
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error;
+  };
 
   const [addDropdownLabels, setAddDropdownLabels] = useState({
     cityName: '',
@@ -145,6 +169,17 @@ const AddDonationModal = ({
     if (name === 'mobileNumber') {
       const cleaned = value.replace(/\D/g, '').slice(0, 10);
       setAddForm(prev => ({ ...prev, [name]: cleaned }));
+      validateField(name, cleaned);
+      return;
+    }
+
+    if (name === 'amount' || name === 'paidAmount') {
+      const rawValue = value.replace(/,/g, '');
+      if (rawValue === '' || /^\d+$/.test(rawValue)) {
+        const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
+        setAddForm(prev => ({ ...prev, [name]: formattedValue }));
+        validateField(name, formattedValue);
+      }
       return;
     }
 
@@ -193,29 +228,21 @@ const AddDonationModal = ({
       return;
     }
 
-    if (name === 'amount' || name === 'paidAmount') {
-      const rawValue = value.replace(/,/g, '');
-      if (rawValue === '' || /^\d+$/.test(rawValue)) {
-        const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
-        setAddForm(prev => ({ ...prev, [name]: formattedValue }));
-      }
-      return;
-    }
-
     setAddForm(prev => ({ ...prev, [name]: value }));
+    validateField(name, value);
   };
 
   const handleAddDropdownSelect = (field, id, name) => {
     if (field === 'cityId') {
       setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
-      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
+      setModalState(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       talukaPagination.reset();
       villagePagination.reset();
     } else if (field === 'talukaId') {
       setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
-      setModalState(prev => ({ ...prev, talukaId: id }));
+      setModalState(prev => ({ ...prev, talukaId: id, villageId: '' }));
       villagePagination.reset();
     } else if (field === 'villageId') {
       setAddForm(prev => ({ ...prev, villageId: id }));
@@ -240,6 +267,17 @@ const AddDonationModal = ({
   const handleAddSubmit = async (e) => {
     e.preventDefault();
 
+    // Final Validation check
+    const mobileErr = validateField('mobileNumber', addForm.mobileNumber);
+    const nameErr = validateField('name', addForm.name);
+    const amountErr = validateField('amount', addForm.amount);
+    const paidAmountErr = addForm.paymentMode === 'partially_paid' ? validateField('paidAmount', addForm.paidAmount) : '';
+
+    if (mobileErr || nameErr || amountErr || paidAmountErr) {
+      toast.error('Please fix the errors in the form');
+      return;
+    }
+
     if (addDropdownLabels.gaushalaName && !addForm.gaushalaId) {
       toast.error('Please select a Gaushala from the list');
       gaushalaRef.current?.focus();
@@ -259,20 +297,6 @@ const AddDonationModal = ({
 
     const rawAmount = addForm.amount.toString().replace(/,/g, '');
 
-    if (addForm.paymentMode === 'partially_paid') {
-      const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
-      if (!rawPaid || Number(rawPaid) <= 0) {
-        toast.error('Please enter the paid amount');
-        paidAmountRef.current?.focus();
-        return;
-      }
-      if (Number(rawPaid) >= Number(rawAmount)) {
-        toast.error('Paid amount must be less than total donation amount');
-        paidAmountRef.current?.focus();
-        return;
-      }
-    }
-
     try {
       const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
       await createDonation({
@@ -286,8 +310,8 @@ const AddDonationModal = ({
       toast.success('Donation added successfully');
       resetAddForm();
       onClose();
-    } catch (error) {
-      toast.error(error?.data?.message || 'Failed to add donation');
+    } catch (error) { 
+      handleMutationError(error, 'Failed to add donation');
     }
   };
 
@@ -320,6 +344,7 @@ const AddDonationModal = ({
       kathaName: '',
       paymentModeName: 'Cash'
     });
+    setErrors({});
   };
 
   return (
@@ -349,6 +374,7 @@ const AddDonationModal = ({
                 onKeyDown={(e) => handleKeyDown(e, nameRef)}
                 inputRef={mobileRef}
                 icon={Phone}
+                error={errors.mobileNumber}
               />
 
               <FormInput
@@ -361,6 +387,7 @@ const AddDonationModal = ({
                 onKeyDown={(e) => handleKeyDown(e, emailRef)}
                 inputRef={nameRef}
                 icon={UserCheck}
+                error={errors.name}
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -575,6 +602,7 @@ const AddDonationModal = ({
                 inputRef={amountRef}
                 icon={IndianRupee}
                 className="donation-amount-field"
+                error={errors.amount}
               />
 
               {addForm.paymentMode === 'partially_paid' && (
@@ -589,6 +617,7 @@ const AddDonationModal = ({
                     onKeyDown={(e) => handleKeyDown(e, submitRef)}
                     inputRef={paidAmountRef}
                     icon={IndianRupee}
+                    error={errors.paidAmount}
                   />
                   {addForm.amount && addForm.paidAmount && (() => {
                     const total = Number(addForm.amount.toString().replace(/,/g, ''));
@@ -599,7 +628,7 @@ const AddDonationModal = ({
                         <div className="flex items-center justify-between px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
                           <span className="text-xs font-semibold text-orange-700">Remaining</span>
                           <span className="text-sm font-bold text-orange-600 flex items-center gap-0.5">
-                            <IndianRupee className="w-3 h-3" />
+                            <IndianRupee className="w-3.5 h-3.5" />
                             {remaining.toLocaleString('en-IN')}
                           </span>
                         </div>
