@@ -182,16 +182,24 @@ const FilterSection = ({ filters = {}, onFilterChange, onClearFilters, fields = 
 
   return (
     <div className="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-100">
-      <button
-        onClick={() => setShowMobileFilters(!showMobileFilters)}
-        className="flex sm:hidden items-center justify-between w-full py-1 text-xs font-bold text-gray-500 uppercase tracking-wider"
-      >
-        <div className="flex items-center gap-2">
+      <div className="flex sm:hidden items-center justify-between w-full mb-1">
+        <button
+          onClick={() => setShowMobileFilters(!showMobileFilters)}
+          className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider py-1"
+        >
           <Filter className="w-4 h-4 text-blue-600" />
           <span>Filters</span>
-        </div>
-        <ChevronDown className={`w-4 h-4 transition-transform duration-300 ${showMobileFilters ? 'rotate-180' : ''}`} />
-      </button>
+          <ChevronDown className={`w-4 h-4 ml-1 transition-transform duration-300 ${showMobileFilters ? 'rotate-180' : ''}`} />
+        </button>
+        {hasActiveFilters && (
+          <button
+            onClick={onClearFilters}
+            className="text-[10px] font-bold text-red-500 hover:text-red-600 uppercase tracking-wider transition-all"
+          >
+            Clear All
+          </button>
+        )}
+      </div>
 
       <div className="hidden sm:flex items-center justify-between mb-4 border-b border-gray-50 pb-2">
         <div className="flex items-center gap-2 text-xs font-bold text-gray-500 uppercase tracking-wider">
