@@ -17,6 +17,7 @@ import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
+import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import { getStatusColor } from '../../../../utils/tableUtils';
 
 const getCurrentMonth = () => {
@@ -51,8 +52,9 @@ const MandalPaymentPage = () => {
   const { data: paymentsData, isLoading } = useGetMandalPaymentsQuery(queryFilters);
   const { data: reportData } = useGetMandalReportQuery({ month: filters.month });
   const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true' });
-  const [generatePayments] = useGenerateMandalPaymentsMutation();
+  const [generatePayments, { isLoading: isGenerating }] = useGenerateMandalPaymentsMutation();
   const [updatePayment] = useUpdateMandalPaymentMutation();
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const payments = paymentsData?.data?.rows || [];
   const pagination = {
@@ -89,6 +91,7 @@ const MandalPaymentPage = () => {
     try {
       const result = await generatePayments({ month: filters.month }).unwrap();
       toast.success(result.message || `Generated ${result.data?.generated || 0} records`);
+      setIsConfirmModalOpen(false);
     } catch (err) {
       handleMutationError(err, 'Failed to generate payments');
     }
@@ -130,7 +133,7 @@ const MandalPaymentPage = () => {
         title="Monthly Collections"
         subtitle={`Mandal payment tracking for ${formatMonth(filters.month)}`}
         buttonText="Generate Month"
-        onButtonClick={handleGenerate}
+        onButtonClick={() => setIsConfirmModalOpen(true)}
       />
 
       <div className="flex flex-wrap gap-3">
@@ -208,6 +211,17 @@ const MandalPaymentPage = () => {
         filters={filters}
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
+      />
+
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={handleGenerate}
+        isLoading={isGenerating}
+        title="Generate Monthly Payments"
+        message={`Are you sure you want to generate payment records for ${formatMonth(filters.month)}? This will create unpaid records for all active members who don't have a record for this month.`}
+        confirmText="Generate Now"
+        type="warning"
       />
     </div>
   );

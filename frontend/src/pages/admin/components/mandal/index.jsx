@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import MandalList from './MandalList';
 import AddMandalModal from './AddMandalModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
+import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { NavLink } from 'react-router-dom';
@@ -16,6 +17,8 @@ const Mandal = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingMandal, setEditingMandal] = useState(null);
   const [generatedMandals, setGeneratedMandals] = useState(new Set());
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [selectedMandalForPayment, setSelectedMandalForPayment] = useState(null);
 
   const currentMonthValue = new Date().toISOString().slice(0, 7); // YYYY-MM format
 
@@ -67,12 +70,15 @@ const Mandal = () => {
     }
   };
 
-  const handleGeneratePayments = async (mandalId) => {
+  const handleGeneratePayments = (mandalId) => {
+    setSelectedMandalForPayment(mandalId);
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmGeneratePayments = async () => {
+    const mandalId = selectedMandalForPayment;
     const monthToGenerate = filters.month || currentMonthValue;
-    const [year, monthNum] = monthToGenerate.split('-');
-    const monthName = new Date(year, parseInt(monthNum) - 1).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
     
-    if (!window.confirm(`Generate payments for ${monthName}?`)) return;
     try {
       const result = await generatePayments({ mandalId, month: monthToGenerate }).unwrap();
       setGeneratedMandals(prev => new Set([...prev, mandalId]));
@@ -81,6 +87,8 @@ const Mandal = () => {
       } else {
         toast.success(result?.message || 'Monthly payments generated successfully');
       }
+      setIsConfirmModalOpen(false);
+      setSelectedMandalForPayment(null);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to generate payments');
     }
@@ -172,6 +180,20 @@ const Mandal = () => {
         isLoading={isDeleting}
         title="Delete Mandal"
         message="Are you sure you want to delete this mandal? All members and payments will be lost. This action cannot be undone."
+      />
+
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => {
+          setIsConfirmModalOpen(false);
+          setSelectedMandalForPayment(null);
+        }}
+        onConfirm={confirmGeneratePayments}
+        isLoading={isGenerating}
+        title="Generate Monthly Payment"
+        message={`Are you sure you want to generate payment records for ${mandals.find(m => m.id === selectedMandalForPayment)?.name || 'this mandal'} for ${new Date(filters.month + '-01').toLocaleDateString('en-IN', { month: 'long', year: 'numeric' })}?`}
+        confirmText="Generate"
+        type="warning"
       />
     </div>
   );
