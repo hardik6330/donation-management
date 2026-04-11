@@ -170,9 +170,23 @@ const Donation = () => {
     }
   };
 
-  const handleDownloadSlip = (donation) => {
+  const handleDownloadSlip = async (donation) => {
     if (donation.slipUrl) {
-      window.open(donation.slipUrl, '_blank');
+      try {
+        const response = await fetch(donation.slipUrl);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Donation_Slip_${donation.id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      } catch (error) {
+        console.error('Download error:', error);
+        window.open(donation.slipUrl, '_blank');
+      }
     }
   };
 
