@@ -185,12 +185,42 @@ export const createDonationOrder = async (req, res) => {
     if (isDirectPay) {
       (async () => {
         try {
-          const [gaushala, katha] = await Promise.all([
+          const [gaushala, katha, locData] = await Promise.all([
             gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
-            kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null)
+            kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
+            targetLocationId ? Location.findByPk(targetLocationId, {
+              include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+            }) : Promise.resolve(null)
           ]);
 
-          const pdfBuffer = await generateDonationSlipBuffer(user, amount, causeString, donation.id, paymentMode, donation.paymentDate, gaushala, katha);
+          // Format address from location hierarchy: "Village, Taluka, City"
+          let locationAddress = '';
+          if (locData) {
+            const parts = [];
+            if (locData.type === 'village') {
+              parts.push(locData.name);
+              if (locData.parent) parts.push(locData.parent.name);
+              if (locData.parent?.parent) parts.push(locData.parent.parent.name);
+            } else if (locData.type === 'taluka') {
+              parts.push(locData.name);
+              if (locData.parent) parts.push(locData.parent.name);
+            } else {
+              parts.push(locData.name);
+            }
+            locationAddress = parts.join(', ');
+          }
+
+          const pdfBuffer = await generateDonationSlipBuffer(
+            user, 
+            amount, 
+            causeString, 
+            donation.id, 
+            paymentMode, 
+            donation.paymentDate, 
+            gaushala, 
+            katha,
+            locationAddress
+          );
 
           const tasks = [];
 

@@ -55,7 +55,7 @@ const numberToWords = (num) => {
 /**
  * Generate a donation slip PDF buffer
  */
-export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null) => {
+export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null, locationAddress = null) => {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0 });
     const chunks = [];
@@ -70,7 +70,8 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => fs.existsSync(candidate));
     if (slipTemplatePath) {
       const donorName = (user?.name || '-').toUpperCase();
-      const donorAddress = ([user?.address, user?.village, user?.district].filter(Boolean).join(', ') || '-').toUpperCase();
+      // Use provided locationAddress if available, otherwise fallback to user details
+      const donorAddress = (locationAddress || [user?.address, user?.village, user?.district].filter(Boolean).join(', ') || '-').toUpperCase();
       const paymentModeLabel = (paymentMode || 'online').replace('_', ' ').toUpperCase();
       const receiptDate = (paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')).toUpperCase();
       const amountValue = Number(amount || 0);
@@ -243,7 +244,7 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     drawLine();
     drawRow('Email', user.email, 'Company', user.companyName);
     drawLine();
-    drawFullRow('Address', [user.address, user.village, user.district].filter(Boolean).join(', '));
+    drawFullRow('Address', locationAddress || [user.address, user.village, user.district].filter(Boolean).join(', '));
 
     y += 8;
 
