@@ -34,6 +34,20 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
     country: 'India'
   });
 
+  const [errors, setErrors] = useState({});
+
+  const validateField = (name, value) => {
+    let error = '';
+    if (name === 'mobileNumber') {
+      if (!value) error = 'Mobile number is required';
+      else if (value.length !== 10) error = 'Enter exactly 10 digits';
+    } else if (name === 'name') {
+      if (!value) error = 'Name is required';
+    }
+    setErrors(prev => ({ ...prev, [name]: error }));
+    return error;
+  };
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (editingSevak) {
@@ -61,6 +75,19 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
     return () => clearTimeout(timer);
   }, [editingSevak, isOpen]);
 
+  const resetForm = () => {
+    setForm({
+      name: '',
+      mobileNumber: '',
+      email: '',
+      address: '',
+      city: '',
+      state: '',
+      country: 'India'
+    });
+    setErrors({});
+  };
+
   // Fast Entry: Focus first field
   useEffect(() => {
     if (isOpen && nameRef.current) {
@@ -71,7 +98,11 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
   const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef?.current) nextRef.current.focus();
+      if (nextRef === submitRef) {
+        handleSubmit(e);
+      } else if (nextRef?.current) {
+        nextRef.current.focus();
+      }
     }
   };
 
@@ -80,15 +111,21 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
     if (name === 'mobileNumber') {
       const cleaned = value.replace(/\D/g, '').slice(0, 10);
       setForm(prev => ({ ...prev, [name]: cleaned }));
+      validateField(name, cleaned);
       return;
     }
     setForm(prev => ({ ...prev, [name]: value }));
+    validateField(name, value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.mobileNumber) {
-      toast.error('Name and Mobile Number are required');
+    
+    const nameErr = validateField('name', form.name);
+    const mobileErr = validateField('mobileNumber', form.mobileNumber);
+
+    if (nameErr || mobileErr) {
+      toast.error('Please fix the errors in the form');
       return;
     }
 
@@ -100,6 +137,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
         await addSevak(form).unwrap();
         toast.success('Sevak added successfully');
       }
+      resetForm();
       onClose();
     } catch (error) {
       toast.error(error?.data?.message || 'Failed to save sevak');
@@ -127,6 +165,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
             inputRef={nameRef}
             icon={User}
             required
+            error={errors.name}
           />
           <FormInput
             label="Mobile Number"
@@ -138,6 +177,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
             inputRef={mobileRef}
             icon={Phone}
             required
+            error={errors.mobileNumber}
           />
         </div>
 

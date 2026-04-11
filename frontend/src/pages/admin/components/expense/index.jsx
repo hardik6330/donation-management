@@ -121,7 +121,7 @@ const Expense = () => {
       <AdminPageHeader 
         title="Expense Management" 
         subtitle="Track and manage all system expenses"
-        buttonText={hasPermission('expense', 'entry') ? "Add Expense" : null}
+        buttonText={hasPermission('expenses', 'entry') ? "Add Expense" : null}
         onButtonClick={handleAdd}
       />
 

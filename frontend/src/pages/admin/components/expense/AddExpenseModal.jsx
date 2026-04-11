@@ -119,7 +119,11 @@ const AddExpenseModal = ({
   const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef?.current) nextRef.current.focus();
+      if (nextRef === submitRef) {
+        handleSubmit(e);
+      } else if (nextRef?.current) {
+        nextRef.current.focus();
+      }
     }
   };
 
@@ -129,20 +133,28 @@ const AddExpenseModal = ({
   };
 
   const handleDropdownSelect = (field, id, name) => {
+    let nextRef = null;
     if (field === 'category') {
       setForm(prev => ({ ...prev, category: id }));
       setDropdownLabels(prev => ({ ...prev, categoryName: name }));
+      nextRef = gaushalaRef;
     } else if (field === 'gaushalaId') {
       setForm(prev => ({ ...prev, gaushalaId: id }));
       setDropdownLabels(prev => ({ ...prev, gaushalaName: name }));
+      nextRef = kathaRef;
     } else if (field === 'kathaId') {
       setForm(prev => ({ ...prev, kathaId: id }));
       setDropdownLabels(prev => ({ ...prev, kathaName: name }));
+      nextRef = paymentModeRef;
     } else if (field === 'paymentMode') {
       setForm(prev => ({ ...prev, paymentMode: id }));
       setDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
+      nextRef = descriptionRef;
     }
     setActiveDropdown(null);
+    if (nextRef?.current) {
+      setTimeout(() => nextRef.current.focus(), 100);
+    }
   };
 
   const handleSubmit = async (e) => {

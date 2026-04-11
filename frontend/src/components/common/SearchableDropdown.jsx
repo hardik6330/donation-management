@@ -68,14 +68,21 @@ const SearchableDropdown = ({
     }
   };
 
-  // Reset highlight when list changes or dropdown opens/closes
   const handleInputChange = (e) => {
-    setHighlightIndex(-1);
+    if (isActive && filtered.length > 0) {
+      setHighlightIndex(0);
+    } else {
+      setHighlightIndex(-1);
+    }
     onChange(e);
   };
 
   const handleInputFocus = () => {
-    setHighlightIndex(-1);
+    if (filtered.length > 0) {
+      setHighlightIndex(0);
+    } else {
+      setHighlightIndex(-1);
+    }
     setActive(name);
   };
 
@@ -176,6 +183,7 @@ const SearchableDropdown = ({
           value && (
             <button
               type="button"
+              tabIndex={-1}
               onClick={handleClear}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-red-500 transition-colors p-0.5"
             >

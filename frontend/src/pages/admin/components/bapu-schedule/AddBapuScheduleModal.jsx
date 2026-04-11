@@ -138,9 +138,10 @@ const AddBapuScheduleModal = ({
   const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef?.current) {
-        if (nextRef.current.focus) nextRef.current.focus();
-        // If it's a dropdown or date picker that needs to be opened, we can handle it here if needed
+      if (nextRef === submitRef) {
+        handleAddSubmit(e);
+      } else if (nextRef?.current) {
+        nextRef.current.focus();
       }
     }
   };
@@ -190,25 +191,33 @@ const AddBapuScheduleModal = ({
   };
 
   const handleAddDropdownSelect = (field, id, name) => {
+    let nextRef = null;
     if (field === 'eventType') {
       setAddForm(prev => ({ ...prev, eventType: id }));
       setAddDropdownLabels(prev => ({ ...prev, eventTypeName: name }));
+      nextRef = cityRef;
     } else if (field === 'cityId') {
       setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
       setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
       talukaPagination.reset();
       villagePagination.reset();
+      nextRef = talukaRef;
     } else if (field === 'talukaId') {
       setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
       setModalState(prev => ({ ...prev, talukaId: id }));
       villagePagination.reset();
+      nextRef = villageRef;
     } else if (field === 'villageId') {
       setAddForm(prev => ({ ...prev, villageId: id }));
       setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
+      nextRef = amountRef;
     }
     setActiveAddDropdown(null);
+    if (nextRef?.current) {
+      setTimeout(() => nextRef.current.focus(), 100);
+    }
   };
 
   const handleAddSubmit = async (e) => {

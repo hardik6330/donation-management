@@ -4,7 +4,18 @@ import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
-const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', label, required = false, icon: Icon, disabled = false }) => {
+const CustomDatePicker = ({ 
+  value, 
+  onChange, 
+  name, 
+  placeholder = 'Select date', 
+  label, 
+  required = false, 
+  icon: Icon, 
+  disabled = false,
+  onKeyDown,
+  inputRef
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => {
     if (value) return new Date(value + 'T00:00:00');
@@ -12,7 +23,8 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
   });
   const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
   const ref = useRef(null);
-  const triggerRef = useRef(null);
+  const internalRef = useRef(null);
+  const triggerRef = inputRef || internalRef;
 
   useEffect(() => {
     if (value) setViewDate(new Date(value + 'T00:00:00'));
@@ -25,6 +37,30 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [isOpen]);
+
+  const updatePosition = () => {
+    if (triggerRef.current) {
+      const rect = triggerRef.current.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const calendarHeight = 360;
+      setDropdownPos({
+        top: spaceBelow < calendarHeight ? rect.top - calendarHeight : rect.bottom + 4,
+        left: rect.left
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+      return () => {
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition, true);
+      };
     }
   }, [isOpen]);
 
@@ -50,12 +86,13 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
     days.push({ day: i, current: false });
   }
 
-  const selectedDate = value ? new Date(value + 'T00:00:00') : null;
+  const selectedHighlightDate = viewDate;
   const today = new Date();
 
   const isSelected = (day) => {
-    if (!selectedDate || !day.current) return false;
-    return selectedDate.getFullYear() === year && selectedDate.getMonth() === month && selectedDate.getDate() === day.day;
+    if (!day.current) return false;
+    // Use viewDate for arrow key highlighting
+    return selectedHighlightDate.getFullYear() === year && selectedHighlightDate.getMonth() === month && selectedHighlightDate.getDate() === day.day;
   };
 
   const isToday = (day) => {
@@ -68,6 +105,10 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
     const selected = `${year}-${String(month + 1).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
     onChange({ target: { name, value: selected } });
     setIsOpen(false);
+    // After selection, trigger onKeyDown to move to next field
+    if (onKeyDown) {
+      onKeyDown({ key: 'Enter', preventDefault: () => {} });
+    }
   };
 
   const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
@@ -79,6 +120,43 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
     return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  const handleKeyDownInternal = (e) => {
+    if (e.key === 'Enter') {
+      if (!isOpen) {
+        setIsOpen(true);
+        e.preventDefault();
+      } else {
+        // If open, select current viewDate
+        const selected = `${year}-${String(month + 1).padStart(2, '0')}-${String(viewDate.getDate()).padStart(2, '0')}`;
+        onChange({ target: { name, value: selected } });
+        setIsOpen(false);
+        if (onKeyDown) {
+          onKeyDown({ key: 'Enter', preventDefault: () => {} });
+        }
+        e.preventDefault();
+      }
+    } else if (isOpen) {
+      if (e.key === 'ArrowRight') {
+        setViewDate(new Date(year, month, viewDate.getDate() + 1));
+        e.preventDefault();
+      } else if (e.key === 'ArrowLeft') {
+        setViewDate(new Date(year, month, viewDate.getDate() - 1));
+        e.preventDefault();
+      } else if (e.key === 'ArrowDown') {
+        setViewDate(new Date(year, month, viewDate.getDate() + 7));
+        e.preventDefault();
+      } else if (e.key === 'ArrowUp') {
+        setViewDate(new Date(year, month, viewDate.getDate() - 7));
+        e.preventDefault();
+      } else if (e.key === 'Escape') {
+        setIsOpen(false);
+        e.preventDefault();
+      }
+    } else if (onKeyDown) {
+      onKeyDown(e);
+    }
+  };
+
   return (
     <div className="relative space-y-1.5" ref={ref}>
       {label && (
@@ -88,17 +166,10 @@ const CustomDatePicker = ({ value, onChange, name, placeholder = 'Select date', 
       )}
       <div
         ref={triggerRef}
+        tabIndex={0}
+        onKeyDown={handleKeyDownInternal}
         onClick={() => {
           if (disabled) return;
-          if (!isOpen && triggerRef.current) {
-            const rect = triggerRef.current.getBoundingClientRect();
-            const spaceBelow = window.innerHeight - rect.bottom;
-            const calendarHeight = 360;
-            setDropdownPos({
-              top: spaceBelow < calendarHeight ? rect.top - calendarHeight : rect.bottom + 4,
-              left: rect.left
-            });
-          }
           setIsOpen(!isOpen);
         }}
         className={`w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-xs sm:text-sm cursor-pointer flex items-center justify-between transition ${isOpen ? 'ring-2 ring-blue-500' : ''} ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}

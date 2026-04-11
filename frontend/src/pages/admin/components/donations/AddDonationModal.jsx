@@ -172,7 +172,11 @@ const AddDonationModal = ({
   const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef?.current) nextRef.current.focus();
+      if (nextRef === submitRef) {
+        handleAddSubmit(e);
+      } else if (nextRef?.current) {
+        nextRef.current.focus();
+      }
     }
   };
 
@@ -276,35 +280,47 @@ const AddDonationModal = ({
   };
 
   const handleAddDropdownSelect = (field, id, name) => {
+    let nextRef = null;
+
     if (field === 'cityId') {
       setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
       setModalState(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
       talukaPagination.reset();
       villagePagination.reset();
+      nextRef = talukaRef;
     } else if (field === 'talukaId') {
       setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
       setModalState(prev => ({ ...prev, talukaId: id, villageId: '' }));
       villagePagination.reset();
+      nextRef = villageRef_add;
     } else if (field === 'villageId') {
       setAddForm(prev => ({ ...prev, villageId: id }));
       setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
       setModalState(prev => ({ ...prev, villageId: id }));
+      nextRef = categoryRef;
     } else if (field === 'categoryId') {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
+      nextRef = referenceRef;
     } else if (field === 'gaushalaId') {
       setAddForm(prev => ({ ...prev, gaushalaId: id, kathaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, gaushalaName: name, kathaName: '' }));
+      nextRef = referenceRef;
     } else if (field === 'kathaId') {
       setAddForm(prev => ({ ...prev, kathaId: id, gaushalaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, kathaName: name, gaushalaName: '' }));
+      nextRef = referenceRef;
     } else if (field === 'paymentMode') {
       setAddForm(prev => ({ ...prev, paymentMode: id, paidAmount: '' }));
       setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
+      nextRef = amountRef;
     }
     setActiveAddDropdown(null);
+    if (nextRef?.current) {
+      setTimeout(() => nextRef.current.focus(), 100);
+    }
   };
 
   const handleAddSubmit = async (e) => {
@@ -562,16 +578,10 @@ const AddDonationModal = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      const isGaushalaEmpty = !addForm.cityId || gaushalas.length === 0 || !!addForm.kathaId;
-                      const isKathaEmpty = !addForm.cityId || kathas.length === 0 || !!addForm.gaushalaId;
-
-                      if (!isGaushalaEmpty) {
-                        gaushalaRef.current?.focus();
-                      } else if (!isKathaEmpty) {
-                        kathaRef.current?.focus();
-                      } else {
-                        referenceRef.current?.focus();
-                      }
+                      // If no selection, just move to next logical field
+                      if (gaushalas.length > 0) gaushalaRef.current?.focus();
+                      else if (kathas.length > 0) kathaRef.current?.focus();
+                      else referenceRef.current?.focus();
                     }
                   }}
                   isActive={activeAddDropdown === 'categoryName'}
@@ -593,12 +603,8 @@ const AddDonationModal = ({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      const isKathaEmpty = !addForm.cityId || kathas.length === 0 || !!addForm.gaushalaId;
-                      if (!isKathaEmpty) {
-                        kathaRef.current?.focus();
-                      } else {
-                        referenceRef.current?.focus();
-                      }
+                      if (kathas.length > 0) kathaRef.current?.focus();
+                      else referenceRef.current?.focus();
                     }
                   }}
                   isActive={activeAddDropdown === 'gaushalaName'}
