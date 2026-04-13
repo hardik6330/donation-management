@@ -1,33 +1,41 @@
 # Donation Management System
 
-A full-stack donation management application built with Node.js, Express, MySQL, and React.
+A full-stack donation management application built with Node.js, Express, MySQL, and React, designed for religious and charitable organizations.
 
-## 🚀 Recent Updates & Features
+## 🚀 Key Features
 
-- **Improved Admin Dashboard**: Sticky header, footer, and sidebar with scrollable content area.
-- **Enhanced Security**: Centralized authentication with `useAuth` hook, Joi-based request validation, and strict route protection (`ProtectedRoute` & `GuestRoute`).
-- **Robust Architecture**: Refactored backend into `services/`, `validators/`, and `seeders/` for better separation of concerns.
-- **Improved API Management**: Split monolithic `apiSlice` into feature-specific API modules using RTK Query's `injectEndpoints`.
-- **Global Error Handling**: Centralized `errorHandler` middleware and `asyncHandler` wrapper for consistent API responses and cleaner code.
-- **Advanced Filtering**: Support for Min/Max amount range and category-wise filtering in admin records.
-- **Instant Category Management**: Toggle category status (Active/Inactive) directly from the list.
-- **Email Notifications**: Automated donation confirmation emails using Nodemailer (BullMQ/Redis ready).
-- **Modern UI Components**: Custom searchable dropdowns and interactive toggles in master data management.
+- **Advanced Admin Dashboard**: A responsive dashboard with sticky layout, sidebar navigation, and real-time statistics.
+- **Role-Based Access Control (RBAC)**: Comprehensive permission management with 3 default roles: Admin, Manager, and Entry Operator.
+- **Dynamic Location Hierarchy**: Intelligent location management allowing on-the-fly creation of City > Taluka > Village hierarchy.
+- **Multi-mode Payment Support**: Flexible donation entry for Online (Razorpay), Cash, Cheque, Pay Later, and Partial Payments.
+- **Digital Receipt Generation**: Automated PDF slip generation with Indian currency word conversion, stored securely on Cloudinary.
+- **Instant Notifications**: Automated donation confirmations sent via Email (Nodemailer) and SMS (Fast2SMS integration).
+- **QR Code Donations**: Quick access to the public donation form via a dynamically generated QR code on the landing page.
+- **Master Data Management**: Dedicated modules for managing Gaushala, Katha, Bapu Schedule, Sevak, Mandal, and Kartal Dhun.
+- **Advanced Filtering & Export**: Powerful server-side filtering (Amount range, Date, Category) and data export to XLSX/PDF.
+- **Enhanced Security**: JWT-based authentication, Joi request validation, Rate limiting, and strict route protection (`ProtectedRoute`).
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 19, Vite, Redux Toolkit (RTK Query), Lucide React, Tailwind CSS.
-- **Backend**: Node.js, Express, MySQL (Sequelize ORM), Redis (ioredis), BullMQ (Queueing).
-- **Payment Integration**: Razorpay for secure online transactions.
-- **Tools**: JWT, Bcrypt, Helmet, Morgan, PDFKit (Receipt Generation).
+### Frontend
+- **Framework**: React 19, Vite
+- **State Management**: Redux Toolkit & RTK Query
+- **Styling**: Tailwind CSS 4, Lucide React
+- **Utils**: XLSX (Excel Export), jsPDF, React Toastify
+
+### Backend
+- **Runtime**: Node.js, Express 5
+- **Database**: MySQL with Sequelize ORM
+- **Services**: Cloudinary (File Storage), BullMQ/Redis (Queueing), Nodemailer, Fast2SMS
+- **Tools**: PDFKit (Receipts), QRCode, Joi (Validation), Bcryptjs, JWT, Helmet, Morgan
 
 ## 📦 Installation
 
 ### Backend Setup
 1. `cd backend`
 2. `npm install`
-3. Configure `.env` with your MySQL, Razorpay, and SMTP (Email) credentials.
-4. `npm start` or `npm run dev`
+3. Configure `.env` with MySQL, Razorpay, Cloudinary, SMTP, and Fast2SMS credentials.
+4. `npm run dev`
 
 ### Frontend Setup
 1. `cd frontend`
@@ -38,4 +46,4 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 ## 🚀 Deployment
 **Live Frontend URL**: [https://donation-management-ln4b.vercel.app/](https://donation-management-ln4b.vercel.app/)
 
-Ready for deployment on **Vercel** or any VPS with MySQL support.
+Ready for deployment on **Vercel** or any VPS with MySQL and Redis support.
