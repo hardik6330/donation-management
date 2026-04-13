@@ -59,35 +59,75 @@ export const getDonationEmailTemplate = (donorName, amount, cause, donationId) =
 
 
 
+// return `
+//   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 25px; border-radius: 12px; background-color: #ffffff;">
+    
+//     <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px;">
+//       આપના દાન બદલ હૃદયપૂર્વક આભાર
+//     </h2>
+    
+//     <p>પ્રિય <strong>${donorName}</strong>,</p>
+    
+//     <p style="font-size: 15px; line-height: 1.7;">
+//       <strong>શ્રી સર્વેશ્વર ગૌધામ</strong> માટે આપ દ્વારા આપવામાં આવેલ 
+//       <strong>₹${amount}</strong>નું દાન અમને પ્રાપ્ત થયું છે.
+//     </p>
+
+//     <p style="font-size: 15px; line-height: 1.7;">
+//       આપનો આ સહયોગ અમારી સેવા પ્રવૃત્તિઓ માટે અમૂલ્ય છે. 
+//       આપ જેવા દાતાશ્રીઓના સહકારથી જ અમે ગૌસેવા અને સમાજ કલ્યાણના કાર્યને આગળ વધારી શકીએ છીએ.
+//     </p>
+
+//     <p style="font-size: 15px; line-height: 1.7;">
+//       આપનો આ સહયોગ અમારા માટે પ્રેરણારૂપ છે અને અમે હંમેશા આપના વિશ્વાસને સાચવવાનો પ્રયત્ન કરીશું.
+//     </p>
+
+//     <p style="font-size: 15px; line-height: 1.7;">
+//       ભગવાન આપને સુખ, શાંતિ અને સમૃદ્ધિ આપે તેવી હાર્દિક પ્રાર્થના.
+//     </p>
+
+//     <p style="margin-top: 25px;">
+//       શુભેચ્છાઓ સહ,<br>
+//       <strong>શ્રી સર્વેશ્વર ગૌધામ પરિવાર</strong>
+//     </p>
+
+//   </div>
+// `;
+
 return `
   <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 25px; border-radius: 12px; background-color: #ffffff;">
     
     <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px;">
-      આપના દાન બદલ હૃદયપૂર્વક આભાર
+      આપના પવિત્ર દાન બદલ હૃદયપૂર્વક આભાર
     </h2>
     
     <p>પ્રિય <strong>${donorName}</strong>,</p>
     
     <p style="font-size: 15px; line-height: 1.7;">
-      <strong>શ્રી સર્વેશ્વર ગૌધામ</strong> માટે આપ દ્વારા આપવામાં આવેલ 
-      <strong>₹${amount}</strong>નું દાન અમને પ્રાપ્ત થયું છે.
+      <strong>શ્રી સર્વેશ્વર ગૌધામ</strong> માટે આપ દ્વારા કરવામાં આવેલ 
+      <strong>₹${amount}</strong>નું પવિત્ર દાન અમને પ્રાપ્ત થયું છે.
     </p>
 
     <p style="font-size: 15px; line-height: 1.7;">
-      આપનો આ સહયોગ અમારી સેવા પ્રવૃત્તિઓ માટે અમૂલ્ય છે. 
-      આપ જેવા દાતાશ્રીઓના સહકારથી જ અમે ગૌસેવા અને સમાજ કલ્યાણના કાર્યને આગળ વધારી શકીએ છીએ.
+      આપનો આ સહયોગ નિરાધાર, અંધ, અપંગ તથા ત્યજી દેવાયેલા ગૌવંશની સેવા, સારવાર અને સંભાળ માટે ઉપયોગમાં લેવામાં આવે છે. 
+      ગૌમાતા અને બળદોને જીવનભર આશ્રય અને સંભાળ આપવાનું આ પવિત્ર કાર્ય આપ જેવા દાતાશ્રીઓના સહકારથી જ શક્ય બને છે.
     </p>
 
     <p style="font-size: 15px; line-height: 1.7;">
-      આપનો આ સહયોગ અમારા માટે પ્રેરણારૂપ છે અને અમે હંમેશા આપના વિશ્વાસને સાચવવાનો પ્રયત્ન કરીશું.
+      ગૌસેવા સાથે સાથે અન્નક્ષેત્ર, સારવાર અને સમાજ કલ્યાણ જેવી સેવાઓ પણ સતત ચાલુ રાખવામાં આવે છે, 
+      જેમાં આપનો સહયોગ અમૂલ્ય યોગદાન આપે છે.
     </p>
 
     <p style="font-size: 15px; line-height: 1.7;">
-      ભગવાન આપને સુખ, શાંતિ અને સમૃદ્ધિ આપે તેવી હાર્દિક પ્રાર્થના.
+      આપનો વિશ્વાસ અને સહયોગ અમને વધુ શ્રદ્ધા અને જવાબદારી સાથે સેવા કાર્ય આગળ વધારવા પ્રેરણા આપે છે.
+    </p>
+
+    <p style="font-size: 15px; line-height: 1.7;">
+      ભગવાન શ્રીકૃષ્ણ આપને અને આપના પરિવારને સુખ, શાંતિ અને સમૃદ્ધિ આપે તેવી હાર્દિક પ્રાર્થના.
     </p>
 
     <p style="margin-top: 25px;">
-      શુભેચ્છાઓ સહ,<br>
+      વિનમ્ર આભાર સહ,<br>
       <strong>શ્રી સર્વેશ્વર ગૌધામ પરિવાર</strong>
     </p>
 
