@@ -6,6 +6,7 @@ import { JWT_SECRET, REFRESH_TOKEN_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_MO
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
+import { notFound, badRequest } from '../utils/httpError.js';
 
 
 
@@ -52,9 +53,7 @@ export const loginUser = asyncHandler(async (req, res) => {
     include: [{ model: Role, as: 'role' }]
   });
   if (!user) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('User');
   }
   const isPasswordValid = user.password ? bcrypt.compareSync(password, user.password) : false;
   if (!isPasswordValid) {
@@ -143,9 +142,7 @@ export const updateSystemUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const user = await User.findByPk(id);
   if (!user) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('User');
   }
 
   const { name, email, mobileNumber, password, roleId, isAdmin } = req.body;
@@ -166,16 +163,12 @@ export const updateSystemUser = asyncHandler(async (req, res) => {
 export const deleteSystemUser = asyncHandler(async (req, res) => {
   const { id } = req.params;
   if (id === req.user?.id) {
-    const error = new Error('Cannot delete yourself');
-    error.statusCode = 400;
-    throw error;
+    throw badRequest('Cannot delete yourself');
   }
 
   const user = await User.findByPk(id);
   if (!user) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('User');
   }
 
   await user.destroy();
@@ -186,9 +179,7 @@ export const getUserByMobile = asyncHandler(async (req, res) => {
   const { mobileNumber } = req.params;
   const user = await User.findOne({ where: { mobileNumber } });
   if (!user) {
-    const error = new Error('User not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('User');
   }
   return sendSuccess(res, user, 'User found successfully');
 });

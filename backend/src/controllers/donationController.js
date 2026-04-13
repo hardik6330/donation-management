@@ -14,6 +14,7 @@ import { sendEmail, getDonationEmailTemplate } from '../services/email.service.j
 import { sendDetailedDonationSMS } from '../services/sms.service.js';
 import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../services/donationSlip.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound, badRequest } from '../utils/httpError.js';
 
 // 1. QR Code Generate Karo
 export const generateQRCode = asyncHandler(async (req, res) => {
@@ -147,19 +148,13 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   if (isPartialPay) {
     const minimumPaidAmount = Math.ceil(totalAmount * 0.2);
     if (!Number.isFinite(partialPaidAmount) || partialPaidAmount <= 0) {
-      const error = new Error('Paid amount is required for partial payment');
-      error.statusCode = 400;
-      throw error;
+      throw badRequest('Paid amount is required for partial payment');
     }
     if (partialPaidAmount < minimumPaidAmount) {
-      const error = new Error(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
-      error.statusCode = 400;
-      throw error;
+      throw badRequest(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
     }
     if (partialPaidAmount >= totalAmount) {
-      const error = new Error('Paid amount must be less than total donation amount');
-      error.statusCode = 400;
-      throw error;
+      throw badRequest('Paid amount must be less than total donation amount');
     }
   }
 
@@ -307,9 +302,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 // 3. Payment Verify (Razorpay - commented out)
 // Razorpay verification is disabled. Online donations are now saved directly.
 export const verifyPayment = asyncHandler(async (req, res) => {
-  const error = new Error('Razorpay payment verification is currently disabled. Online donations are saved directly.');
-  error.statusCode = 400;
-  throw error;
+  throw badRequest('Razorpay payment verification is currently disabled. Online donations are saved directly.');
 });
 
 export const getDonations = asyncHandler(async (req, res) => {
@@ -452,9 +445,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
 
   const donation = await Donation.findByPk(id);
   if (!donation) {
-    const error = new Error('Donation not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Donation');
   }
 
   const nextAmount = amount ?? donation.amount;
@@ -481,19 +472,13 @@ export const updateDonation = asyncHandler(async (req, res) => {
       : (incomingPaidAmount !== null ? incomingPaidAmount : currentPaidAmount);
 
     if (!Number.isFinite(finalPaidAmount) || finalPaidAmount <= 0) {
-      const error = new Error('Paid amount is required for partially paid donations');
-      error.statusCode = 400;
-      throw error;
+      throw badRequest('Paid amount is required for partially paid donations');
     }
     if (finalPaidAmount < minimumPaidAmount) {
-      const error = new Error(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
-      error.statusCode = 400;
-      throw error;
+      throw badRequest(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
     }
     if (finalPaidAmount > Number(nextAmount)) {
-      const error = new Error('Paid amount cannot exceed total donation amount');
-      error.statusCode = 400;
-      throw error;
+      throw badRequest('Paid amount cannot exceed total donation amount');
     }
 
     updateData.paidAmount = finalPaidAmount;
@@ -508,14 +493,10 @@ export const updateDonation = asyncHandler(async (req, res) => {
       : incomingPaidAmount;
 
     if (!Number.isFinite(finalPaidAmount) || finalPaidAmount < 0) {
-      const error = new Error('Invalid paid amount');
-      error.statusCode = 400;
-      throw error;
+      throw badRequest('Invalid paid amount');
     }
     if (finalPaidAmount > Number(nextAmount)) {
-      const error = new Error('Paid amount cannot exceed total donation amount');
-      error.statusCode = 400;
-      throw error;
+      throw badRequest('Paid amount cannot exceed total donation amount');
     }
 
     updateData.paidAmount = finalPaidAmount;

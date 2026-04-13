@@ -3,6 +3,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound } from '../utils/httpError.js';
 
 // 1. Add New Expense
 export const addExpense = asyncHandler(async (req, res) => {
@@ -80,9 +81,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
 
   const expense = await Expense.findByPk(id);
   if (!expense) {
-    const error = new Error('Expense not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Expense');
   }
 
   // Handle empty strings for optional IDs
@@ -99,9 +98,7 @@ export const deleteExpense = asyncHandler(async (req, res) => {
   const expense = await Expense.findByPk(id);
   
   if (!expense) {
-    const error = new Error('Expense not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Expense');
   }
 
   await expense.destroy();

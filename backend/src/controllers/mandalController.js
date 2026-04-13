@@ -3,6 +3,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound } from '../utils/httpError.js';
 
 // ===== MANDAL (Group) CRUD =====
 
@@ -63,9 +64,7 @@ export const updateMandal = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const mandal = await Mandal.findByPk(id);
   if (!mandal) {
-    const error = new Error('Mandal not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Mandal');
   }
 
   await mandal.update(req.body);
@@ -76,9 +75,7 @@ export const deleteMandal = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const mandal = await Mandal.findByPk(id);
   if (!mandal) {
-    const error = new Error('Mandal not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Mandal');
   }
 
   await mandal.destroy();
@@ -131,9 +128,7 @@ export const updateMember = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const member = await MandalMember.findByPk(id);
   if (!member) {
-    const error = new Error('Member not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Member');
   }
 
   await member.update(req.body);
@@ -144,9 +139,7 @@ export const deleteMember = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const member = await MandalMember.findByPk(id);
   if (!member) {
-    const error = new Error('Member not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Member');
   }
 
   await member.destroy();

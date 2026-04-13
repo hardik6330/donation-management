@@ -3,6 +3,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound, badRequest } from '../utils/httpError.js';
 
 // Generate unpaid records for all active members for a given month
 export const generateMonthlyPayments = asyncHandler(async (req, res) => {
@@ -56,9 +57,7 @@ export const getMonthlyPayments = asyncHandler(async (req, res) => {
   const { month, mandalId, status, search } = req.query;
 
   if (!month) {
-    const error = new Error('Month parameter is required');
-    error.statusCode = 400;
-    throw error;
+    throw badRequest('Month parameter is required');
   }
 
   const where = { month };
@@ -100,9 +99,7 @@ export const updatePayment = asyncHandler(async (req, res) => {
 
   const payment = await MandalPayment.findByPk(id);
   if (!payment) {
-    const error = new Error('Payment record not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Payment record');
   }
 
   const updateData = {};
@@ -125,9 +122,7 @@ export const updatePayment = asyncHandler(async (req, res) => {
 export const getMonthlyReport = asyncHandler(async (req, res) => {
   const { month } = req.query;
   if (!month) {
-    const error = new Error('Month parameter is required');
-    error.statusCode = 400;
-    throw error;
+    throw badRequest('Month parameter is required');
   }
 
   const totalMembers = await MandalPayment.count({ where: { month } });

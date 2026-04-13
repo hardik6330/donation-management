@@ -1,9 +1,10 @@
 import { Gaushala, Donation, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { findOrCreateLocationStructure, getAllSubLocationIds } from '../utils/locationHelper.js';
+import { findOrCreateLocationStructure, getAllSubLocationIds, extractLocationHierarchy } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound } from '../utils/httpError.js';
 
 export const getGaushalas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -71,21 +72,13 @@ export const getGaushalas = asyncHandler(async (req, res) => {
   // Format the response to include city, taluka, village
   const formattedGaushalas = rows.map(g => {
     const gaushala = g.toJSON();
-    let city = null, taluka = null, village = null;
-
-    let current = gaushala.location;
-    while (current) {
-      if (current.type === 'city') city = current.name;
-      if (current.type === 'taluka') taluka = current.name;
-      if (current.type === 'village') village = current.name;
-      current = current.parent;
-    }
+    const { city, taluka, village } = extractLocationHierarchy(gaushala.location);
 
     return {
       ...gaushala,
-      city,
-      taluka,
-      village,
+      city: city || null,
+      taluka: taluka || null,
+      village: village || null,
       fullLocation: [village, taluka, city].filter(Boolean).join(', '),
       totalDonations: parseInt(gaushala.totalDonations) || 0,
       totalDonationAmount: parseFloat(gaushala.totalDonationAmount) || 0
@@ -127,11 +120,7 @@ export const updateGaushala = asyncHandler(async (req, res) => {
   const { name, city, taluka, village, locationId, isActive } = req.body;
   
   const gaushala = await Gaushala.findByPk(id);
-  if (!gaushala) {
-    const error = new Error('Gaushala not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!gaushala) throw notFound('Gaushala');
 
   let finalLocationId = locationId || gaushala.locationId;
   if (city) {
@@ -151,11 +140,7 @@ export const updateGaushala = asyncHandler(async (req, res) => {
 export const deleteGaushala = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const gaushala = await Gaushala.findByPk(id);
-  if (!gaushala) {
-    const error = new Error('Gaushala not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!gaushala) throw notFound('Gaushala');
   await gaushala.destroy();
   return sendSuccess(res, null, 'Gaushala deleted successfully');
 });

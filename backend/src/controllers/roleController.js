@@ -1,6 +1,7 @@
 import { Role } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound } from '../utils/httpError.js';
 
 export const getAllRoles = asyncHandler(async (req, res) => {
   const roles = await Role.findAll({ order: [['name', 'ASC']] });
@@ -22,9 +23,7 @@ export const updateRole = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const role = await Role.findByPk(id);
   if (!role) {
-    const error = new Error('Role not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Role');
   }
 
   await role.update(req.body);
@@ -35,9 +34,7 @@ export const deleteRole = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const role = await Role.findByPk(id);
   if (!role) {
-    const error = new Error('Role not found');
-    error.statusCode = 404;
-    throw error;
+    throw notFound('Role');
   }
 
   await role.destroy();

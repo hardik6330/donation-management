@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { Location } from '../models/index.js';
+import { buildLocationFilter } from './locationHelper.js';
 
 /**
  * Builds a Sequelize where clause for donations based on query parameters.
@@ -76,27 +76,8 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
   }
 
   // 6. Location Filters (Hierarchical)
-  if (villageId) {
-    whereClause.locationId = villageId;
-  } else if (talukaId) {
-    const subLocations = await Location.findAll({
-      where: { [Op.or]: [{ id: talukaId }, { parentId: talukaId }] },
-      attributes: ['id']
-    });
-    whereClause.locationId = { [Op.in]: subLocations.map(loc => loc.id) };
-  } else if (cityId) {
-    const talukas = await Location.findAll({
-      where: { parentId: cityId },
-      attributes: ['id']
-    });
-    const talukaIds = talukas.map(t => t.id);
-    const villages = await Location.findAll({
-      where: { parentId: { [Op.in]: talukaIds } },
-      attributes: ['id']
-    });
-    const allLocationIds = [cityId, ...talukaIds, ...villages.map(v => v.id)];
-    whereClause.locationId = { [Op.in]: allLocationIds };
-  }
+  const locationFilter = await buildLocationFilter(villageId, talukaId, cityId);
+  if (locationFilter) whereClause.locationId = locationFilter;
 
   return { whereClause, donorWhere };
 };

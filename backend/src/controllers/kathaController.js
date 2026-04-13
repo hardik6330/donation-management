@@ -1,9 +1,10 @@
 import { Katha, Donation, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { findOrCreateLocationStructure, getAllSubLocationIds } from '../utils/locationHelper.js';
+import { findOrCreateLocationStructure, getAllSubLocationIds, extractLocationHierarchy } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound } from '../utils/httpError.js';
 
 export const getKathas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -71,15 +72,7 @@ export const getKathas = asyncHandler(async (req, res) => {
 
   const formattedKathas = rows.map(k => {
     const katha = k.toJSON();
-    let city = null, taluka = null, village = null;
-
-    let current = katha.location;
-    while (current) {
-      if (current.type === 'city') city = current.name;
-      if (current.type === 'taluka') taluka = current.name;
-      if (current.type === 'village') village = current.name;
-      current = current.parent;
-    }
+    const { city, taluka, village } = extractLocationHierarchy(katha.location);
 
     return {
       ...katha,
@@ -131,11 +124,7 @@ export const updateKatha = asyncHandler(async (req, res) => {
   const { name, city, taluka, village, locationId, startDate, endDate, status, description } = req.body;
   
   const katha = await Katha.findByPk(id);
-  if (!katha) {
-    const error = new Error('Katha not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!katha) throw notFound('Katha');
 
   let finalLocationId = locationId || katha.locationId;
   if (city) {
@@ -158,11 +147,7 @@ export const updateKatha = asyncHandler(async (req, res) => {
 export const deleteKatha = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const katha = await Katha.findByPk(id);
-  if (!katha) {
-    const error = new Error('Katha not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!katha) throw notFound('Katha');
   await katha.destroy();
   return sendSuccess(res, null, 'Katha deleted successfully');
 });

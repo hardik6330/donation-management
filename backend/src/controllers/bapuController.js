@@ -1,9 +1,10 @@
 import { BapuSchedule, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { findOrCreateLocationStructure } from '../utils/locationHelper.js';
+import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationFilter } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { notFound } from '../utils/httpError.js';
 
 // Get all schedules with filtering
 export const getBapuSchedules = asyncHandler(async (req, res) => {
@@ -23,26 +24,9 @@ export const getBapuSchedules = asyncHandler(async (req, res) => {
   // Hierarchical Location Filter
   if (locationId) {
     where.locationId = locationId;
-  } else if (villageId) {
-    where.locationId = villageId;
-  } else if (talukaId) {
-    const subLocations = await Location.findAll({
-      where: { [Op.or]: [{ id: talukaId }, { parentId: talukaId }] },
-      attributes: ['id']
-    });
-    where.locationId = { [Op.in]: subLocations.map(loc => loc.id) };
-  } else if (cityId) {
-    const talukas = await Location.findAll({
-      where: { parentId: cityId },
-      attributes: ['id']
-    });
-    const talukaIds = talukas.map(t => t.id);
-    const villages = await Location.findAll({
-      where: { parentId: { [Op.in]: talukaIds } },
-      attributes: ['id']
-    });
-    const allLocationIds = [cityId, ...talukaIds, ...villages.map(v => v.id)];
-    where.locationId = { [Op.in]: allLocationIds };
+  } else {
+    const locationFilter = await buildLocationFilter(villageId, talukaId, cityId);
+    if (locationFilter) where.locationId = locationFilter;
   }
 
   const { count, rows: schedules } = await BapuSchedule.findAndCountAll({
@@ -69,32 +53,9 @@ export const getBapuSchedules = asyncHandler(async (req, res) => {
   // Format the response to include city, taluka, village names
   const formattedSchedules = schedules.map(schedule => {
     const s = schedule.toJSON();
-    let city = '', taluka = '', village = '';
-
-    if (s.location) {
-      if (s.location.type === 'village') {
-        village = s.location.name;
-        if (s.location.parent) {
-          taluka = s.location.parent.name;
-          if (s.location.parent.parent) {
-            city = s.location.parent.parent.name;
-          }
-        }
-      } else if (s.location.type === 'taluka') {
-        taluka = s.location.name;
-        if (s.location.parent) {
-          city = s.location.parent.name;
-        }
-      } else if (s.location.type === 'city') {
-        city = s.location.name;
-      }
-    }
-
     return {
       ...s,
-      city,
-      taluka,
-      village
+      ...extractLocationHierarchy(s.location)
     };
   });
 
@@ -143,11 +104,7 @@ export const updateBapuSchedule = asyncHandler(async (req, res) => {
   const { city, taluka, village, locationId, ...rest } = req.body;
 
   const schedule = await BapuSchedule.findByPk(id);
-  if (!schedule) {
-    const error = new Error('Schedule not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!schedule) throw notFound('Schedule');
 
   let finalLocationId = locationId;
   if (city) {
@@ -163,11 +120,7 @@ export const updateBapuSchedule = asyncHandler(async (req, res) => {
 export const deleteBapuSchedule = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const schedule = await BapuSchedule.findByPk(id);
-  if (!schedule) {
-    const error = new Error('Schedule not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!schedule) throw notFound('Schedule');
 
   await schedule.destroy();
   return sendSuccess(res, null, 'Schedule deleted successfully');

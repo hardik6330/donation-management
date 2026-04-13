@@ -1,8 +1,8 @@
 import { KartalDhun, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
-import { findOrCreateLocationStructure } from '../utils/locationHelper.js';
-import { Op } from 'sequelize';
+import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationFilter } from '../utils/locationHelper.js';
+import { notFound } from '../utils/httpError.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 
 export const addKartalDhun = asyncHandler(async (req, res) => {
@@ -38,27 +38,8 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
   }
 
   // Hierarchical Location Filter
-  if (villageId) {
-    where.locationId = villageId;
-  } else if (talukaId) {
-    const subLocations = await Location.findAll({
-      where: { [Op.or]: [{ id: talukaId }, { parentId: talukaId }] },
-      attributes: ['id']
-    });
-    where.locationId = { [Op.in]: subLocations.map(loc => loc.id) };
-  } else if (cityId) {
-    const talukas = await Location.findAll({
-      where: { parentId: cityId },
-      attributes: ['id']
-    });
-    const talukaIds = talukas.map(t => t.id);
-    const villages = await Location.findAll({
-      where: { parentId: { [Op.in]: talukaIds } },
-      attributes: ['id']
-    });
-    const allLocationIds = [cityId, ...talukaIds, ...villages.map(v => v.id)];
-    where.locationId = { [Op.in]: allLocationIds };
-  }
+  const locationFilter = await buildLocationFilter(villageId, talukaId, cityId);
+  if (locationFilter) where.locationId = locationFilter;
 
   const { count, rows } = await KartalDhun.findAndCountAll({
     where,
@@ -84,14 +65,7 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
 
   const formattedRows = rows.map(r => {
     const record = r.toJSON();
-    let city = null, taluka = null, village = null;
-    let current = record.location;
-    while (current) {
-      if (current.type === 'city') city = current.name;
-      if (current.type === 'taluka') taluka = current.name;
-      if (current.type === 'village') village = current.name;
-      current = current.parent;
-    }
+    const { city, taluka, village } = extractLocationHierarchy(record.location);
     return { ...record, city, taluka, village };
   });
 
@@ -102,11 +76,7 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
 export const updateKartalDhun = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const record = await KartalDhun.findByPk(id);
-  if (!record) {
-    const error = new Error('Record not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!record) throw notFound('Record');
 
   const { city, taluka, village, locationId, ...rest } = req.body;
   let finalLocationId = locationId;
@@ -122,11 +92,7 @@ export const updateKartalDhun = asyncHandler(async (req, res) => {
 export const deleteKartalDhun = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const record = await KartalDhun.findByPk(id);
-  if (!record) {
-    const error = new Error('Record not found');
-    error.statusCode = 404;
-    throw error;
-  }
+  if (!record) throw notFound('Record');
 
   await record.destroy();
   return sendSuccess(res, null, 'Record deleted successfully');
