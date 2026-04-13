@@ -85,6 +85,10 @@ export const updateExpense = asyncHandler(async (req, res) => {
     throw error;
   }
 
+  // Handle empty strings for optional IDs
+  if (updateData.gaushalaId === '') updateData.gaushalaId = null;
+  if (updateData.kathaId === '') updateData.kathaId = null;
+
   await expense.update(updateData);
   return sendSuccess(res, expense, 'Expense updated successfully');
 });

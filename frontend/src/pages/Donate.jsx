@@ -8,10 +8,11 @@ import {
 } from '../services/masterApi';
 import { useGetGaushalasQuery } from '../services/gaushalaApi';
 import { useGetKathasQuery } from '../services/kathaApi';
-import { IndianRupee, User, Mail, Home as HomeIcon, Building, MapPin, Loader2, Phone, CreditCard, Tag, Mic2, Building2, X, ChevronDown } from 'lucide-react';
+import { IndianRupee, User, Mail, Home as HomeIcon, Building, MapPin, Loader2, Phone, CreditCard, Tag, Mic2, Building2, X, ChevronDown, Languages } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import confetti from 'canvas-confetti';
+import { transliterateToGujarati } from '../utils/gujaratiTransliteration';
 
 // Reusable dropdown for Donate page
 const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false, onDisabledClick, inputRef, onKeyDown, defaultName = '' }) => {
@@ -221,6 +222,10 @@ const Donate = () => {
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
 
+  const [isGujarati, setIsGujarati] = useState(false);
+  const [rawInputs, setRawInputs] = useState({});
+  const TRANSLITERATE_FIELDS = ['name', 'address', 'village', 'district', 'companyName', 'referenceName'];
+
   const [formData, setFormData] = useState({
     mobileNumber: '', name: '', email: '', address: '', village: '', district: '',
     cityId: '', talukaId: '', villageId: '', categoryId: '', gaushalaId: '', kathaId: '',
@@ -342,6 +347,23 @@ const Donate = () => {
     if (e.key === 'Enter') {
       e.preventDefault();
       if (nextRef?.current) nextRef.current.focus();
+      return;
+    }
+
+    const name = e.target.name;
+    if (isGujarati && TRANSLITERATE_FIELDS.includes(name)) {
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        const raw = rawInputs[name] || '';
+        const newRaw = raw.slice(0, -1);
+        setRawInputs(prev => ({ ...prev, [name]: newRaw }));
+        setFormData(prev => ({ ...prev, [name]: transliterateToGujarati(newRaw) }));
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const raw = (rawInputs[name] || '') + e.key;
+        setRawInputs(prev => ({ ...prev, [name]: raw }));
+        setFormData(prev => ({ ...prev, [name]: transliterateToGujarati(raw) }));
+      }
     }
   };
 
@@ -458,9 +480,21 @@ const Donate = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2 sm:p-4">
       <div className="max-w-2xl w-full bg-white rounded-xl sm:rounded-2xl shadow-xl overflow-hidden my-4">
-        <div className="bg-blue-600 p-4 sm:p-6 text-white text-center">
+        <div className="bg-blue-600 p-4 sm:p-6 text-white text-center relative">
           <h1 className="text-xl sm:text-2xl font-bold">Support Shree Sarveshwar Gaudham</h1>
           <p className="text-sm opacity-90">Your contribution makes a difference in our community</p>
+          <button
+            type="button"
+            onClick={() => setIsGujarati(prev => !prev)}
+            className={`absolute top-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              isGujarati
+                ? 'bg-white text-blue-600 shadow-md'
+                : 'bg-blue-500 text-white hover:bg-blue-400'
+            }`}
+          >
+            <Languages className="w-3.5 h-3.5" />
+            {isGujarati ? 'ગુજ' : 'EN'}
+          </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-6 sm:space-y-8">

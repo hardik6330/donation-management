@@ -118,6 +118,7 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
             setActive={setActiveDropdown}
             inputRef={mandalRef}
             icon={UsersRound}
+            allowTransliteration={false}
           />
           <SearchableDropdown
             label="Location (City)"
@@ -143,6 +144,7 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
             onLoadMore={cityPagination.handleLoadMore}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
+            allowTransliteration={false}
           />
         </div>
         <div className="pt-4 flex items-center gap-3">

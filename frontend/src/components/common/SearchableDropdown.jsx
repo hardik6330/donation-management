@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown } from 'lucide-react';
 import { handleFormNavigation } from '../../utils/formNavigation';
+import { useLanguage } from '../../context/LanguageContext';
+import { transliterateToGujarati } from '../../utils/gujaratiTransliteration';
 
 const SearchableDropdown = ({
   label,
@@ -23,18 +25,23 @@ const SearchableDropdown = ({
   onLoadMore,
   hasMore = false,
   loading = false,
-  isServerSearch = false
+  isServerSearch = false,
+  allowTransliteration = true
 }) => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
   const listRef = useRef(null);
   const inputContainerRef = useRef(null);
+  const { isGujarati } = useLanguage();
+  const rawInputRef = useRef('');
 
-  const filtered = isServerSearch 
-    ? items 
-    : items.filter(item =>
-        item.name?.toLowerCase().includes((value || '').toLowerCase())
-      );
+  // Local filtering even for server-side search to provide instant feedback 
+  // and handle potential race conditions or stale data.
+  const filtered = items.filter(item =>
+    item.name?.toLowerCase().includes((value || '').toLowerCase())
+  );
+
+  const showGujaratiIndicator = isGujarati && allowTransliteration;
 
   // Update position coordinates whenever dropdown is opened or window changes
   useEffect(() => {
@@ -74,6 +81,11 @@ const SearchableDropdown = ({
     } else {
       setHighlightIndex(-1);
     }
+    
+    // Update rawInputRef if transliteration is disabled or it's a normal change
+    if (!allowTransliteration) {
+      rawInputRef.current = e.target.value;
+    }
     onChange(e);
   };
 
@@ -83,6 +95,8 @@ const SearchableDropdown = ({
     } else {
       setHighlightIndex(-1);
     }
+    // Update rawInputRef with current value when focusing
+    rawInputRef.current = value || '';
     setActive(name);
   };
 
@@ -97,6 +111,7 @@ const SearchableDropdown = ({
   const handleClear = (e) => {
     e.stopPropagation();
     setHighlightIndex(-1);
+    rawInputRef.current = '';
     onChange({ target: { name, value: '' } });
   };
 
@@ -123,6 +138,27 @@ const SearchableDropdown = ({
       if (e.key === 'Escape') {
         setActive(null);
         setHighlightIndex(-1);
+        return;
+      }
+    }
+
+    if (showGujaratiIndicator) {
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        const newRaw = rawInputRef.current.slice(0, -1);
+        rawInputRef.current = newRaw;
+        const transliterated = transliterateToGujarati(newRaw);
+        onChange({ target: { name, value: transliterated } });
+        if (isActive && filtered.length > 0) setHighlightIndex(0);
+        return;
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const newRaw = rawInputRef.current + e.key;
+        rawInputRef.current = newRaw;
+        const transliterated = transliterateToGujarati(newRaw);
+        onChange({ target: { name, value: transliterated } });
+        if (!isActive) setActive(name);
+        if (filtered.length > 0) setHighlightIndex(0);
         return;
       }
     }
@@ -176,9 +212,10 @@ const SearchableDropdown = ({
           className={`w-full px-4 py-2.5 rounded-xl text-sm outline-none transition disabled:opacity-50 pr-8 border ${
             error 
               ? 'bg-red-50/30 border-red-200 focus:ring-2 focus:ring-red-500' 
-              : 'bg-gray-50 border-gray-100 focus:ring-2 focus:ring-blue-500'
+              : `bg-gray-50 border-gray-100 focus:ring-2 focus:ring-blue-500 ${showGujaratiIndicator ? 'ring-1 ring-orange-200' : ''}`
           }`}
         />
+        {showGujaratiIndicator && <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[9px] font-bold text-orange-400 pointer-events-none">ગુજ</span>}
         {!disabled && (showClear ? (
           value && (
             <button

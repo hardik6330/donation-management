@@ -10,6 +10,7 @@ const DeleteConfirmationModal = ({ isOpen, onClose, onConfirm, title, message, i
       title={title || "Confirm Delete"}
       icon={<Trash2 className="text-red-600" />}
       maxWidth="max-w-md"
+      showLanguageToggle={false}
     >
       <div className="flex flex-col items-center text-center space-y-4">
         <div className="p-3 bg-red-50 rounded-full text-red-600">

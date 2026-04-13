@@ -6,6 +6,8 @@ import {
 import { toast } from 'react-toastify';
 import { Tag, Plus, Loader2, CheckCircle2, Edit } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
+import { useLanguage } from '../../../../context/LanguageContext';
+import { transliterateToGujarati } from '../../../../utils/gujaratiTransliteration';
 
 const AddCategoryModal = ({ isOpen, onClose, editingData, categoryPagination }) => {
   const [addCombinedMaster, { isLoading: isAdding }] = useAddCombinedMasterDataMutation();
@@ -29,6 +31,8 @@ const AddCategoryModal = ({ isOpen, onClose, editingData, categoryPagination }) 
 
   const [formData, setFormData] = useState(getInitialState);
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const { isGujarati } = useLanguage();
+  const rawInputsRef = useRef({ categoryName: '', categoryDescription: '' });
 
   // Refs for Fast Entry
   const categoryRef = useRef(null);
@@ -63,6 +67,30 @@ const AddCategoryModal = ({ isOpen, onClose, editingData, categoryPagination }) 
     if (e.key === 'Enter') {
       e.preventDefault();
       if (nextRef?.current) nextRef.current.focus();
+      return;
+    }
+
+    const name = e.target.name;
+    if (isGujarati && ['categoryName', 'categoryDescription'].includes(name)) {
+      if (e.key === 'Backspace') {
+        e.preventDefault();
+        const raw = rawInputsRef.current[name] || '';
+        const newRaw = raw.slice(0, -1);
+        rawInputsRef.current[name] = newRaw;
+        const transliterated = transliterateToGujarati(newRaw);
+        setFormData(prev => ({ ...prev, [name]: transliterated }));
+        if (name === 'categoryName') categoryPagination.handleSearch(newRaw);
+      } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const raw = (rawInputsRef.current[name] || '') + e.key;
+        rawInputsRef.current[name] = raw;
+        const transliterated = transliterateToGujarati(raw);
+        setFormData(prev => ({ ...prev, [name]: transliterated }));
+        if (name === 'categoryName') {
+          setActiveDropdown('category');
+          categoryPagination.handleSearch(raw);
+        }
+      }
     }
   };
 
@@ -164,18 +192,21 @@ const AddCategoryModal = ({ isOpen, onClose, editingData, categoryPagination }) 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2 relative">
               <label className="text-xs font-bold text-gray-500 uppercase">Category Name</label>
-              <input
-                ref={categoryRef}
-                name="categoryName"
-                autoComplete="off"
-                value={formData.categoryName}
-                onChange={handleChange}
-                onFocus={() => setActiveDropdown('category')}
-                onClick={(e) => { e.stopPropagation(); setActiveDropdown('category'); }}
-                onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
-                placeholder="Ex: Gaushala"
-              />
+              <div className="relative">
+                <input
+                  ref={categoryRef}
+                  name="categoryName"
+                  autoComplete="off"
+                  value={formData.categoryName}
+                  onChange={handleChange}
+                  onFocus={() => setActiveDropdown('category')}
+                  onClick={(e) => { e.stopPropagation(); setActiveDropdown('category'); }}
+                  onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
+                  className={`w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition ${isGujarati ? 'ring-1 ring-orange-200' : ''}`}
+                  placeholder="Ex: Gaushala"
+                />
+                {isGujarati && <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-orange-400 pointer-events-none">ગુજ</span>}
+              </div>
               {renderDropdown('categoryName', categories)}
             </div>
             <div className="space-y-2">
@@ -198,15 +229,18 @@ const AddCategoryModal = ({ isOpen, onClose, editingData, categoryPagination }) 
             </div>
             <div className="sm:col-span-2 space-y-2">
               <label className="text-xs font-bold text-gray-500 uppercase">Description</label>
-              <textarea
-                ref={descriptionRef}
-                name="categoryDescription"
-                value={formData.categoryDescription}
-                onChange={handleChange}
-                onKeyDown={(e) => handleKeyDown(e, submitRef)}
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none h-24"
-                placeholder="About this category..."
-              />
+              <div className="relative">
+                <textarea
+                  ref={descriptionRef}
+                  name="categoryDescription"
+                  value={formData.categoryDescription}
+                  onChange={handleChange}
+                  onKeyDown={(e) => handleKeyDown(e, submitRef)}
+                  className={`w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition resize-none h-24 ${isGujarati ? 'ring-1 ring-orange-200' : ''}`}
+                  placeholder="About this category..."
+                />
+                {isGujarati && <span className="absolute right-2 top-2 text-[9px] font-bold text-orange-400 pointer-events-none">ગુજ</span>}
+              </div>
             </div>
           </div>
         </div>

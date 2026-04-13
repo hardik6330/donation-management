@@ -202,6 +202,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
             onKeyDown={(e) => handleKeyDown(e, stateRef)}
             inputRef={cityRef}
             icon={Landmark}
+            allowTransliteration={false}
           />
         </div>
 
@@ -215,6 +216,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
             onKeyDown={(e) => handleKeyDown(e, countryRef)}
             inputRef={stateRef}
             icon={MapPin}
+            allowTransliteration={false}
           />
           <FormInput
             label="Country"
@@ -225,6 +227,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
             onKeyDown={(e) => handleKeyDown(e, addressRef)}
             inputRef={countryRef}
             icon={Globe}
+            allowTransliteration={false}
           />
         </div>
 

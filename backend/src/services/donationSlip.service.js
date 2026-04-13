@@ -1,11 +1,17 @@
 import PDFDocument from 'pdfkit';
 import cloudinary from '../config/cloudinary.js';
 import fs from 'fs';
+import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const FONTS = {
+  REGULAR: path.resolve(__dirname, '../assets/fonts/NotoSansGujarati-Regular.ttf'),
+  BOLD: path.resolve(__dirname, '../assets/fonts/NotoSansGujarati-Bold.ttf'),
+};
 
 const SLIP_TEMPLATE_CANDIDATES = [
   // Primary expected location
@@ -17,26 +23,31 @@ const SLIP_TEMPLATE_CANDIDATES = [
   path.resolve(__dirname, '../../../src/assets/slip.jpg')
 ];
 
-const numberToWords = (num) => {
-  const ones = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten',
-    'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
-  const tens = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const numberToGujaratiWords = (num) => {
+  if (!Number.isFinite(num) || num <= 0) return 'શૂન્ય';
 
-  const belowThousand = (n) => {
-    let out = '';
-    if (n >= 100) {
-      out += `${ones[Math.floor(n / 100)]} hundred `;
-      n %= 100;
-    }
-    if (n >= 20) {
-      out += `${tens[Math.floor(n / 10)]} `;
-      n %= 10;
-    }
-    if (n > 0) out += ones[n];
-    return out.trim();
+  // Gujarati words for 1-99 (Indian numbering has unique words for many numbers)
+  const ones = [
+    '', 'એક', 'બે', 'ત્રણ', 'ચાર', 'પાંચ', 'છ', 'સાત', 'આઠ', 'નવ', 'દસ',
+    'અગિયાર', 'બાર', 'તેર', 'ચૌદ', 'પંદર', 'સોળ', 'સત્તર', 'અઢાર', 'ઓગણીસ', 'વીસ',
+    'એકવીસ', 'બાવીસ', 'તેવીસ', 'ચોવીસ', 'પચ્ચીસ', 'છવ્વીસ', 'સત્તાવીસ', 'અઠ્ઠાવીસ', 'ઓગણત્રીસ', 'ત્રીસ',
+    'એકત્રીસ', 'બત્રીસ', 'તેત્રીસ', 'ચોત્રીસ', 'પાંત્રીસ', 'છત્રીસ', 'સાડત્રીસ', 'આડત્રીસ', 'ઓગણચાલીસ', 'ચાલીસ',
+    'એકતાલીસ', 'બેતાલીસ', 'તેતાલીસ', 'ચુંમાલીસ', 'પિસ્તાલીસ', 'છેતાલીસ', 'સુડતાલીસ', 'અડતાલીસ', 'ઓગણપચાસ', 'પચાસ',
+    'એકાવન', 'બાવન', 'ત્રેપન', 'ચોપન', 'પંચાવન', 'છપ્પન', 'સત્તાવન', 'અઠ્ઠાવન', 'ઓગણસાઠ', 'સાઠ',
+    'એકસઠ', 'બાસઠ', 'ત્રેસઠ', 'ચોસઠ', 'પાંસઠ', 'છાસઠ', 'સડસઠ', 'અડસઠ', 'ઓગણસિત્તેર', 'સિત્તેર',
+    'એકોતેર', 'બોતેર', 'તોતેર', 'ચુમોતેર', 'પંચોતેર', 'છોતેર', 'સિત્યોતેર', 'ઇઠ્યોતેર', 'ઓગણાએંસી', 'એંસી',
+    'એક્યાસી', 'બ્યાસી', 'ત્યાસી', 'ચોર્યાસી', 'પંચ્યાસી', 'છ્યાસી', 'સત્યાસી', 'ઈઠ્યાસી', 'નેવ્યાસી', 'નેવું',
+    'એકાણું', 'બાણું', 'ત્રાણું', 'ચોરાણું', 'પંચાણું', 'છન્નું', 'સત્તાણું', 'અઠ્ઠાણું', 'નવ્વાણું'
+  ];
+
+  const belowHundred = (n) => {
+    if (n < 100) return ones[n];
+    const h = Math.floor(n / 100);
+    const r = n % 100;
+    let out = ones[h] + 'સો';
+    if (r > 0) out += ' ' + ones[r];
+    return out;
   };
-
-  if (!Number.isFinite(num) || num <= 0) return 'zero';
 
   const crore = Math.floor(num / 10000000);
   const lakh = Math.floor((num % 10000000) / 100000);
@@ -44,10 +55,10 @@ const numberToWords = (num) => {
   const rest = num % 1000;
 
   const parts = [];
-  if (crore) parts.push(`${belowThousand(crore)} crore`);
-  if (lakh) parts.push(`${belowThousand(lakh)} lakh`);
-  if (thousand) parts.push(`${belowThousand(thousand)} thousand`);
-  if (rest) parts.push(belowThousand(rest));
+  if (crore) parts.push(`${belowHundred(crore)} કરોડ`);
+  if (lakh) parts.push(`${belowHundred(lakh)} લાખ`);
+  if (thousand) parts.push(`${belowHundred(thousand)} હજાર`);
+  if (rest) parts.push(belowHundred(rest));
 
   return parts.join(' ').trim();
 };
@@ -58,6 +69,11 @@ const numberToWords = (num) => {
 export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null, locationAddress = null) => {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 0 });
+
+    // Register Gujarati Unicode fonts
+    if (existsSync(FONTS.REGULAR)) doc.registerFont('Gujarati-Regular', FONTS.REGULAR);
+    if (existsSync(FONTS.BOLD)) doc.registerFont('Gujarati-Bold', FONTS.BOLD);
+
     const chunks = [];
 
     doc.on('data', (chunk) => chunks.push(chunk));
@@ -67,16 +83,16 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     const W = doc.page.width;   // 595
     const H = doc.page.height;  // 842
 
-    const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => fs.existsSync(candidate));
+    const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
     if (slipTemplatePath) {
-      const donorName = (user?.name || '-').toUpperCase();
+      const donorName = user?.name || '-';
       // Use provided locationAddress if available, otherwise fallback to user details
-      const donorAddress = (locationAddress || [user?.address, user?.village, user?.district].filter(Boolean).join(', ') || '-').toUpperCase();
+      const donorAddress = [user?.village, user?.district].filter(Boolean).join(', ') || locationAddress || '-';
       const paymentModeLabel = (paymentMode || 'online').replace('_', ' ').toUpperCase();
       const receiptDate = (paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')).toUpperCase();
       const amountValue = Number(amount || 0);
       const amountText = amountValue.toLocaleString('en-IN');
-      const amountInWords = `${numberToWords(Math.floor(amountValue))} rupees only`.toUpperCase();
+      const amountInWords = `${numberToGujaratiWords(Math.floor(amountValue))} રૂપિયા માત્ર`;
       const receiptNo = (donationId?.toString().slice(-8) || '-').toUpperCase();
 
       // Render template without distortion (keep aspect ratio) and then place text
@@ -98,6 +114,8 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       const isCheque = normalizedMode === 'cheque' || normalizedMode === 'check';
       const isOnline = normalizedMode === 'online' || normalizedMode === 'upi';
 
+      const hasGujaratiFont = existsSync(FONTS.REGULAR);
+
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.015))
         .text(receiptNo, px(0.12), py(0.305), { width: drawW * 0.18, align: 'center' });
 
@@ -105,13 +123,13 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
         .text(receiptDate, px(0.242), py(0.410), { width: drawW * 0.18, align: 'left', lineBreak: false });
 
-      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.017))
+      doc.fillColor('#1f2937').font(hasGujaratiFont ? 'Gujarati-Bold' : 'Helvetica-Bold').fontSize(fs(0.017))
         .text(donorName, px(0.255), py(0.455), { width: drawW * 0.24, lineBreak: false });
 
-      doc.fillColor('#1f2937').font('Helvetica').fontSize(fs(0.014))
+      doc.fillColor('#1f2937').font(hasGujaratiFont ? 'Gujarati-Regular' : 'Helvetica').fontSize(fs(0.014))
         .text(donorAddress, px(0.265), py(0.510), { width: drawW * 0.50, lineBreak: false });
 
-      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.013))
+      doc.fillColor('#1f2937').font(hasGujaratiFont ? 'Gujarati-Bold' : 'Helvetica-Bold').fontSize(fs(0.013))
         .text(amountInWords, px(0.395), py(0.570), {
           width: drawW * 0.46,
           height: drawW * 0.06,
@@ -240,11 +258,37 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     // DONOR INFO
     // ═══════════════════════════════════
     drawSection('DONOR INFORMATION');
-    drawRow('Full Name', user.name, 'Mobile', user.mobileNumber);
+    const rowFont = hasGujaratiFont ? 'Gujarati-Regular' : 'Helvetica';
+    const rowFontBold = hasGujaratiFont ? 'Gujarati-Bold' : 'Helvetica-Bold';
+
+    const drawRowGuj = (label1, value1, label2, value2) => {
+      doc.fontSize(7.5).fillColor('#9ca3af').font('Helvetica-Bold')
+        .text(label1.toUpperCase(), M + 14, y);
+      doc.fontSize(10.5).fillColor('#1e293b').font(rowFont)
+        .text(value1 || '-', M + 14, y + 12, { width: colW - 14 });
+
+      if (label2) {
+        doc.fontSize(7.5).fillColor('#9ca3af').font('Helvetica-Bold')
+          .text(label2.toUpperCase(), col2X, y);
+        doc.fontSize(10.5).fillColor('#1e293b').font(rowFont)
+          .text(value2 || '-', col2X, y + 12, { width: colW });
+      }
+      y += 32;
+    };
+
+    const drawFullRowGuj = (label, value) => {
+      doc.fontSize(7.5).fillColor('#9ca3af').font('Helvetica-Bold')
+        .text(label.toUpperCase(), M + 14, y);
+      doc.fontSize(10.5).fillColor('#1e293b').font(rowFont)
+        .text(value || '-', M + 14, y + 12, { width: CW - 28 });
+      y += 32;
+    };
+
+    drawRowGuj('Full Name', user.name, 'Mobile', user.mobileNumber);
     drawLine();
-    drawRow('Email', user.email, 'Company', user.companyName);
+    drawRowGuj('Email', user.email, 'Company', user.companyName);
     drawLine();
-    drawFullRow('Address', locationAddress || [user.address, user.village, user.district].filter(Boolean).join(', '));
+    drawFullRowGuj('Address', locationAddress || [user.address, user.village, user.district].filter(Boolean).join(', '));
 
     y += 8;
 
@@ -252,14 +296,14 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     // DONATION INFO
     // ═══════════════════════════════════
     drawSection('DONATION INFORMATION');
-    drawFullRow('Purpose / Cause', cause);
+    drawFullRowGuj('Purpose / Cause', cause);
     drawLine();
-    drawRow(
+    drawRowGuj(
       'Payment Mode', (paymentMode || 'online').replace('_', ' ').toUpperCase(),
       'Payment Date', paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'
     );
     drawLine();
-    drawRow('Receipt ID', donationId, 'Status', 'Completed');
+    drawRowGuj('Receipt ID', donationId, 'Status', 'Completed');
 
     y += 12;
 
@@ -268,13 +312,13 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     // ═══════════════════════════════════
     if (gaushala) {
       drawSection('GAUSHALA DETAILS');
-      drawRow('Gaushala Name', gaushala.name, 'Location', gaushala.location?.name);
+      drawRowGuj('Gaushala Name', gaushala.name, 'Location', gaushala.location?.name);
       y += 8;
     } else if (katha) {
       drawSection('KATHA DETAILS');
-      drawRow('Katha Name', katha.name, 'Duration', `${katha.startDate || '-'} to ${katha.endDate || '-'}`);
+      drawRowGuj('Katha Name', katha.name, 'Duration', `${katha.startDate || '-'} to ${katha.endDate || '-'}`);
       drawLine();
-      drawFullRow('Description', katha.description);
+      drawFullRowGuj('Description', katha.description);
       y += 8;
     }
 

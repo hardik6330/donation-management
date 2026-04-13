@@ -16,6 +16,12 @@ export const useDropdownPagination = (triggerQuery, options = {}) => {
   const [search, setSearch] = useState('');
   const [hasMore, setHasMore] = useState(false);
   const [loading, setLoading] = useState(false);
+  const searchRef = useRef(search);
+
+  // Update searchRef whenever search changes
+  useEffect(() => {
+    searchRef.current = search;
+  }, [search]);
 
   // Use a ref to store additionalParams to avoid unnecessary re-renders
   const paramsRef = useRef(additionalParams);
@@ -35,6 +41,11 @@ export const useDropdownPagination = (triggerQuery, options = {}) => {
         ...paramsRef.current
       }).unwrap();
 
+      // Race condition check: only update if this response matches the current search
+      if (currentSearch !== searchRef.current && !append) {
+        return;
+      }
+
       const responseData = result?.[dataKey] || {};
       const newItems = responseData?.[rowsKey] || [];
       const totalPages = responseData?.totalPages || 1;
@@ -51,7 +62,7 @@ export const useDropdownPagination = (triggerQuery, options = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [triggerQuery, limit, fields, dataKey, rowsKey, skip]);
+  }, [triggerQuery, limit, fields, dataKey, rowsKey, skip, searchKey]);
 
   // Handle search and parameter changes
   useEffect(() => {

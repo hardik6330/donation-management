@@ -329,6 +329,7 @@ const AddBapuScheduleModal = ({
             required
             inputRef={eventTypeRef}
             icon={Tag}
+            allowTransliteration={false}
           />
 
           <SearchableDropdown
@@ -349,6 +350,7 @@ const AddBapuScheduleModal = ({
             onLoadMore={cityPagination.handleLoadMore}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
+            allowTransliteration={false}
           />
 
           <SearchableDropdown
@@ -369,6 +371,7 @@ const AddBapuScheduleModal = ({
             onLoadMore={talukaPagination.handleLoadMore}
             hasMore={talukaPagination.hasMore}
             loading={talukaPagination.loading}
+            allowTransliteration={false}
           />
 
           <SearchableDropdown
@@ -389,6 +392,7 @@ const AddBapuScheduleModal = ({
             onLoadMore={villagePagination.handleLoadMore}
             hasMore={villagePagination.hasMore}
             loading={villagePagination.loading}
+            allowTransliteration={false}
           />
 
           <FormInput

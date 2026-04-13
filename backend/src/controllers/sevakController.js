@@ -11,7 +11,7 @@ export const addSevak = asyncHandler(async (req, res) => {
   const sevak = await Sevak.create({
     name,
     mobileNumber,
-    email,
+    email: email === '' ? null : email,
     address,
     city,
     state,
@@ -80,6 +80,10 @@ export const updateSevak = asyncHandler(async (req, res) => {
     const error = new Error('Sevak not found');
     error.statusCode = 404;
     throw error;
+  }
+
+  if (updateData.email === '') {
+    updateData.email = null;
   }
 
   await sevak.update(updateData);

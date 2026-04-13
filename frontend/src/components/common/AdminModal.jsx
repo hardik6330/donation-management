@@ -1,7 +1,17 @@
 import React from 'react';
-import { X } from 'lucide-react';
+import { X, Languages } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
-const AdminModal = ({ isOpen, onClose, title, icon, children, maxWidth = "max-w-2xl" }) => {
+const AdminModal = ({ 
+  isOpen, 
+  onClose, 
+  title, 
+  icon, 
+  children, 
+  maxWidth = "max-w-2xl",
+  showLanguageToggle = true 
+}) => {
+  const { isGujarati, toggleLanguage } = useLanguage();
   if (!isOpen) return null;
 
   return (
@@ -26,12 +36,29 @@ const AdminModal = ({ isOpen, onClose, title, icon, children, maxWidth = "max-w-
               title
             )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400 hover:text-gray-600"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          
+          <div className="flex items-center gap-2 mr-2">
+            {showLanguageToggle && (
+              <button
+                onClick={toggleLanguage}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  isGujarati
+                    ? 'bg-orange-100 text-orange-700 ring-1 ring-orange-300 shadow-sm shadow-orange-100'
+                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100 border border-gray-100'
+                }`}
+                title={isGujarati ? "Switch to English" : "Switch to Gujarati"}
+              >
+                <Languages className="w-3.5 h-3.5" />
+                {isGujarati ? 'ગુજ' : 'EN'}
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-2 hover:bg-gray-100 rounded-xl transition text-gray-400 hover:text-gray-600"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
         <div className="p-4 sm:p-6 lg:p-8 overflow-y-auto max-h-[85vh] sm:max-h-[80vh]">
           {children}

@@ -251,6 +251,7 @@ const AddExpenseModal = ({
             required
             inputRef={categoryRef}
             icon={Tag}
+            allowTransliteration={false}
           />
           <SearchableDropdown
             label="Gaushala"
@@ -273,6 +274,7 @@ const AddExpenseModal = ({
             onLoadMore={gaushalaPagination.handleLoadMore}
             hasMore={gaushalaPagination.hasMore}
             loading={gaushalaPagination.loading}
+            allowTransliteration={false}
           />
         </div>
 
@@ -298,6 +300,7 @@ const AddExpenseModal = ({
             onLoadMore={kathaPagination.handleLoadMore}
             hasMore={kathaPagination.hasMore}
             loading={kathaPagination.loading}
+            allowTransliteration={false}
           />
           <SearchableDropdown
             label="Payment Mode"
@@ -316,24 +319,23 @@ const AddExpenseModal = ({
             required
             inputRef={paymentModeRef}
             icon={CreditCard}
+            allowTransliteration={false}
           />
         </div>
 
-        <div className="space-y-1.5">
-          <label className="text-[10px] font-bold text-gray-500 uppercase ml-1 flex items-center gap-2">
-            <AlignLeft className="w-3 h-3 text-gray-400" />
-            Description
-          </label>
-          <textarea
-            ref={descriptionRef}
+        <div className="space-y-2">
+          <FormInput
+            label="Description"
             name="description"
+            placeholder="Enter expense details..."
+            type="textarea"
             value={form.description}
             onChange={handleChange}
             onKeyDown={(e) => handleKeyDown(e, submitRef)}
-            placeholder="Enter expense details..."
-            rows="3"
-            className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200 text-gray-700 resize-none"
-          ></textarea>
+            inputRef={descriptionRef}
+            icon={AlignLeft}
+            allowTransliteration={true}
+          />
         </div>
 
         <div className="pt-4 flex items-center gap-3">

@@ -13,7 +13,7 @@ export const expenseSchema = Joi.object({
     'any.required': 'Category is required'
   }),
   description: Joi.string().optional().allow(''),
-  gaushalaId: Joi.string().uuid().optional().allow(null),
-  kathaId: Joi.string().uuid().optional().allow(null),
+  gaushalaId: Joi.string().uuid().optional().allow(null, ''),
+  kathaId: Joi.string().uuid().optional().allow(null, ''),
   paymentMode: Joi.string().valid('cash', 'online', 'check').optional()
 });

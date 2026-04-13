@@ -6,6 +6,7 @@ import {
 import { toast } from 'react-toastify';
 import { MapPin, Plus, Loader2, CheckCircle2, Edit } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
+import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 
 const AddLocationModal = ({ 
   isOpen, 
@@ -52,14 +53,6 @@ const AddLocationModal = ({
   const talukas = talukaPagination.items;
   const villages = villagePagination.items;
 
-  // Handle scroll for each dropdown
-  const handleScroll = (e, pagination) => {
-    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
-    if (scrollHeight - scrollTop <= clientHeight + 10 && !pagination.loading && pagination.hasMore) {
-      pagination.handleLoadMore();
-    }
-  };
-
   // Close dropdowns on click outside
   useEffect(() => {
     const handleClickOutside = () => setActiveDropdown(null);
@@ -78,10 +71,11 @@ const AddLocationModal = ({
     if (e.key === 'Enter') {
       e.preventDefault();
       if (nextRef?.current) nextRef.current.focus();
+      return;
     }
   };
 
-  const handleSelectOption = (name, value, id = '') => {
+  const handleSelectOption = (name, id, value) => {
     if (name === 'city') {
       setFormData(prev => ({
         ...prev,
@@ -113,29 +107,27 @@ const AddLocationModal = ({
     const { name, value } = e.target;
 
     if (name === 'city') {
-      const selectedCity = cities.find(c => c.name === value);
       setFormData(prev => ({
         ...prev,
         city: value,
-        cityId: selectedCity ? selectedCity.id : '',
+        cityId: '',
         taluka: '',
         talukaId: '',
         village: ''
       }));
-      setModalState(prev => ({ ...prev, cityId: selectedCity ? selectedCity.id : '', talukaId: '' }));
+      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
       cityPagination.handleSearch(value);
       return;
     }
 
     if (name === 'taluka') {
-      const selectedTaluka = talukas.find(t => t.name === value);
       setFormData(prev => ({
         ...prev,
         taluka: value,
-        talukaId: selectedTaluka ? selectedTaluka.id : '',
+        talukaId: '',
         village: ''
       }));
-      setModalState(prev => ({ ...prev, talukaId: selectedTaluka ? selectedTaluka.id : '' }));
+      setModalState(prev => ({ ...prev, talukaId: '' }));
       talukaPagination.handleSearch(value);
       return;
     }
@@ -143,7 +135,6 @@ const AddLocationModal = ({
     if (name === 'village') {
       setFormData(prev => ({ ...prev, village: value }));
       villagePagination.handleSearch(value);
-      setActiveDropdown('village');
       return;
     }
 
@@ -178,39 +169,6 @@ const AddLocationModal = ({
 
   if (!isOpen) return null;
 
-  const renderDropdown = (name, pagination, valueField = 'name', idField = 'id') => {
-    const items = pagination.items;
-    const filteredItems = items.filter(item =>
-      item[valueField].toLowerCase().includes((formData[name] || '').toLowerCase())
-    );
-
-    if (activeDropdown !== name || (filteredItems.length === 0 && !pagination.loading) || editingData) return null;
-
-    return (
-      <div
-        className="absolute z-[110] w-full mt-1 bg-white border border-gray-100 rounded-xl shadow-xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
-        onClick={(e) => e.stopPropagation()}
-        onScroll={(e) => handleScroll(e, pagination)}
-      >
-        {filteredItems.map((item) => (
-          <button
-            key={item[idField] || item[valueField]}
-            type="button"
-            onClick={() => handleSelectOption(name, item[valueField], item[idField])}
-            className="w-full text-left px-4 py-2.5 hover:bg-blue-50 text-sm font-medium text-gray-700 transition-colors border-b border-gray-50 last:border-0"
-          >
-            {item[valueField]}
-          </button>
-        ))}
-        {pagination.loading && (
-          <div className="flex justify-center p-2">
-            <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-          </div>
-        )}
-      </div>
-    );
-  };
-
   return (
     <AdminModal
       isOpen={isOpen}
@@ -218,63 +176,74 @@ const AddLocationModal = ({
       title={editingData ? "Edit Location" : "Add Location"}
       icon={editingData ? <Edit /> : <MapPin />}
       maxWidth="max-w-2xl"
+      showLanguageToggle={false}
     >
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-4">
           <div className={`grid grid-cols-1 ${editingData ? 'sm:grid-cols-1' : 'sm:grid-cols-3'} gap-4`}>
-            <div className="space-y-2 relative">
-              <label className="text-xs font-bold text-gray-500 uppercase">City / Location Name</label>
-              <input
-                ref={cityRef}
-                name="city"
-                autoComplete="off"
-                value={formData.city}
-                onChange={handleChange}
-                onFocus={() => setActiveDropdown('city')}
-                onClick={(e) => { e.stopPropagation(); setActiveDropdown('city'); }}
-                onKeyDown={(e) => handleKeyDown(e, editingData ? submitRef : talukaRef)}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition"
-                placeholder="Ex: Bhavnagar"
-              />
-              {renderDropdown('city', cityPagination)}
-            </div>
+            <SearchableDropdown
+              label="City / Location Name"
+              name="city"
+              placeholder="Ex: Bhavnagar"
+              value={formData.city}
+              items={cities}
+              onChange={handleChange}
+              onSelect={(id, value) => handleSelectOption('city', id, value)}
+              onKeyDown={(e) => handleKeyDown(e, editingData ? submitRef : talukaRef)}
+              isActive={activeDropdown === 'city'}
+              setActive={setActiveDropdown}
+              inputRef={cityRef}
+              required
+              icon={MapPin}
+              isServerSearch={true}
+              onLoadMore={cityPagination.handleLoadMore}
+              hasMore={cityPagination.hasMore}
+              loading={cityPagination.loading}
+              allowTransliteration={false}
+            />
             
             {!editingData && (
               <>
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Taluka</label>
-                  <input
-                    ref={talukaRef}
-                    name="taluka"
-                    autoComplete="off"
-                    value={formData.taluka}
-                    onChange={handleChange}
-                    onFocus={() => setActiveDropdown('taluka')}
-                    onClick={(e) => { e.stopPropagation(); setActiveDropdown('taluka'); }}
-                    onKeyDown={(e) => handleKeyDown(e, villageRef)}
-                    disabled={!formData.city}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
-                    placeholder="Ex: Ghogha"
-                  />
-                  {renderDropdown('taluka', talukaPagination)}
-                </div>
-                <div className="space-y-2 relative">
-                  <label className="text-xs font-bold text-gray-500 uppercase">Village</label>
-                  <input
-                    ref={villageRef}
-                    name="village"
-                    autoComplete="off"
-                    value={formData.village}
-                    onChange={handleChange}
-                    onFocus={() => setActiveDropdown('village')}
-                    onClick={(e) => { e.stopPropagation(); setActiveDropdown('village'); }}
-                    onKeyDown={(e) => handleKeyDown(e, submitRef)}
-                    disabled={!formData.taluka}
-                    className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition disabled:opacity-50"
-                    placeholder="Ex: Rampar"
-                  />
-                  {renderDropdown('village', villagePagination)}
-                </div>
+                <SearchableDropdown
+                  label="Taluka"
+                  name="taluka"
+                  placeholder="Ex: Ghogha"
+                  value={formData.taluka}
+                  items={talukas}
+                  onChange={handleChange}
+                  onSelect={(id, value) => handleSelectOption('taluka', id, value)}
+                  onKeyDown={(e) => handleKeyDown(e, villageRef)}
+                  isActive={activeDropdown === 'taluka'}
+                  setActive={setActiveDropdown}
+                  disabled={!formData.city}
+                  inputRef={talukaRef}
+                  icon={MapPin}
+                  isServerSearch={true}
+                  onLoadMore={talukaPagination.handleLoadMore}
+                  hasMore={talukaPagination.hasMore}
+                  loading={talukaPagination.loading}
+                  allowTransliteration={false}
+                />
+                <SearchableDropdown
+                  label="Village"
+                  name="village"
+                  placeholder="Ex: Rampar"
+                  value={formData.village}
+                  items={villages}
+                  onChange={handleChange}
+                  onSelect={(id, value) => handleSelectOption('village', id, value)}
+                  onKeyDown={(e) => handleKeyDown(e, submitRef)}
+                  isActive={activeDropdown === 'village'}
+                  setActive={setActiveDropdown}
+                  disabled={!formData.taluka}
+                  inputRef={villageRef}
+                  icon={MapPin}
+                  isServerSearch={true}
+                  onLoadMore={villagePagination.handleLoadMore}
+                  hasMore={villagePagination.hasMore}
+                  loading={villagePagination.loading}
+                  allowTransliteration={false}
+                />
               </>
             )}
           </div>

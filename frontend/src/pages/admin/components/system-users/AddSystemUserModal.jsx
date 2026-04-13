@@ -155,6 +155,7 @@ const AddSystemUserModal = ({ isOpen, onClose, editingUser = null }) => {
           setActive={setActiveDropdown}
           inputRef={roleRef}
           icon={Shield}
+          allowTransliteration={false}
         />
 
         <div className="pt-4 flex items-center gap-3">

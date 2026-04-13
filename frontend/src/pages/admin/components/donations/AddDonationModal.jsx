@@ -533,6 +533,7 @@ const AddDonationModal = ({
                   required
                   inputRef={cityRef}
                   icon={MapPin}
+                  allowTransliteration={false}
                 />
                 <SearchableDropdown
                   label="Taluka"
@@ -548,6 +549,7 @@ const AddDonationModal = ({
                   disabled={!addDropdownLabels.cityName}
                   inputRef={talukaRef}
                   icon={MapPin}
+                  allowTransliteration={false}
                 />
               </div>
 
@@ -566,6 +568,7 @@ const AddDonationModal = ({
                   disabled={!addDropdownLabels.talukaName}
                   inputRef={villageRef_add}
                   icon={MapPin}
+                  allowTransliteration={false}
                 />
                 <SearchableDropdown
                   label="Category"
@@ -661,6 +664,7 @@ const AddDonationModal = ({
                   inputRef={paymentModeRef}
                   required
                   icon={CreditCard}
+                  allowTransliteration={false}
                 />
               </div>
 

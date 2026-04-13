@@ -78,17 +78,20 @@ const AddKartalDhunModal = ({
     if (name === 'cityName') {
       setForm(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', talukaName: '', villageId: '', villageName: '' }));
       setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
+      cityPagination.handleSearch(value);
       setActiveDropdown('cityName');
       return;
     }
     if (name === 'talukaName') {
       setForm(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '', villageName: '' }));
       setModalState(prev => ({ ...prev, talukaId: '' }));
+      talukaPagination.handleSearch(value);
       setActiveDropdown('talukaName');
       return;
     }
     if (name === 'villageName') {
       setForm(prev => ({ ...prev, villageName: value, villageId: '' }));
+      villagePagination.handleSearch(value);
       setActiveDropdown('villageName');
       return;
     }
@@ -178,6 +181,7 @@ const AddKartalDhunModal = ({
             onLoadMore={cityPagination.handleLoadMore}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
+            allowTransliteration={false}
           />
           <SearchableDropdown
             label="Taluka"
@@ -197,6 +201,7 @@ const AddKartalDhunModal = ({
             onLoadMore={talukaPagination.handleLoadMore}
             hasMore={talukaPagination.hasMore}
             loading={talukaPagination.loading}
+            allowTransliteration={false}
           />
           <SearchableDropdown
             label="Village"
@@ -216,6 +221,7 @@ const AddKartalDhunModal = ({
             onLoadMore={villagePagination.handleLoadMore}
             hasMore={villagePagination.hasMore}
             loading={villagePagination.loading}
+            allowTransliteration={false}
           />
         </div>
 

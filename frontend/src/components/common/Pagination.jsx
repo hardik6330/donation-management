@@ -54,6 +54,7 @@ const Pagination = ({
                 }
                 setActiveDropdown(name);
               }}
+              allowTransliteration={false}
             />
           </div>
         </div>

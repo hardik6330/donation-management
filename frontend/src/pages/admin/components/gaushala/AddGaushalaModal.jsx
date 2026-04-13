@@ -132,14 +132,17 @@ const AddGaushalaModal = ({
     if (name === 'cityName') {
       setFormData(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', villageId: '' }));
       setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
+      cityPagination.handleSearch(value);
       setActiveDropdown('cityName');
       validateField(name, value);
     } else if (name === 'talukaName') {
       setFormData(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '' }));
       setModalState(prev => ({ ...prev, talukaId: '' }));
+      talukaPagination.handleSearch(value);
       setActiveDropdown('talukaName');
     } else if (name === 'villageName') {
       setFormData(prev => ({ ...prev, villageName: value, villageId: '' }));
+      villagePagination.handleSearch(value);
       setActiveDropdown('villageName');
     } else {
       setFormData(prev => ({
@@ -226,6 +229,7 @@ const AddGaushalaModal = ({
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
             error={errors.cityName}
+            allowTransliteration={false}
           />
 
           <SearchableDropdown
@@ -246,6 +250,7 @@ const AddGaushalaModal = ({
             onLoadMore={talukaPagination.handleLoadMore}
             hasMore={talukaPagination.hasMore}
             loading={talukaPagination.loading}
+            allowTransliteration={false}
           />
 
           <SearchableDropdown
@@ -266,6 +271,7 @@ const AddGaushalaModal = ({
             onLoadMore={villagePagination.handleLoadMore}
             hasMore={villagePagination.hasMore}
             loading={villagePagination.loading}
+            allowTransliteration={false}
           />
 
           <div className="space-y-1.5">

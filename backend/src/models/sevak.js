@@ -26,7 +26,9 @@ export const Sevak = sequelize.define('Sevak', {
     type: DataTypes.STRING,
     allowNull: true,
     validate: {
-      isEmail: true,
+      isEmail: {
+        msg: 'Please enter a valid email address'
+      }
     },
   },
   address: {

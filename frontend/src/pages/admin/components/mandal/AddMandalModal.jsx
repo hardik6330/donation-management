@@ -118,8 +118,9 @@ const AddMandalModal = ({ isOpen, onClose, editingMandal = null }) => {
             placeholder="Select Type"
             value={form.mandalTypeName}
             items={[
-              { id: 'Monthly', name: 'Monthly' },
-              { id: 'Yearly', name: 'Yearly' }
+              { id: 'monthly', name: 'Monthly' },
+              { id: 'yearly', name: 'Yearly' },
+              { id: 'onetime', name: 'One Time' }
             ]}
             onChange={handleChange}
             onSelect={(id, name) => {
@@ -131,6 +132,7 @@ const AddMandalModal = ({ isOpen, onClose, editingMandal = null }) => {
             setActive={setActiveDropdown}
             inputRef={typeRef}
             icon={Layers}
+            allowTransliteration={false}
           />
         </div>
         <div className="pt-4 flex items-center gap-3">

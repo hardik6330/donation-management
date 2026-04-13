@@ -82,19 +82,27 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     });
     
     if (location) {
-      // Build location path: "Village, Taluka, City"
-      const parts = [location.name];
+      // Build location path: "Village, Taluka, City" in Gujarati
+      const parts = [location.nameGuj || location.name];
       let current = location.parent;
       while (current) {
-        parts.push(current.name);
+        parts.push(current.nameGuj || current.name);
         current = current.parent;
       }
       locationName = parts.join(', ');
     }
   }
 
-  // Example Cause: "Bhagvat Katha (Surat) - Education Donation for Village, Taluka, City"
-  causeString = `${kathaName ? `${kathaName} - ` : ''}${categoryName}${locationName ? ` for ${locationName}` : ''}`;
+  // Example Cause: "મોરારી બાપુ કથા જે ડુંગરા, કામરેજ, સુરત માં છે તેના માટે"
+  if (kathaName && locationName) {
+    causeString = `${kathaName} જે ${locationName} માં છે તેના માટે`;
+  } else if (kathaName) {
+    causeString = `${kathaName} માટે`;
+  } else if (categoryName && locationName) {
+    causeString = `${categoryName} જે ${locationName} માં છે તેના માટે`;
+  } else {
+    causeString = `${categoryName} માટે`;
+  }
 
   // 2. Check user (create or update if exists)
   let user = await User.findOne({ where: { mobileNumber } });
@@ -177,39 +185,30 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   // Only for fully paid donations at creation time.
   if (isDirectPay) {
     try {
-      const [gaushala, katha, locData] = await Promise.all([
+      const [gaushala, katha] = await Promise.all([
         gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
         kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
-        targetLocationId ? Location.findByPk(targetLocationId, {
-          include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
-        }) : Promise.resolve(null)
       ]);
 
-      // Format address from location hierarchy: "Village, Taluka, City"
       let locationAddress = '';
-      if (locData) {
+      if (targetLocationId) {
         const parts = [];
-        if (locData.type === 'village') {
-          parts.push(locData.name);
-          if (locData.parent) parts.push(locData.parent.name);
-          if (locData.parent?.parent) parts.push(locData.parent.parent.name);
-        } else if (locData.type === 'taluka') {
-          parts.push(locData.name);
-          if (locData.parent) parts.push(locData.parent.name);
-        } else {
-          parts.push(locData.name);
+        let loc = await Location.findByPk(targetLocationId);
+        while (loc) {
+          parts.push(loc.name);
+          loc = loc.parentId ? await Location.findByPk(loc.parentId) : null;
         }
         locationAddress = parts.join(', ');
       }
 
       const pdfBuffer = await generateDonationSlipBuffer(
-        user, 
-        amount, 
-        causeString, 
-        donation.id, 
-        paymentMode, 
-        donation.paymentDate, 
-        gaushala, 
+        user,
+        amount,
+        causeString,
+        donation.id,
+        paymentMode,
+        donation.paymentDate,
+        gaushala,
         katha,
         locationAddress
       );
@@ -264,14 +263,14 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             let city = '', taluka = '', village = '';
             if (locData) {
               if (locData.type === 'village') {
-                village = locData.name;
-                taluka = locData.parent?.name || '';
-                city = locData.parent?.parent?.name || '';
+                village = locData.nameGuj || locData.name;
+                taluka = locData.parent?.nameGuj || locData.parent?.name || '';
+                city = locData.parent?.parent?.nameGuj || locData.parent?.parent?.name || '';
               } else if (locData.type === 'taluka') {
-                taluka = locData.name;
-                city = locData.parent?.name || '';
+                taluka = locData.nameGuj || locData.name;
+                city = locData.parent?.nameGuj || locData.parent?.name || '';
               } else {
-                city = locData.name;
+                city = locData.nameGuj || locData.name;
               }
             }
 
@@ -542,11 +541,32 @@ export const updateDonation = asyncHandler(async (req, res) => {
       console.log(`[Donation ${donation.id}] 🔄 Donation marked completed. Processing tasks...`);
       try {
         const [gaushala, katha] = await Promise.all([
-          donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null,
-          donation.kathaId ? await Katha.findByPk(donation.kathaId) : null
+          donation.gaushalaId ? Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null,
+          donation.kathaId ? Katha.findByPk(donation.kathaId) : null,
         ]);
 
-        const pdfBuffer = await generateDonationSlipBuffer(donor, donation.amount, donation.cause, donation.id, donation.paymentMode, donation.paymentDate, gaushala, katha);
+        let locationAddress = '';
+        if (donation.locationId) {
+          const parts = [];
+          let loc = await Location.findByPk(donation.locationId);
+          while (loc) {
+            parts.push(loc.name);
+            loc = loc.parentId ? await Location.findByPk(loc.parentId) : null;
+          }
+          locationAddress = parts.join(', ');
+        }
+
+        const pdfBuffer = await generateDonationSlipBuffer(
+          donor, 
+          donation.amount, 
+          donation.cause, 
+          donation.id, 
+          donation.paymentMode, 
+          donation.paymentDate, 
+          gaushala, 
+          katha,
+          locationAddress
+        );
         
         const tasks = [];
 
@@ -585,14 +605,14 @@ export const updateDonation = asyncHandler(async (req, res) => {
                 });
                 if (loc) {
                   if (loc.type === 'village') {
-                    village = loc.name;
-                    taluka = loc.parent?.name || '';
-                    city = loc.parent?.parent?.name || '';
+                    village = loc.nameGuj || loc.name;
+                    taluka = loc.parent?.nameGuj || loc.parent?.name || '';
+                    city = loc.parent?.parent?.nameGuj || loc.parent?.parent?.name || '';
                   } else if (loc.type === 'taluka') {
-                    taluka = loc.name;
-                    city = loc.parent?.name || '';
+                    taluka = loc.nameGuj || loc.name;
+                    city = loc.parent?.nameGuj || loc.parent?.name || '';
                   } else {
-                    city = loc.name;
+                    city = loc.nameGuj || loc.name;
                   }
                 }
               }

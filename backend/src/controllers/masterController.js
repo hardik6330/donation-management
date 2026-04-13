@@ -1,5 +1,5 @@
 import { Location, Category, Gaushala, Katha, Donation, sequelize } from '../models/index.js';
-import { sendSuccess } from '../utils/apiResponse.js';
+import { sendSuccess, sendError } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
@@ -260,26 +260,50 @@ export const updateLocationMaster = async (req, res) => {
 
 // 9. Delete Location (Admin)
 export const deleteLocationMaster = async (req, res) => {
+  const transaction = await sequelize.transaction();
   try {
     const { id } = req.params;
     const location = await Location.findByPk(id);
-    if (!location) return sendError(res, 'Location not found', 404);
-
-    // Check if any sub-locations are linked to this location
-    const subLocationsCount = await Location.count({ where: { parentId: id } });
-    if (subLocationsCount > 0) {
-      return sendError(res, 'Cannot delete location with sub-locations (talukas/villages).', 400);
+    if (!location) {
+      await transaction.rollback();
+      return sendError(res, 'Location not found', 404);
     }
 
-    // Check if any donations are linked to this location
-    const donationsCount = await Donation.count({ where: { locationId: id } });
+    // 1. Recursive check for linked donations in this location and all its sub-locations
+    const getAllChildIds = async (parentId) => {
+      let ids = [parentId];
+      const children = await Location.findAll({ where: { parentId } });
+      for (const child of children) {
+        const childIds = await getAllChildIds(child.id);
+        ids = [...ids, ...childIds];
+      }
+      return ids;
+    };
+
+    const allAffectedLocationIds = await getAllChildIds(id);
+
+    // Check if any donations are linked to any of these locations
+    const donationsCount = await Donation.count({ 
+      where: { locationId: { [Op.in]: allAffectedLocationIds } } 
+    });
+
     if (donationsCount > 0) {
-      return sendError(res, 'Cannot delete location with linked donations. Please deactivate it instead.', 400);
+      await transaction.rollback();
+      return sendError(res, 'Cannot delete location or its sub-locations because they have linked donations. Please deactivate them instead.', 400);
     }
 
-    await location.destroy();
-    return sendSuccess(res, null, 'Location deleted successfully');
+    // 2. Delete sub-locations first (to satisfy FK constraints if any, though recursive is better)
+    // We can just delete all locations in the affected list
+    // To be safe with FKs, we should delete in reverse order of hierarchy or just delete all at once if supported
+    await Location.destroy({ 
+      where: { id: { [Op.in]: allAffectedLocationIds } },
+      transaction 
+    });
+
+    await transaction.commit();
+    return sendSuccess(res, null, 'Location and all its sub-locations deleted successfully');
   } catch (error) {
+    if (transaction) await transaction.rollback();
     return sendError(res, 'Error deleting location', 500, error);
   }
 };
