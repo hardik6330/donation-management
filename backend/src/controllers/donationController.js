@@ -2,7 +2,7 @@ import { Donation, User, Category, Gaushala, Katha, Location } from '../models/i
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
-import { findOrCreateLocationStructure } from '../utils/locationHelper.js';
+import { findOrCreateLocationStructure, formatLocationAddress, extractLocationHierarchy } from '../utils/locationHelper.js';
 // import { razorpay } from '../config/razorpay.js';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
@@ -18,7 +18,6 @@ import { notFound, badRequest } from '../utils/httpError.js';
 
 // 1. QR Code Generate Karo
 export const generateQRCode = asyncHandler(async (req, res) => {
-  console.log(FRONTEND_URL);
   const frontendURL = FRONTEND_URL + '/donate';
 
   const qrCodeData = await QRCode.toDataURL(frontendURL);
@@ -84,13 +83,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     
     if (location) {
       // Build location path: "Village, Taluka, City" in Gujarati
-      const parts = [location.nameGuj || location.name];
-      let current = location.parent;
-      while (current) {
-        parts.push(current.nameGuj || current.name);
-        current = current.parent;
-      }
-      locationName = parts.join(', ');
+      locationName = formatLocationAddress(location, { useGujarati: true });
     }
   }
 
@@ -187,13 +180,10 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
       let locationAddress = '';
       if (targetLocationId) {
-        const parts = [];
-        let loc = await Location.findByPk(targetLocationId);
-        while (loc) {
-          parts.push(loc.name);
-          loc = loc.parentId ? await Location.findByPk(loc.parentId) : null;
-        }
-        locationAddress = parts.join(', ');
+        const loc = await Location.findByPk(targetLocationId, {
+          include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+        });
+        locationAddress = formatLocationAddress(loc);
       }
 
       const pdfBuffer = await generateDonationSlipBuffer(
@@ -211,10 +201,9 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       const tasks = [];
 
       const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
-        .then(async url => {
-          console.log(`[Donation ${donation.id}] ✅ Cloudinary upload success: ${url}`);
-          await donation.update({ slipUrl: url });
-        })
+          .then(async url => {
+            await donation.update({ slipUrl: url });
+          })
         .catch(err => {
           console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, {
             message: err.message,
@@ -225,12 +214,10 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       tasks.push(uploadTask);
 
       if (user.email) {
-        console.log(`[Donation ${donation.id}] 📧 Preparing to send email to ${user.email}`);
         const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
         const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
           { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
         ])
-        .then(() => console.log(`[Donation ${donation.id}] ✅ Email sent successfully to ${user.email}`))
         .catch(err => {
           console.error(`[Donation ${donation.id}] ❌ Email Error for ${user.email}:`, {
             message: err.message,
@@ -285,18 +272,12 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       }
 
       await Promise.all(tasks);
-      console.log(`✅ All post-donation tasks completed for donation ${donation.id}`);
     } catch (error) {
-      console.error('❌ Post-donation tasks failed:', error);
+      console.error(`[Donation ${donation.id}] ❌ Error in post-donation tasks:`, error);
     }
   }
 
-  const message = isDirectPay
-    ? 'Donation recorded successfully'
-    : isPartialPay
-      ? 'Partial donation recorded successfully'
-      : 'Donation intent recorded (Pay Later)';
-  return sendSuccess(res, { donationId: donation.id, paymentMode }, message);
+  return sendSuccess(res, donation, 'Donation order created successfully');
 });
 
 // 3. Payment Verify (Razorpay - commented out)
@@ -519,7 +500,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
   if (updateData.status === 'completed' && wasNotCompleted) {
     const donor = await User.findByPk(donation.donorId);
     if (donor) {
-      console.log(`[Donation ${donation.id}] 🔄 Donation marked completed. Processing tasks...`);
       try {
         const [gaushala, katha] = await Promise.all([
           donation.gaushalaId ? Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null,
@@ -528,13 +508,10 @@ export const updateDonation = asyncHandler(async (req, res) => {
 
         let locationAddress = '';
         if (donation.locationId) {
-          const parts = [];
-          let loc = await Location.findByPk(donation.locationId);
-          while (loc) {
-            parts.push(loc.name);
-            loc = loc.parentId ? await Location.findByPk(loc.parentId) : null;
-          }
-          locationAddress = parts.join(', ');
+          const loc = await Location.findByPk(donation.locationId, {
+            include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+          });
+          locationAddress = formatLocationAddress(loc);
         }
 
         const pdfBuffer = await generateDonationSlipBuffer(
@@ -554,18 +531,15 @@ export const updateDonation = asyncHandler(async (req, res) => {
         const uploadTask = uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id)
           .then(async cloudinaryUrl => {
             await donation.update({ slipUrl: cloudinaryUrl });
-            console.log(`[Donation ${donation.id}] ✅ Donation slip uploaded & saved: ${cloudinaryUrl}`);
           })
           .catch(err => console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err));
         tasks.push(uploadTask);
 
         if (donor.email) {
-          console.log(`[Donation ${donation.id}] 📧 Preparing to send email to ${donor.email}`);
           const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
           const emailTask = sendEmail(donor.email, 'Donation Completed - Thank You!', emailHtml, [
             { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
           ])
-          .then(() => console.log(`[Donation ${donation.id}] ✅ Email sent successfully to ${donor.email}`))
           .catch(err => console.error(`[Donation ${donation.id}] ❌ Email Error for ${donor.email}:`, err));
           tasks.push(emailTask);
         }
@@ -584,18 +558,11 @@ export const updateDonation = asyncHandler(async (req, res) => {
                 const loc = await Location.findByPk(locId, {
                   include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
                 });
-                if (loc) {
-                  if (loc.type === 'village') {
-                    village = loc.nameGuj || loc.name;
-                    taluka = loc.parent?.nameGuj || loc.parent?.name || '';
-                    city = loc.parent?.parent?.nameGuj || loc.parent?.parent?.name || '';
-                  } else if (loc.type === 'taluka') {
-                    taluka = loc.nameGuj || loc.name;
-                    city = loc.parent?.nameGuj || loc.parent?.name || '';
-                  } else {
-                    city = loc.nameGuj || loc.name;
-                  }
-                }
+                
+                const hierarchy = extractLocationHierarchy(loc, { useGujarati: true });
+                city = hierarchy.city;
+                taluka = hierarchy.taluka;
+                village = hierarchy.village;
               }
 
               await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
@@ -606,7 +573,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
                 taluka,
                 village
               });
-              console.log(`[Donation ${donation.id}] ✅ SMS sent successfully to ${donor.mobileNumber}`);
             } catch (err) {
               console.error(`[Donation ${donation.id}] ❌ SMS Error:`, err);
             }
@@ -615,7 +581,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
         }
         
         await Promise.all(tasks);
-        console.log(`[Donation ${donation.id}] ✅ All post-update tasks completed.`);
       } catch (slipError) {
         console.error(`[Donation ${donation.id}] ❌ Post-update tasks failed:`, slipError);
       }

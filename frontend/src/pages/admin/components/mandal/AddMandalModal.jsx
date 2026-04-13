@@ -120,7 +120,6 @@ const AddMandalModal = ({ isOpen, onClose, editingMandal = null }) => {
             items={[
               { id: 'monthly', name: 'Monthly' },
               { id: 'yearly', name: 'Yearly' },
-              { id: 'onetime', name: 'One Time' }
             ]}
             onChange={handleChange}
             onSelect={(id, name) => {

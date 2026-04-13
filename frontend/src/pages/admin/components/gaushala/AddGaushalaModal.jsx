@@ -4,6 +4,7 @@ import {
   useUpdateGaushalaMutation
 } from '../../../../services/gaushalaApi';
 import { toast } from 'react-toastify';
+import { useLocationDropdowns } from '../../../../hooks/useLocationDropdowns';
 import { handleMutationError } from '../../../../utils/errorHelper';
 import { MapPin, Building2, Plus, Loader2, CheckCircle2, Tag, Edit, Building2Icon } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -21,13 +22,27 @@ const AddGaushalaModal = ({
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    cityId: '',
-    cityName: '',
-    talukaId: '',
-    talukaName: '',
-    villageId: '',
-    villageName: '',
     isActive: true
+  });
+
+  const {
+    cityRef,
+    talukaRef,
+    villageRef,
+    handleLocationInputChange,
+    handleLocationSelect,
+    locationForm,
+    locationLabels,
+    setLocationForm,
+    setLocationLabels
+  } = useLocationDropdowns({
+    cityPagination,
+    talukaPagination,
+    villagePagination,
+    setModalState,
+    onSelectCallback: (field, id, name) => {
+      if (field === 'cityId') validateField('cityName', name);
+    }
   });
 
   const [errors, setErrors] = useState({});
@@ -47,9 +62,6 @@ const AddGaushalaModal = ({
 
   // Refs for Fast Entry
   const nameRef = useRef(null);
-  const cityRef = useRef(null);
-  const talukaRef = useRef(null);
-  const villageRef = useRef(null);
   const submitRef = useRef(null);
 
   const cities = cityPagination.items;
@@ -64,18 +76,22 @@ const AddGaushalaModal = ({
     if (editingGaushala) {
       setFormData({
         name: editingGaushala.name || '',
-        cityId: editingGaushala.locationId || '', 
-        cityName: editingGaushala.city || '',
-        talukaId: '',
-        talukaName: editingGaushala.taluka || '',
-        villageId: '',
-        villageName: editingGaushala.village || '',
         isActive: editingGaushala.isActive ?? true
       });
-    } else {
-      setFormData({
-        name: '', cityId: '', cityName: '', talukaId: '', talukaName: '', villageId: '', villageName: '', isActive: true
+      setLocationForm({
+        cityId: editingGaushala.locationId || '',
+        talukaId: '',
+        villageId: ''
       });
+      setLocationLabels({
+        cityName: editingGaushala.city || '',
+        talukaName: editingGaushala.taluka || '',
+        villageName: editingGaushala.village || ''
+      });
+    } else {
+      setFormData({ name: '', isActive: true });
+      setLocationForm({ cityId: '', talukaId: '', villageId: '' });
+      setLocationLabels({ cityName: '', talukaName: '', villageName: '' });
     }
     
     // Fast Entry: Focus first field
@@ -92,36 +108,9 @@ const AddGaushalaModal = ({
   };
 
   const handleSelectOption = (field, name, id = '') => {
-    if (field === 'city') {
-      setFormData(prev => ({
-        ...prev,
-        cityId: id,
-        cityName: name,
-        talukaId: '',
-        talukaName: '',
-        villageId: '',
-        villageName: ''
-      }));
-      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      validateField('cityName', name);
-    } else if (field === 'taluka') {
-      setFormData(prev => ({
-        ...prev,
-        talukaId: id,
-        talukaName: name,
-        villageId: '',
-        villageName: ''
-      }));
-      setModalState(prev => ({ ...prev, talukaId: id }));
-      villagePagination.reset();
-    } else if (field === 'village') {
-      setFormData(prev => ({
-        ...prev,
-        villageId: id,
-        villageName: name
-      }));
+    if (field === 'city' || field === 'taluka' || field === 'village') {
+      const fieldId = field === 'city' ? 'cityId' : field === 'taluka' ? 'talukaId' : 'villageId';
+      handleLocationSelect(fieldId, id, name);
     }
     setActiveDropdown(null);
   };
@@ -129,35 +118,24 @@ const AddGaushalaModal = ({
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
 
-    if (name === 'cityName') {
-      setFormData(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
-      cityPagination.handleSearch(value);
-      setActiveDropdown('cityName');
-      validateField(name, value);
-    } else if (name === 'talukaName') {
-      setFormData(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, talukaId: '' }));
-      talukaPagination.handleSearch(value);
-      setActiveDropdown('talukaName');
-    } else if (name === 'villageName') {
-      setFormData(prev => ({ ...prev, villageName: value, villageId: '' }));
-      villagePagination.handleSearch(value);
-      setActiveDropdown('villageName');
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? checked : value
-      }));
-      if (name === 'name') validateField(name, value);
+    if (name === 'cityName' || name === 'talukaName' || name === 'villageName') {
+      const dropdown = handleLocationInputChange(name, value);
+      if (dropdown) setActiveDropdown(dropdown);
+      return;
     }
+
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    if (name === 'name') validateField(name, value);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
     const nameErr = validateField('name', formData.name);
-    const cityErr = validateField('cityName', formData.cityName);
+    const cityErr = validateField('cityName', locationLabels.cityName);
 
     if (nameErr || cityErr) {
       toast.error('Please fix the errors in the form');
@@ -167,10 +145,10 @@ const AddGaushalaModal = ({
     try {
       const payload = {
         name: formData.name,
-        city: formData.cityName,
-        taluka: formData.talukaName,
-        village: formData.villageName,
-        locationId: formData.villageId || formData.talukaId || formData.cityId,
+        city: locationLabels.cityName,
+        taluka: locationLabels.talukaName,
+        village: locationLabels.villageName,
+        locationId: locationForm.villageId || locationForm.talukaId || locationForm.cityId,
         isActive: formData.isActive
       };
 
@@ -215,7 +193,7 @@ const AddGaushalaModal = ({
             label="City"
             name="cityName"
             placeholder="Search City..."
-            value={formData.cityName}
+            value={locationLabels.cityName}
             items={cities}
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('city', name, id)}
@@ -236,14 +214,14 @@ const AddGaushalaModal = ({
             label="Taluka"
             name="talukaName"
             placeholder="Search Taluka..."
-            value={formData.talukaName}
+            value={locationLabels.talukaName}
             items={talukas}
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('taluka', name, id)}
             onKeyDown={(e) => handleKeyDown(e, villageRef)}
             isActive={activeDropdown === 'talukaName'}
             setActive={setActiveDropdown}
-            disabled={!formData.cityName}
+            disabled={!locationLabels.cityName}
             inputRef={talukaRef}
             icon={MapPin}
             isServerSearch={true}
@@ -257,14 +235,14 @@ const AddGaushalaModal = ({
             label="Village"
             name="villageName"
             placeholder="Search Village..."
-            value={formData.villageName}
+            value={locationLabels.villageName}
             items={villages}
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('village', name, id)}
             onKeyDown={(e) => handleKeyDown(e, submitRef)}
             isActive={activeDropdown === 'villageName'}
             setActive={setActiveDropdown}
-            disabled={!formData.talukaName}
+            disabled={!locationLabels.talukaName}
             inputRef={villageRef}
             icon={MapPin}
             isServerSearch={true}

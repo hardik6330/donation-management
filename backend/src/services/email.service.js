@@ -21,7 +21,6 @@ const isValidEmail = (email) => {
 // 3. Function to send email directly (Serverless compatible)
 export const sendEmail = async (to, subject, html, attachments = []) => {
   if (!isValidEmail(to)) {
-    console.log(`⏭️ Skipping email — invalid or missing address: ${to}`);
     return { success: false, skipped: true };
   }
 
@@ -33,7 +32,6 @@ export const sendEmail = async (to, subject, html, attachments = []) => {
       html,
       attachments,
     });
-    console.log(`✅ Email sent directly to ${to}`);
     return { success: true };
   } catch (error) {
     console.error(`❌ Error sending email to ${to}:`, error.message);

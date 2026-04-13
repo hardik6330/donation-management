@@ -1,9 +1,10 @@
 import { KartalDhun, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
-import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationFilter } from '../utils/locationHelper.js';
-import { notFound } from '../utils/httpError.js';
+import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationFilter, formatLocationAddress } from '../utils/locationHelper.js';
+import { notFound, badRequest } from '../utils/httpError.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { Op } from 'sequelize';
 
 export const addKartalDhun = asyncHandler(async (req, res) => {
   const { name, date, amount, locationId, city, taluka, village, description } = req.body;
@@ -66,7 +67,13 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
   const formattedRows = rows.map(r => {
     const record = r.toJSON();
     const { city, taluka, village } = extractLocationHierarchy(record.location);
-    return { ...record, city, taluka, village };
+    return { 
+      ...record, 
+      city, 
+      taluka, 
+      village,
+      fullLocation: formatLocationAddress(record.location)
+    };
   });
 
   const response = getPaginatedResponse({ rows: formattedRows, count, limit, page, dataKey: 'rows' });

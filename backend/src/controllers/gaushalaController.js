@@ -1,10 +1,10 @@
 import { Gaushala, Donation, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { findOrCreateLocationStructure, getAllSubLocationIds, extractLocationHierarchy } from '../utils/locationHelper.js';
+import { findOrCreateLocationStructure, buildLocationFilter, extractLocationHierarchy, formatLocationAddress } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
-import { notFound } from '../utils/httpError.js';
+import { notFound, badRequest } from '../utils/httpError.js';
 
 export const getGaushalas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -16,8 +16,8 @@ export const getGaushalas = asyncHandler(async (req, res) => {
   }
 
   if (locationId) {
-    const locationIds = await getAllSubLocationIds(locationId);
-    where.locationId = { [Op.in]: locationIds };
+    const locationFilter = await buildLocationFilter(null, null, null, locationId);
+    if (locationFilter) where.locationId = locationFilter;
   }
 
   // If only specific fields are requested (e.g. id, name), avoid complex logic
@@ -79,7 +79,7 @@ export const getGaushalas = asyncHandler(async (req, res) => {
       city: city || null,
       taluka: taluka || null,
       village: village || null,
-      fullLocation: [village, taluka, city].filter(Boolean).join(', '),
+      fullLocation: formatLocationAddress(gaushala.location),
       totalDonations: parseInt(gaushala.totalDonations) || 0,
       totalDonationAmount: parseFloat(gaushala.totalDonationAmount) || 0
     };
@@ -103,7 +103,7 @@ export const addGaushala = asyncHandler(async (req, res) => {
   }
 
   if (!finalLocationId) {
-    throw new Error('Location is required');
+    throw badRequest('Location is required');
   }
 
   const gaushala = await Gaushala.create({ 

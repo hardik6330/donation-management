@@ -8,10 +8,10 @@ import {
 import {
   Loader2, IndianRupee, Plus, Phone, User,
   MapPin, UserCheck, Mail, Building2, Tag, CreditCard,
-  HandCoins,
-  HandCoinsIcon
+  HandCoins
 } from 'lucide-react';
 import { toast } from 'react-toastify';
+import { useLocationDropdowns } from '../../../../hooks/useLocationDropdowns';
 import { handleMutationError } from '../../../../utils/errorHelper';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
@@ -50,6 +50,42 @@ const AddDonationModal = ({
     paymentMode: 'cash',
   });
 
+  const [addDropdownLabels, setAddDropdownLabels] = useState({
+    cityName: '',
+    talukaName: '',
+    villageName: '',
+    categoryName: '',
+    gaushalaName: '',
+    kathaName: '',
+    paymentModeName: 'Cash',
+  });
+
+  const {
+    cityRef,
+    talukaRef,
+    villageRef,
+    handleLocationInputChange,
+    handleLocationSelect
+  } = useLocationDropdowns({
+    cityPagination,
+    talukaPagination,
+    villagePagination,
+    setModalState,
+    onSelectCallback: (field, id, name) => {
+      if (field === 'cityId') {
+        setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
+        setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
+      } else if (field === 'talukaId') {
+        setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
+        setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
+      } else if (field === 'villageId') {
+        setAddForm(prev => ({ ...prev, villageId: id }));
+        setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
+        setTimeout(() => categoryRef.current?.focus(), 100);
+      }
+    }
+  });
+
   const [errors, setErrors] = useState({});
 
   const validateField = (name, value) => {
@@ -73,15 +109,6 @@ const AddDonationModal = ({
     return error;
   };
 
-  const [addDropdownLabels, setAddDropdownLabels] = useState({
-    cityName: '',
-    talukaName: '',
-    villageName: '',
-    categoryName: '',
-    gaushalaName: '',
-    kathaName: '',
-    paymentModeName: 'Cash',
-  });
   const [activeAddDropdown, setActiveAddDropdown] = useState(null);
 
   const handleSetActiveAddDropdown = (name) => {
@@ -98,9 +125,6 @@ const AddDonationModal = ({
   const emailRef = useRef(null);
   const companyRef = useRef(null);
   const addressRef = useRef(null);
-  const cityRef = useRef(null);
-  const talukaRef = useRef(null);
-  const villageRef_add = useRef(null);
   const categoryRef = useRef(null);
   const gaushalaRef = useRef(null);
   const kathaRef = useRef(null);
@@ -204,6 +228,12 @@ const AddDonationModal = ({
           villageId: user.villageId || '',
           companyName: user.companyName || '',
         }));
+        setAddDropdownLabels(prev => ({
+          ...prev,
+          cityName: user.city?.name || prev.cityName,
+          talukaName: user.taluka?.name || prev.talukaName,
+          villageName: user.village_loc?.name || prev.villageName,
+        }));
         toast.info('User found! Details auto-filled.');
       }, 0);
       return () => clearTimeout(timer);
@@ -230,27 +260,12 @@ const AddDonationModal = ({
       return;
     }
 
-    if (name === 'cityName') {
-      setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
-      setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
-      setActiveAddDropdown('cityName');
+    if (name === 'cityName' || name === 'talukaName' || name === 'villageName') {
+      const dropdown = handleLocationInputChange(name, value);
+      if (dropdown) setActiveAddDropdown(dropdown);
       return;
     }
-    if (name === 'talukaName') {
-      setAddDropdownLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
-      setAddForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, talukaId: '', villageId: '' }));
-      setActiveAddDropdown('talukaName');
-      return;
-    }
-    if (name === 'villageName') {
-      setAddDropdownLabels(prev => ({ ...prev, villageName: value }));
-      setAddForm(prev => ({ ...prev, villageId: '' }));
-      setModalState(prev => ({ ...prev, villageId: '' }));
-      setActiveAddDropdown('villageName');
-      return;
-    }
+
     if (name === 'categoryName') {
       setAddDropdownLabels(prev => ({ ...prev, categoryName: value }));
       setAddForm(prev => ({ ...prev, categoryId: '' }));
@@ -282,24 +297,8 @@ const AddDonationModal = ({
   const handleAddDropdownSelect = (field, id, name) => {
     let nextRef = null;
 
-    if (field === 'cityId') {
-      setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
-      setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
-      setModalState(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      nextRef = talukaRef;
-    } else if (field === 'talukaId') {
-      setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
-      setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
-      setModalState(prev => ({ ...prev, talukaId: id, villageId: '' }));
-      villagePagination.reset();
-      nextRef = villageRef_add;
-    } else if (field === 'villageId') {
-      setAddForm(prev => ({ ...prev, villageId: id }));
-      setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
-      setModalState(prev => ({ ...prev, villageId: id }));
-      nextRef = categoryRef;
+    if (field === 'cityId' || field === 'talukaId' || field === 'villageId') {
+      nextRef = handleLocationSelect(field, id, name);
     } else if (field === 'categoryId') {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
@@ -435,7 +434,7 @@ const AddDonationModal = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Create New Donation"
-      icon={<HandCoinsIcon />}
+      icon={<HandCoins />}
       maxWidth="max-w-4xl"
     >
       <form onSubmit={handleAddSubmit} className="space-y-8">
@@ -543,7 +542,7 @@ const AddDonationModal = ({
                   items={talukas}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('talukaId', id, name)}
-                  onKeyDown={(e) => handleKeyDown(e, villageRef_add)}
+                  onKeyDown={(e) => handleKeyDown(e, villageRef)}
                   isActive={activeAddDropdown === 'talukaName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!addDropdownLabels.cityName}
@@ -566,7 +565,7 @@ const AddDonationModal = ({
                   isActive={activeAddDropdown === 'villageName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!addDropdownLabels.talukaName}
-                  inputRef={villageRef_add}
+                  inputRef={villageRef}
                   icon={MapPin}
                   allowTransliteration={false}
                 />

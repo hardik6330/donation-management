@@ -7,12 +7,10 @@ import { VITE_FAST2SMS_API_KEY } from '../config/env.js';
  */
 export const sendSMS = async (mobileNumber, message) => {
   if (!VITE_FAST2SMS_API_KEY) {
-    console.log('⏭️ Skipping SMS — VITE_FAST2SMS_API_KEY not configured');
     return { success: false, skipped: true };
   }
 
   if (!mobileNumber || mobileNumber.length !== 10) {
-    console.log(`⏭️ Skipping SMS — Invalid mobile number: ${mobileNumber}`);
     return { success: false, skipped: true };
   }
 
@@ -34,7 +32,6 @@ export const sendSMS = async (mobileNumber, message) => {
     const result = await response.json();
     
     if (result.return) {
-      console.log(`✅ SMS sent successfully to ${mobileNumber}`);
       return { success: true, result };
     } else {
       console.error(`❌ Fast2SMS Error: ${result.message}`);

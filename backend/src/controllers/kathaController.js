@@ -1,10 +1,10 @@
 import { Katha, Donation, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { findOrCreateLocationStructure, getAllSubLocationIds, extractLocationHierarchy } from '../utils/locationHelper.js';
+import { findOrCreateLocationStructure, buildLocationFilter, extractLocationHierarchy, formatLocationAddress } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
-import { notFound } from '../utils/httpError.js';
+import { notFound, badRequest } from '../utils/httpError.js';
 
 export const getKathas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -17,8 +17,8 @@ export const getKathas = asyncHandler(async (req, res) => {
   }
 
   if (locationId) {
-    const locationIds = await getAllSubLocationIds(locationId);
-    where.locationId = { [Op.in]: locationIds };
+    const locationFilter = await buildLocationFilter(null, null, null, locationId);
+    if (locationFilter) where.locationId = locationFilter;
   }
 
   // If only specific fields are requested (e.g. id, name), avoid complex logic
@@ -79,6 +79,7 @@ export const getKathas = asyncHandler(async (req, res) => {
       city,
       taluka,
       village,
+      fullLocation: formatLocationAddress(katha.location),
       totalDonations: parseInt(katha.totalDonations) || 0,
       totalDonationAmount: parseFloat(katha.totalDonationAmount) || 0
     };
@@ -102,9 +103,7 @@ export const addKatha = asyncHandler(async (req, res) => {
   }
 
   if (!finalLocationId) {
-    const error = new Error('Location is required');
-    error.statusCode = 400;
-    throw error;
+    throw badRequest('Location is required');
   }
 
   const katha = await Katha.create({ 

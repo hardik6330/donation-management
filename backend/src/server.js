@@ -88,7 +88,7 @@ app.use(async (req, res, next) => {
 
 // Root route (Moved above ipAuth for public health check/load testing)
 app.get('/', (req, res) => {
-  res.send('test complte server running');
+  res.send('test complete server running');
 });
 
 // IP Whitelisting Middleware

@@ -4,6 +4,7 @@ import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.j
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { findOrCreateLocationStructure, formatName } from '../utils/locationHelper.js';
+import { notFound, badRequest } from '../utils/httpError.js';
 
 // --- MASTER DATA MANAGEMENT (ADMIN) ---
 
@@ -13,9 +14,7 @@ export const addLocationMaster = asyncHandler(async (req, res) => {
   const lastLocation = await findOrCreateLocationStructure(city, taluka, village);
   
   if (!lastLocation) {
-    const error = new Error('City name is required');
-    error.statusCode = 400;
-    throw error;
+    throw badRequest('City name is required');
   }
 
   return sendSuccess(res, lastLocation, 'Location structure saved successfully');
@@ -37,35 +36,8 @@ export const addCombinedMasterData = asyncHandler(async (req, res) => {
 
   // Handle Location if provided
   if (city) {
-    let cityObj = await Location.findOne({ where: { name: city, type: 'city' } });
-    if (!cityObj) {
-      cityObj = await Location.create({ name: city, type: 'city' });
-      messages.push(`City '${city}' created.`);
-    }
-
-    let parentId = cityObj.id;
-
-    if (taluka) {
-      let talukaObj = await Location.findOne({ where: { name: taluka, type: 'taluka', parentId } });
-      if (!talukaObj) {
-        talukaObj = await Location.create({ name: taluka, type: 'taluka', parentId });
-        messages.push(`Taluka '${taluka}' created.`);
-      }
-      parentId = talukaObj.id;
-
-      if (village) {
-        let villageObj = await Location.findOne({ where: { name: village, type: 'village', parentId } });
-        if (!villageObj) {
-          villageObj = await Location.create({ name: village, type: 'village', parentId });
-          messages.push(`Village '${village}' created.`);
-        }
-        locationResult = villageObj;
-      } else {
-        locationResult = talukaObj;
-      }
-    } else {
-      locationResult = cityObj;
-    }
+    locationResult = await findOrCreateLocationStructure(city, taluka, village);
+    if (locationResult) messages.push('Location structure updated/verified.');
   }
 
   // Handle Category if provided
@@ -199,77 +171,62 @@ export const getCategories = asyncHandler(async (req, res) => {
 });
 
 // 6. Update Category (Admin)
-export const updateCategoryMaster = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, description, isActive } = req.body;
+export const updateCategoryMaster = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, description, isActive } = req.body;
 
-    const category = await Category.findByPk(id);
-    if (!category) return sendError(res, 'Category not found', 404);
+  const category = await Category.findByPk(id);
+  if (!category) throw notFound('Category');
 
-    await category.update({
-      name: name !== undefined ? name : category.name,
-      description: description !== undefined ? description : category.description,
-      isActive: isActive !== undefined ? isActive : category.isActive,
-    });
+  await category.update({
+    name: name !== undefined ? name : category.name,
+    description: description !== undefined ? description : category.description,
+    isActive: isActive !== undefined ? isActive : category.isActive,
+  });
 
-    return sendSuccess(res, category, 'Category updated successfully');
-  } catch (error) {
-    return sendError(res, 'Error updating category', 500, error);
-  }
-};
+  return sendSuccess(res, category, 'Category updated successfully');
+});
 
 // 7. Delete Category (Admin)
-export const deleteCategoryMaster = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const category = await Category.findByPk(id);
-    if (!category) return sendError(res, 'Category not found', 404);
+export const deleteCategoryMaster = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const category = await Category.findByPk(id);
+  if (!category) throw notFound('Category');
 
-    // Check if any donations are linked to this category
-    const donationsCount = await Donation.count({ where: { categoryId: id } });
-    if (donationsCount > 0) {
-      return sendError(res, 'Cannot delete category with linked donations. Please deactivate it instead.', 400);
-    }
-
-    await category.destroy();
-    return sendSuccess(res, null, 'Category deleted successfully');
-  } catch (error) {
-    return sendError(res, 'Error deleting category', 500, error);
+  // Check if any donations are linked to this category
+  const donationsCount = await Donation.count({ where: { categoryId: id } });
+  if (donationsCount > 0) {
+    throw badRequest('Cannot delete category with linked donations. Please deactivate it instead.');
   }
-};
+
+  await category.destroy();
+  return sendSuccess(res, null, 'Category deleted successfully');
+});
 
 // 8. Update Location (Admin)
-export const updateLocationMaster = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, isActive } = req.body;
+export const updateLocationMaster = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { name, isActive } = req.body;
 
-    const location = await Location.findByPk(id);
-    if (!location) return sendError(res, 'Location not found', 404);
+  const location = await Location.findByPk(id);
+  if (!location) throw notFound('Location');
 
-    await location.update({
-      name: name !== undefined ? formatName(name) : location.name,
-      isActive: isActive !== undefined ? isActive : location.isActive,
-    });
+  await location.update({
+    name: name !== undefined ? formatName(name) : location.name,
+    isActive: isActive !== undefined ? isActive : location.isActive,
+  });
 
-    return sendSuccess(res, location, 'Location updated successfully');
-  } catch (error) {
-    return sendError(res, 'Error updating location', 500, error);
-  }
-};
+  return sendSuccess(res, location, 'Location updated successfully');
+});
 
 // 9. Delete Location (Admin)
-export const deleteLocationMaster = async (req, res) => {
+export const deleteLocationMaster = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const location = await Location.findByPk(id);
+  if (!location) throw notFound('Location');
+
   const transaction = await sequelize.transaction();
   try {
-    const { id } = req.params;
-    const location = await Location.findByPk(id);
-    if (!location) {
-      await transaction.rollback();
-      return sendError(res, 'Location not found', 404);
-    }
-
     // 1. Recursive check for linked donations in this location and all its sub-locations
     const getAllChildIds = async (parentId) => {
       let ids = [parentId];
@@ -290,12 +247,10 @@ export const deleteLocationMaster = async (req, res) => {
 
     if (donationsCount > 0) {
       await transaction.rollback();
-      return sendError(res, 'Cannot delete location or its sub-locations because they have linked donations. Please deactivate them instead.', 400);
+      throw badRequest('Cannot delete location or its sub-locations because they have linked donations. Please deactivate them instead.');
     }
 
-    // 2. Delete sub-locations first (to satisfy FK constraints if any, though recursive is better)
-    // We can just delete all locations in the affected list
-    // To be safe with FKs, we should delete in reverse order of hierarchy or just delete all at once if supported
+    // 2. Delete all locations in the affected list
     await Location.destroy({ 
       where: { id: { [Op.in]: allAffectedLocationIds } },
       transaction 
@@ -305,7 +260,7 @@ export const deleteLocationMaster = async (req, res) => {
     return sendSuccess(res, null, 'Location and all its sub-locations deleted successfully');
   } catch (error) {
     if (transaction) await transaction.rollback();
-    return sendError(res, 'Error deleting location', 500, error);
+    throw error;
   }
-};
+});
 

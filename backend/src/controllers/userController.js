@@ -6,7 +6,7 @@ import { JWT_SECRET, REFRESH_TOKEN_SECRET, ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_MO
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
-import { notFound, badRequest } from '../utils/httpError.js';
+import { notFound, badRequest, unauthorized } from '../utils/httpError.js';
 
 
 
@@ -57,9 +57,7 @@ export const loginUser = asyncHandler(async (req, res) => {
   }
   const isPasswordValid = user.password ? bcrypt.compareSync(password, user.password) : false;
   if (!isPasswordValid) {
-    const error = new Error('Invalid password');
-    error.statusCode = 401;
-    throw error;
+    throw unauthorized('Invalid password');
   }
 
   const accessToken = generateAccessToken(user.id);

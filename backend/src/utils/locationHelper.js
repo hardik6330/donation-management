@@ -43,15 +43,17 @@ export const findOrCreateLocationStructure = async (city, taluka, village) => {
  * Extract city, taluka, village from a location object with nested parent includes.
  * Works with both while-loop traversal and nested parent structure.
  */
-export const extractLocationHierarchy = (locationObj) => {
+export const extractLocationHierarchy = (locationObj, options = {}) => {
+  const { useGujarati = false } = options;
   let city = '', taluka = '', village = '';
   if (!locationObj) return { city, taluka, village };
 
   let current = locationObj;
   while (current) {
-    if (current.type === 'city') city = current.name;
-    if (current.type === 'taluka') taluka = current.name;
-    if (current.type === 'village') village = current.name;
+    const name = (useGujarati && current.nameGuj) ? current.nameGuj : current.name;
+    if (current.type === 'city') city = name;
+    if (current.type === 'taluka') taluka = name;
+    if (current.type === 'village') village = name;
     current = current.parent;
   }
   return { city, taluka, village };
@@ -59,10 +61,14 @@ export const extractLocationHierarchy = (locationObj) => {
 
 /**
  * Build a locationId filter for Sequelize queries.
- * Given villageId/talukaId/cityId, returns the where clause for locationId
- * that includes all descendant locations.
+ * Given villageId/talukaId/cityId OR a single locationId, returns the where clause
+ * for locationId that includes all descendant locations.
  */
-export const buildLocationFilter = async (villageId, talukaId, cityId) => {
+export const buildLocationFilter = async (villageId, talukaId, cityId, locationId) => {
+  if (locationId) {
+    const ids = await getAllSubLocationIds(locationId);
+    return { [Op.in]: ids };
+  }
   if (villageId) return villageId;
   if (talukaId) {
     const villages = await Location.findAll({ where: { parentId: talukaId }, attributes: ['id'] });
@@ -75,6 +81,40 @@ export const buildLocationFilter = async (villageId, talukaId, cityId) => {
     return { [Op.in]: [cityId, ...talukaIds, ...villages.map(v => v.id)] };
   }
   return null;
+};
+
+/**
+ * Formats a location object into a string address like "Village, Taluka, City".
+ * Handles both nested parent objects and Gujarati names.
+ */
+export const formatLocationAddress = (locationObj, options = {}) => {
+  const { useGujarati = false, separator = ', ' } = options;
+  if (!locationObj) return '';
+
+  const { city, taluka, village } = extractLocationHierarchy(locationObj);
+  
+  // If we need Gujarati names, we need to handle that carefully because 
+  // extractLocationHierarchy currently only returns English names.
+  // Let's improve extractLocationHierarchy to support both.
+  
+  const parts = [];
+  
+  // Re-traversing for Gujarati if requested, or just use the extracted ones
+  if (useGujarati) {
+    let current = locationObj;
+    const gujParts = [];
+    while (current) {
+      gujParts.push(current.nameGuj || current.name);
+      current = current.parent;
+    }
+    return gujParts.join(separator);
+  }
+
+  if (village) parts.push(village);
+  if (taluka) parts.push(taluka);
+  if (city) parts.push(city);
+  
+  return parts.filter(Boolean).join(separator);
 };
 
 // Helper to get all sub-location IDs recursively

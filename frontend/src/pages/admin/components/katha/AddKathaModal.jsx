@@ -4,6 +4,8 @@ import {
   useUpdateKathaMutation
 } from '../../../../services/kathaApi';
 import { toast } from 'react-toastify';
+import { useLocationDropdowns } from '../../../../hooks/useLocationDropdowns';
+import { handleMutationError } from '../../../../utils/errorHelper';
 import { MapPin, Mic2, Plus, Loader2, CheckCircle2, Calendar, Tag, CheckCircle, Edit, Mic2Icon } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
@@ -21,12 +23,6 @@ const AddKathaModal = ({
 }) => {
   const [formData, setFormData] = useState({
     name: '',
-    cityId: '',
-    cityName: '',
-    talukaId: '',
-    talukaName: '',
-    villageId: '',
-    villageName: '',
     startDate: '',
     endDate: '',
     status: 'upcoming',
@@ -34,13 +30,27 @@ const AddKathaModal = ({
     description: ''
   });
 
+  const {
+    cityRef,
+    talukaRef,
+    villageRef,
+    handleLocationInputChange,
+    handleLocationSelect,
+    locationForm,
+    locationLabels,
+    setLocationForm,
+    setLocationLabels
+  } = useLocationDropdowns({
+    cityPagination,
+    talukaPagination,
+    villagePagination,
+    setModalState
+  });
+
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   // Refs for Fast Entry
   const nameRef = useRef(null);
-  const cityRef = useRef(null);
-  const talukaRef = useRef(null);
-  const villageRef = useRef(null);
   const statusRef = useRef(null);
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
@@ -57,23 +67,28 @@ const AddKathaModal = ({
     if (editingKatha) {
       setFormData({
         name: editingKatha.name || '',
-        cityId: editingKatha.locationId || '',
-        cityName: editingKatha.city || '',
-        talukaId: '',
-        talukaName: editingKatha.taluka || '',
-        villageId: '',
-        villageName: editingKatha.village || '',
         startDate: editingKatha.startDate ? new Date(editingKatha.startDate).toISOString().split('T')[0] : '',
         endDate: editingKatha.endDate ? new Date(editingKatha.endDate).toISOString().split('T')[0] : '',
         status: editingKatha.status || 'upcoming',
         statusName: editingKatha.status ? editingKatha.status.charAt(0).toUpperCase() + editingKatha.status.slice(1) : 'Upcoming',
         description: editingKatha.description || ''
       });
+      setLocationForm({
+        cityId: editingKatha.locationId || '',
+        talukaId: '',
+        villageId: ''
+      });
+      setLocationLabels({
+        cityName: editingKatha.city || '',
+        talukaName: editingKatha.taluka || '',
+        villageName: editingKatha.village || ''
+      });
     } else {
       setFormData({
-        name: '', cityId: '', cityName: '', talukaId: '', talukaName: '', villageId: '', villageName: '',
-        startDate: '', endDate: '', status: 'upcoming', statusName: 'Upcoming', description: ''
+        name: '', startDate: '', endDate: '', status: 'upcoming', statusName: 'Upcoming', description: ''
       });
+      setLocationForm({ cityId: '', talukaId: '', villageId: '' });
+      setLocationLabels({ cityName: '', talukaName: '', villageName: '' });
     }
 
     if (isOpen && nameRef.current) {
@@ -89,35 +104,9 @@ const AddKathaModal = ({
   };
 
   const handleSelectOption = (field, name, id = '') => {
-    if (field === 'city') {
-      setFormData(prev => ({
-        ...prev,
-        cityId: id,
-        cityName: name,
-        talukaId: '',
-        talukaName: '',
-        villageId: '',
-        villageName: ''
-      }));
-      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
-      talukaPagination.reset();
-      villagePagination.reset();
-    } else if (field === 'taluka') {
-      setFormData(prev => ({
-        ...prev,
-        talukaId: id,
-        talukaName: name,
-        villageId: '',
-        villageName: ''
-      }));
-      setModalState(prev => ({ ...prev, talukaId: id }));
-      villagePagination.reset();
-    } else if (field === 'village') {
-      setFormData(prev => ({
-        ...prev,
-        villageId: id,
-        villageName: name
-      }));
+    if (field === 'city' || field === 'taluka' || field === 'village') {
+      const fieldId = field === 'city' ? 'cityId' : field === 'taluka' ? 'talukaId' : 'villageId';
+      handleLocationSelect(fieldId, id, name);
     }
     setActiveDropdown(null);
   };
@@ -130,41 +119,30 @@ const AddKathaModal = ({
       setActiveDropdown('statusName');
       return;
     }
-    if (name === 'cityName') {
-      setFormData(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
-      cityPagination.handleSearch(value);
-      setActiveDropdown('cityName');
-    } else if (name === 'talukaName') {
-      setFormData(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, talukaId: '' }));
-      talukaPagination.handleSearch(value);
-      setActiveDropdown('talukaName');
-    } else if (name === 'villageName') {
-      setFormData(prev => ({ ...prev, villageName: value, villageId: '' }));
-      villagePagination.handleSearch(value);
-      setActiveDropdown('villageName');
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [name]: value
-      }));
+    if (name === 'cityName' || name === 'talukaName' || name === 'villageName') {
+      const dropdown = handleLocationInputChange(name, value);
+      if (dropdown) setActiveDropdown(dropdown);
+      return;
     }
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name) return toast.error('Katha name is required');
 
-    if (!formData.cityName) return toast.error('Please select or enter a city');
+    if (!locationLabels.cityName) return toast.error('Please select or enter a city');
 
     try {
       const payload = {
         name: formData.name,
-        city: formData.cityName,
-        taluka: formData.talukaName,
-        village: formData.villageName,
-        locationId: formData.villageId || formData.talukaId || formData.cityId,
+        city: locationLabels.cityName,
+        taluka: locationLabels.talukaName,
+        village: locationLabels.villageName,
+        locationId: locationForm.villageId || locationForm.talukaId || locationForm.cityId,
         startDate: formData.startDate,
         endDate: formData.endDate,
         status: formData.status,
@@ -180,7 +158,7 @@ const AddKathaModal = ({
       }
       onClose();
     } catch (err) {
-      toast.error(err?.data?.message || `Failed to ${editingKatha ? 'update' : 'add'} katha`);
+      handleMutationError(err, `Failed to ${editingKatha ? 'update' : 'add'} katha`);
     }
   };
 
@@ -211,7 +189,7 @@ const AddKathaModal = ({
             label="City"
             name="cityName"
             placeholder="Search City..."
-            value={formData.cityName}
+            value={locationLabels.cityName}
             items={cities}
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('city', name, id)}
@@ -231,14 +209,14 @@ const AddKathaModal = ({
             label="Taluka"
             name="talukaName"
             placeholder="Search Taluka..."
-            value={formData.talukaName}
+            value={locationLabels.talukaName}
             items={talukas}
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('taluka', name, id)}
             onKeyDown={(e) => handleKeyDown(e, villageRef)}
             isActive={activeDropdown === 'talukaName'}
             setActive={setActiveDropdown}
-            disabled={!formData.cityName}
+            disabled={!locationLabels.cityName}
             inputRef={talukaRef}
             icon={MapPin}
             isServerSearch={true}
@@ -252,14 +230,14 @@ const AddKathaModal = ({
             label="Village"
             name="villageName"
             placeholder="Search Village..."
-            value={formData.villageName}
+            value={locationLabels.villageName}
             items={villages}
             onChange={handleChange}
             onSelect={(id, name) => handleSelectOption('village', name, id)}
             onKeyDown={(e) => handleKeyDown(e, statusRef)}
             isActive={activeDropdown === 'villageName'}
             setActive={setActiveDropdown}
-            disabled={!formData.talukaName}
+            disabled={!locationLabels.talukaName}
             inputRef={villageRef}
             icon={MapPin}
             isServerSearch={true}

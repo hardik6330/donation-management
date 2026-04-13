@@ -1,10 +1,10 @@
 import { BapuSchedule, Location } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
-import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationFilter } from '../utils/locationHelper.js';
+import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationFilter, formatLocationAddress } from '../utils/locationHelper.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
-import { notFound } from '../utils/httpError.js';
+import { notFound, badRequest } from '../utils/httpError.js';
 
 // Get all schedules with filtering
 export const getBapuSchedules = asyncHandler(async (req, res) => {
@@ -55,7 +55,8 @@ export const getBapuSchedules = asyncHandler(async (req, res) => {
     const s = schedule.toJSON();
     return {
       ...s,
-      ...extractLocationHierarchy(s.location)
+      ...extractLocationHierarchy(s.location),
+      fullLocation: formatLocationAddress(s.location)
     };
   });
 
