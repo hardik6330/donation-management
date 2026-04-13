@@ -298,7 +298,7 @@ export const uploadSlipToCloudinary = async (pdfBuffer, donorName, mobileNumber,
     const uploadOptions = {
       folder: folderName,
       public_id: `slip_${donationId}`,
-      resource_type: 'raw',
+      resource_type: 'image',
       format: 'pdf',
       overwrite: true,
       timeout: 60000, // 60 seconds timeout
@@ -311,7 +311,9 @@ export const uploadSlipToCloudinary = async (pdfBuffer, donorName, mobileNumber,
           console.error(`[Cloudinary] ❌ Stream Upload Error for Donation ${donationId}:`, error);
           return reject(error);
         }
-        resolve(result.secure_url);
+        // Store as .png URL so browser opens it as image directly (no PDF viewer needed)
+        const imageUrl = result.secure_url.replace(/\.pdf$/, '.png');
+        resolve(imageUrl);
       }
     );
 
