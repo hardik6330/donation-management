@@ -1,7 +1,7 @@
 import express from 'express';
 import { createDonationOrder, verifyPayment, getDonations, generateQRCode, updateDonation } from '../controllers/donationController.js';
-import { validate } from '../validators/validate.js';
-import { donationSchema } from '../validators/donation.validator.js';
+import { validate } from '../utils/validators/validate.js';
+import { donationSchema } from '../utils/validators/donation.validator.js';
 
 const router = express.Router();
 

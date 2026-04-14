@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } from '../config/env.js';
+import { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } from '../../config/env.js';
 
 // 1. Create Nodemailer Transporter
 const transporter = nodemailer.createTransport({
@@ -131,4 +131,42 @@ return `
 
   </div>
 `;
+};
+
+export const getPartialPaymentReminderEmailTemplate = (donorName, totalAmount, paidAmount, remainingAmount, cause, donationId) => {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 25px; border-radius: 12px; background-color: #ffffff;">
+      <h2 style="color: #2563eb; text-align: center; margin-bottom: 10px;">
+        બાકી દાન રકમ માટે નમ્ર યાદી
+      </h2>
+      
+      <p>પ્રિય <strong>${donorName}</strong>,</p>
+      
+      <p style="font-size: 15px; line-height: 1.7;">
+        <strong>શ્રી સર્વેશ્વર ગૌધામ</strong> માટે આપ દ્વારા <strong>${cause}</strong> માટે કરવામાં આવેલ 
+        <strong>₹${totalAmount}</strong>ના દાનની નોંધણી બદલ આભાર.
+      </p>
+
+      <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <p style="margin: 0;"><strong>કુલ દાન રકમ:</strong> ₹${totalAmount}</p>
+        <p style="margin: 5px 0 0 0;"><strong>જમા રકમ:</strong> ₹${paidAmount}</p>
+        <p style="margin: 5px 0 0 0; color: #dc2626;"><strong>બાકી રકમ:</strong> ₹${remainingAmount}</p>
+        <p style="margin: 5px 0 0 0;"><strong>ડોનેશન ID:</strong> ${donationId}</p>
+      </div>
+
+      <p style="font-size: 15px; line-height: 1.7;">
+        આપની અનુકૂળતા મુજબ બાકી રકમ જમા કરાવી આપના આ પવિત્ર કાર્યને પૂર્ણ કરવા વિનંતી છે.
+        આપનો આ સહયોગ ગૌસેવા અને સમાજ કલ્યાણના કાર્યોમાં ખૂબ જ ઉપયોગી બનશે.
+      </p>
+
+      <p style="font-size: 15px; line-height: 1.7;">
+        વધુ માહિતી માટે આપ અમારો સંપર્ક કરી શકો છો.
+      </p>
+
+      <p style="margin-top: 25px;">
+        શુભેચ્છાઓ સહ,<br>
+        <strong>શ્રી સર્વેશ્વર ગૌધામ પરિવાર</strong>
+      </p>
+    </div>
+  `;
 };

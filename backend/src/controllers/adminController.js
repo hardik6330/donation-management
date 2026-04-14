@@ -4,6 +4,48 @@ import { getPaginationParams, getPaginatedResponse, processFields } from '../uti
 import { buildDonationFilter } from '../utils/filterHelper.js';
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { processPendingNotifications } from '../utils/services/notification.service.js';
+import { sendWhatsAppMessage } from '../utils/services/whatsapp.service.js';
+import { badRequest } from '../utils/httpError.js';
+
+export const processRemindersAdmin = asyncHandler(async (req, res) => {
+  const results = await processPendingNotifications();
+  return sendSuccess(res, results, 'Reminder processing completed successfully');
+});
+
+export const sendAnnouncement = asyncHandler(async (req, res) => {
+  const { mobileNumber, message, templateName, userId } = req.body;
+
+  if (!mobileNumber || !templateName) {
+    throw badRequest('Mobile number and template name are required');
+  }
+
+  // Find user to get name if available
+  const user = userId ? await User.findByPk(userId) : null;
+  const userName = user?.name || 'Donor';
+
+  // Prepare components for 'general_notification' template
+  // Assuming template: "શ્રી સર્વેશ્વર ગૌધામ: {{1}} બાપજી. {{2}}"
+  // Or whatever the template structure is. 
+  // Based on screenshot, general_notification has "શ્રી સર્વેશ્વર ગૌધામ: {{1}} બાપજી."
+  const components = [
+    {
+      type: 'body',
+      parameters: [
+        { type: 'text', text: userName },
+        { type: 'text', text: message }
+      ]
+    }
+  ];
+
+  const result = await sendWhatsAppMessage(mobileNumber, templateName, 'gu', components);
+
+  if (result.success) {
+    return sendSuccess(res, result.data, 'Announcement sent successfully');
+  } else {
+    throw badRequest(result.error?.message || 'Failed to send WhatsApp message');
+  }
+});
 
 export const getAdminStats = asyncHandler(async (req, res) => {
   // 1. Run queries in parallel for better performance

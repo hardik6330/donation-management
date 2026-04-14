@@ -5,7 +5,8 @@ import {
   DB_PASSWORD,
   DB_HOST,
   DB_PORT,
-  DB_DIALECT
+  DB_DIALECT,
+  NODE_ENV
 } from './env.js';
 
 export const sequelize = new Sequelize(
@@ -41,3 +42,48 @@ export const connectDB = async () => {
     process.exit(1);
   }
 };
+
+// Initialize Database logic moved from server.js
+let dbInitialized = false;
+let dbInitPromise = null;
+
+export const initDB = async (force = false) => {
+  if (dbInitialized && !force) return { initialized: true };
+  if (dbInitPromise && !force) return dbInitPromise;
+
+  dbInitPromise = (async () => {
+    try {
+      // Dynamic imports to avoid circular dependencies
+      const { seedAdmin } = await import('../utils/seeders/admin.seeder.js');
+      const { seedRoles } = await import('../utils/seeders/roles.seeder.js');
+
+      await connectDB();
+      
+      // OPTIMIZATION: Only sync and seed in development or when explicitly requested
+      const shouldSync = NODE_ENV === 'development' || process.env.FORCE_DB_SYNC === 'true';
+      
+      if (shouldSync) {
+        const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
+        await sequelize.sync(syncOptions);
+        console.log('✅ Database synchronized (Tables created/updated)');
+
+        await seedRoles();
+        await seedAdmin();
+      } else {
+        console.log('ℹ️ Database sync skipped (Production mode)');
+      }
+      
+      dbInitialized = true;
+      dbInitPromise = null;
+      return { initialized: true };
+    } catch (error) {
+      console.error('❌ Database initialization failed:', error);
+      dbInitPromise = null;
+      throw error;
+    }
+  })();
+
+  return dbInitPromise;
+};
+
+export const isDBInitialized = () => dbInitialized;

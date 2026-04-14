@@ -1,4 +1,4 @@
-import { Donation, User, Category, Gaushala, Katha, Location } from '../models/index.js';
+import { Donation, User, Category, Gaushala, Katha, Location, Notification } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
@@ -10,11 +10,41 @@ import { sequelize } from '../config/db.js';
 import { FRONTEND_URL } from '../config/env.js';
 // import { RAZORPAY_KEY_SECRET, RAZORPAY_KEY_ID } from '../config/env.js';
 import { Op } from 'sequelize';
-import { sendEmail, getDonationEmailTemplate } from '../services/email.service.js';
-import { sendDetailedDonationSMS } from '../services/sms.service.js';
-import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../services/donationSlip.service.js';
+import { sendEmail, getDonationEmailTemplate } from '../utils/services/email.service.js';
+import { sendDetailedDonationSMS } from '../utils/services/sms.service.js';
+import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/services/donationSlip.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
+
+// Helper function to manage partial payment reminders
+const managePartialPaymentReminder = async (donationId, userId, status) => {
+  try {
+    if (status === 'partially_paid') {
+      // Schedule reminder for 5 days later at 10:00 AM
+      const scheduledAt = new Date();
+      scheduledAt.setDate(scheduledAt.getDate() + 5);
+      scheduledAt.setHours(10, 0, 0, 0); // Set time to exactly 10:00:00.000 AM
+
+      // Upsert notification (one per donation)
+      const [notification, created] = await Notification.findOrCreate({
+        where: { donationId, type: 'partial_payment_reminder' },
+        defaults: { userId, scheduledAt, status: 'pending' }
+      });
+
+      if (!created && notification.status !== 'sent') {
+        await notification.update({ scheduledAt, status: 'pending' });
+      }
+    } else if (status === 'completed') {
+      // Cancel any pending reminders if donation is fully paid
+      await Notification.update(
+        { status: 'cancelled' },
+        { where: { donationId, status: 'pending', type: 'partial_payment_reminder' } }
+      );
+    }
+  } catch (error) {
+    console.error(`❌ Error managing reminder for donation ${donationId}:`, error);
+  }
+};
 
 // 1. QR Code Generate Karo
 export const generateQRCode = asyncHandler(async (req, res) => {
@@ -168,6 +198,11 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   };
 
   const donation = await Donation.create(donationData);
+
+  // 4. Handle Partial Payment Reminder (Send email after 5 days)
+  if (isPartialPay) {
+    await managePartialPaymentReminder(donation.id, user.id, 'partially_paid');
+  }
 
   // Generate slip, upload to Cloudinary, save URL, and send email/SMS
   // Only for fully paid donations at creation time.
@@ -331,7 +366,7 @@ export const getDonors = asyncHandler(async (req, res) => {
     minAmount,
     maxAmount
   } = req.query;
-  const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
+  const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
   const donorWhere = { isAdmin: false };
 
   if (search) {
@@ -369,29 +404,47 @@ export const getDonors = asyncHandler(async (req, res) => {
     }
   }
 
+  // Handle attributes and virtual fields (donationCount, totalDonated)
+  let attributes = requestedFields || { include: [] };
+  
+  const totalDonatedLiteral = [
+    sequelize.literal(`(
+      SELECT COALESCE(SUM(amount), 0)
+      FROM Donations
+      WHERE Donations.donorId = User.id AND Donations.status = 'completed'
+    )`),
+    'totalDonated'
+  ];
+
+  const donationCountLiteral = [
+    sequelize.literal(`(
+      SELECT COUNT(*)
+      FROM Donations
+      WHERE Donations.donorId = User.id AND Donations.status = 'completed'
+    )`),
+    'donationCount'
+  ];
+
+  if (Array.isArray(attributes)) {
+    // If specific fields are requested, filter out virtual ones from main selection
+    // and add them back as literals
+    const baseFields = attributes.filter(f => f !== 'donationCount' && f !== 'totalDonated');
+    const includeLiterals = [];
+    if (attributes.includes('totalDonated')) includeLiterals.push(totalDonatedLiteral);
+    if (attributes.includes('donationCount')) includeLiterals.push(donationCountLiteral);
+    
+    attributes = [...baseFields, ...includeLiterals];
+  } else {
+    // Default behavior (fetch all + virtual fields)
+    attributes = {
+      include: [totalDonatedLiteral, donationCountLiteral]
+    };
+  }
+
   const { count, rows: donors } = await User.findAndCountAll({
     where: donorWhere,
-    attributes: {
-      include: [
-        [
-          sequelize.literal(`(
-            SELECT COALESCE(SUM(amount), 0)
-            FROM Donations
-            WHERE Donations.donorId = User.id AND Donations.status = 'completed'
-          )`),
-          'totalDonated'
-        ],
-        [
-          sequelize.literal(`(
-            SELECT COUNT(*)
-            FROM Donations
-            WHERE Donations.donorId = User.id AND Donations.status = 'completed'
-          )`),
-          'donationCount'
-        ]
-      ]
-    },
-    order: [[sequelize.literal('totalDonated'), 'DESC']],
+    attributes,
+    order: requestedFields ? [[sequelize.literal('donationCount'), 'DESC'], ['name', 'ASC']] : [[sequelize.literal('totalDonated'), 'DESC']],
     limit: queryLimit,
     offset
   });
@@ -495,6 +548,11 @@ export const updateDonation = asyncHandler(async (req, res) => {
   }
 
   await donation.update(updateData);
+
+  // Manage reminders if status changed to partially_paid or completed
+  if (updateData.status === 'partially_paid' || updateData.status === 'completed') {
+    await managePartialPaymentReminder(donation.id, donation.donorId, updateData.status);
+  }
 
   // Generate slip/email/SMS when donation becomes fully completed
   if (updateData.status === 'completed' && wasNotCompleted) {

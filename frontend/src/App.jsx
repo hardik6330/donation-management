@@ -26,6 +26,7 @@ import MandalMemberList from './pages/admin/components/mandal/MandalMemberList';
 import MandalPaymentPage from './pages/admin/components/mandal/MandalPaymentPage';
 import RoleList from './pages/admin/components/roles';
 import SystemUserList from './pages/admin/components/system-users';
+import AnnouncementPage from './pages/admin/components/announcement';
 import { ToastContainer, Slide } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -68,6 +69,7 @@ function App() {
                 <Route path="dashboard" element={<Dashboard />} />
                 <Route path="donations" element={<DonationList />} />
                 <Route path="donors" element={<DonorsList />} />
+                <Route path="announcement" element={<AnnouncementPage />} />
                 <Route path="gaushala" element={<GaushalaList />} />
                 <Route path="katha" element={<KathaList />} />
                 <Route path="bapu-schedule" element={<BapuScheduleList />} />

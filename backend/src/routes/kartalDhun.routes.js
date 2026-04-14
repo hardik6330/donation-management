@@ -1,8 +1,8 @@
 import express from 'express';
 import { addKartalDhun, getAllKartalDhun, updateKartalDhun, deleteKartalDhun } from '../controllers/kartalDhunController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
-import { validate } from '../validators/validate.js';
-import { kartalDhunSchema } from '../validators/kartalDhun.validator.js';
+import { validate } from '../utils/validators/validate.js';
+import { kartalDhunSchema } from '../utils/validators/kartalDhun.validator.js';
 
 const router = express.Router();
 

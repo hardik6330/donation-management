@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+@theme {
+  --color-primary: #2563eb; /* blue-600 */
+  --color-primary-hover: #1d4ed8; /* blue-700 */
+  --color-primary-light: #eff6ff; /* blue-50 */
+}
+
 /* Custom Toastify Styles */
 :root {
   --toastify-color-success: #22c55e; /* Green-500 */

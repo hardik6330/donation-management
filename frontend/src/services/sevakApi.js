@@ -37,6 +37,7 @@ const sevakApi = apiSlice.injectEndpoints({
 
 export const {
   useGetSevaksQuery,
+  useLazyGetSevaksQuery,
   useAddSevakMutation,
   useUpdateSevakMutation,
   useDeleteSevakMutation,

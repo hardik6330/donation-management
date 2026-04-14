@@ -4,58 +4,17 @@ import os from 'os';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import { connectDB, sequelize } from './config/db.js';
+import { initDB, isDBInitialized } from './config/db.js';
 import './models/index.js'; // Register all models & associations before sync
 import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.js';
 import { apiLimiter } from './middlewares/rateLimiter.js';
 import { errorHandler } from './middlewares/errorHandler.js';
 import { sendError } from './utils/apiResponse.js';
-import { seedAdmin } from './seeders/admin.seeder.js';
-import { seedRoles } from './seeders/roles.seeder.js';
 import { NODE_ENV, FRONTEND_URL, PORT } from './config/env.js';
 // Load env vars
 
 const numCPUs = os.cpus().length;
-
-// Initialize Database
-let dbInitialized = false;
-let dbInitPromise = null;
-
-const initDB = async (force = false) => {
-  if (dbInitialized && !force) return;
-  if (dbInitPromise && !force) return dbInitPromise;
-
-  dbInitPromise = (async () => {
-    try {
-      await connectDB();
-      
-      // OPTIMIZATION: Only sync and seed in development or when explicitly requested
-      // Running sync and seed on every cold start in serverless is very expensive
-      const shouldSync = NODE_ENV === 'development' || process.env.FORCE_DB_SYNC === 'true';
-      
-      if (shouldSync) {
-        const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
-        await sequelize.sync(syncOptions);
-        console.log('✅ Database synchronized (Tables created/updated)');
-
-        await seedRoles();
-        await seedAdmin();
-      } else {
-        console.log('ℹ️ Database sync skipped (Production mode)');
-      }
-      
-      dbInitialized = true;
-      dbInitPromise = null;
-    } catch (error) {
-      console.error('❌ Database initialization failed:', error);
-      dbInitPromise = null;
-      throw error;
-    }
-  })();
-
-  return dbInitPromise;
-};
 
 const app = express();
 const port = PORT || 5000;
@@ -76,7 +35,7 @@ app.use(express.urlencoded({ extended: true }));
 // Lazy load DB on first request for serverless (Only if background init hasn't finished)
 app.use(async (req, res, next) => {
   // Only wait for DB on non-root routes to keep health checks fast
-  if (req.path !== '/' && !dbInitialized) {
+  if (req.path !== '/' && !isDBInitialized()) {
     try {
       await initDB();
     } catch (error) {

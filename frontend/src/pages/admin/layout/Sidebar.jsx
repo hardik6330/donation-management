@@ -18,7 +18,8 @@ import {
   UsersRound,
   Music,
   Shield,
-  FileText
+  FileText,
+  MessageSquare
 } from 'lucide-react';
 import usePermissions from '../../../hooks/usePermissions';
 import { useAuth } from '../../../context/AuthContext';
@@ -32,6 +33,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard', show: hasPermission('dashboard') },
     { id: 'donations', label: 'Donation List', icon: HandCoins, path: '/admin/donations', show: hasPermission('donations') },
     { id: 'donors', label: 'Donors', icon: Users, path: '/admin/donors', show: hasPermission('donors') },
+    { id: 'announcement', label: 'Announcement', icon: MessageSquare, path: '/admin/announcement', show: hasPermission('announcement') },
     { id: 'expenses', label: 'Expenses', icon: IndianRupee, path: '/admin/expenses', show: hasPermission('expenses') },
     { id: 'sevaks', label: 'Sevaks', icon: UserCheck, path: '/admin/sevaks', show: hasPermission('sevaks') },
     { id: 'gaushala', label: 'Gaushala', icon: Building2, path: '/admin/gaushala', show: hasPermission('gaushala') },

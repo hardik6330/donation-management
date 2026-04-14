@@ -7,8 +7,8 @@ import {
   generateMonthlyPayments, getMonthlyPayments, updatePayment, getMonthlyReport
 } from '../controllers/mandalPaymentController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
-import { validate } from '../validators/validate.js';
-import { mandalSchema, mandalMemberSchema, generatePaymentSchema } from '../validators/mandal.validator.js';
+import { validate } from '../utils/validators/validate.js';
+import { mandalSchema, mandalMemberSchema, generatePaymentSchema } from '../utils/validators/mandal.validator.js';
 
 const router = express.Router();
 

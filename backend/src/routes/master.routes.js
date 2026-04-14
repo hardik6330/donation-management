@@ -12,8 +12,8 @@ import {
   getSubLocations
 } from '../controllers/masterController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
-import { validate } from '../validators/validate.js';
-import { locationSchema, categorySchema, combinedMasterSchema } from '../validators/master.validator.js';
+import { validate } from '../utils/validators/validate.js';
+import { locationSchema, categorySchema, combinedMasterSchema } from '../utils/validators/master.validator.js';
 
 const router = express.Router();
 

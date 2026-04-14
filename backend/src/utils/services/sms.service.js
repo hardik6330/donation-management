@@ -1,4 +1,4 @@
-import { VITE_FAST2SMS_API_KEY } from '../config/env.js';
+import { VITE_FAST2SMS_API_KEY } from '../../config/env.js';
 
 /**
  * Send SMS using Fast2SMS API (India)

@@ -15,6 +15,7 @@ import { MandalMember } from './mandalMember.js';
 import { MandalPayment } from './mandalPayment.js';
 import { BapuSchedule } from './bapuSchedule.js';
 import { KartalDhun } from './kartalDhun.js';
+import { Notification } from './notification.js';
 
 // ──────────────────────────────────────
 // Associations
@@ -23,6 +24,13 @@ import { KartalDhun } from './kartalDhun.js';
 // User <-> Role
 User.belongsTo(Role, { as: 'role', foreignKey: 'roleId' });
 Role.hasMany(User, { foreignKey: 'roleId' });
+
+// Notification associations
+User.hasMany(Notification, { foreignKey: 'userId' });
+Notification.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+Donation.hasMany(Notification, { foreignKey: 'donationId' });
+Notification.belongsTo(Donation, { as: 'donation', foreignKey: 'donationId' });
 
 // Location (self-referencing hierarchy: City > Taluka > Village)
 Location.hasMany(Location, { as: 'children', foreignKey: 'parentId' });
@@ -91,4 +99,5 @@ export {
   MandalPayment,
   BapuSchedule,
   KartalDhun,
+  Notification,
 };

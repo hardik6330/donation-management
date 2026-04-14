@@ -1,7 +1,7 @@
-import { User, Role } from '../models/index.js';
+import { User, Role } from '../../models/index.js';
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
-import { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_MOBILE } from '../config/env.js';
+import { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_MOBILE } from '../../config/env.js';
 
 export const seedAdmin = async () => {
   try {

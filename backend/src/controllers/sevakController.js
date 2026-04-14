@@ -24,7 +24,7 @@ export const addSevak = asyncHandler(async (req, res) => {
 
 // 2. Get All Sevaks with Filters
 export const getAllSevaks = asyncHandler(async (req, res) => {
-  const { page, limit } = getPaginationParams(req.query);
+  const { page, limit, requestedFields } = getPaginationParams(req.query);
   const { search, city, state, isActive } = req.query;
 
   const where = {};
@@ -50,6 +50,7 @@ export const getAllSevaks = asyncHandler(async (req, res) => {
 
   const { count, rows } = await Sevak.findAndCountAll({
     where,
+    attributes: requestedFields || undefined,
     order: [['name', 'ASC']],
     limit,
     offset: (page - 1) * limit

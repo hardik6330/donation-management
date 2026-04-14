@@ -46,6 +46,13 @@ const donationApi = apiSlice.injectEndpoints({
       }),
       providesTags: ['Donors'],
     }),
+    sendAnnouncement: builder.mutation({
+      query: (data) => ({
+        url: '/admin/announcement',
+        method: 'POST',
+        body: data,
+      }),
+    }),
   }),
 });
 
@@ -57,4 +64,6 @@ export const {
   useGetAdminStatsQuery,
   useGetAllDonationsQuery,
   useGetDonorsQuery,
+  useLazyGetDonorsQuery,
+  useSendAnnouncementMutation,
 } = donationApi;

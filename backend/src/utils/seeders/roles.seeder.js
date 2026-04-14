@@ -1,4 +1,4 @@
-import { Role } from '../models/index.js';
+import { Role } from '../../models/index.js';
 
 const MODULES = ['dashboard', 'donations', 'donors', 'expenses', 'sevaks', 'gaushala', 'katha', 'mandal', 'kartalDhun', 'bapuSchedule', 'category', 'location', 'users'];
 
