@@ -14,12 +14,9 @@ const FONTS = {
 };
 
 const SLIP_TEMPLATE_CANDIDATES = [
-  // Primary expected location
-  path.resolve(__dirname, '../../../../frontend/src/assets/slip.jpg'),
-  // Supported fallback formats at same location
-  path.resolve(__dirname, '../../../../frontend/src/assets/slip.jpeg'),
-  // Fallback if frontend is missing
+  // Primary: backend assets
   path.resolve(__dirname, '../../assets/slip.jpg'),
+  // Fallback: frontend assets
 ];
 
 const numberToGujaratiWords = (num) => {
@@ -129,20 +126,20 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
 
       // Date in left-side "તા." field area (inside the line, not outside template)
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
-        .text(receiptDate, px(0.242), py(0.410), { width: drawW * 0.18, align: 'left', lineBreak: false });
+        .text(receiptDate, px(0.242), py(0.420), { width: drawW * 0.18, align: 'left', lineBreak: false });
 
       // Handle donor name with fallback font for English characters
       const donorNameFont = (hasGujaratiFont && hasNonLatin(donorName)) ? 'Gujarati-Bold' : 'Helvetica-Bold';
       doc.fillColor('#1f2937').font(donorNameFont).fontSize(fs(0.017))
-        .text(donorName, px(0.255), py(0.455), { width: drawW * 0.24, lineBreak: false });
+        .text(donorName, px(0.255), py(0.465), { width: drawW * 0.24, lineBreak: false });
 
       // Handle address with fallback font for English characters
       const donorAddressFont = (hasGujaratiFont && hasNonLatin(donorAddress)) ? 'Gujarati-Regular' : 'Helvetica';
       doc.fillColor('#1f2937').font(donorAddressFont).fontSize(fs(0.014))
-        .text(donorAddress, px(0.265), py(0.510), { width: drawW * 0.50, lineBreak: false });
+        .text(donorAddress, px(0.265), py(0.525), { width: drawW * 0.50, lineBreak: false });
 
       doc.fillColor('#1f2937').font(hasGujaratiFont ? 'Gujarati-Bold' : 'Helvetica-Bold').fontSize(fs(0.013))
-        .text(amountInWords, px(0.395), py(0.570), {
+        .text(amountInWords, px(0.395), py(0.580), {
           width: drawW * 0.46,
           height: drawW * 0.06,
           lineBreak: true,
@@ -163,14 +160,14 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
           .restore();
       };
 
-      const checkY = py(0.628);
+      const checkY = py(0.650);
       const checkSize = drawW * 0.015;
-      if (isCash) drawCheckMark(px(0.640), checkY, checkSize);      // રોકડા
-      if (isCheque) drawCheckMark(px(0.730), checkY, checkSize);    // ચેક
-      if (isOnline) drawCheckMark(px(0.802), checkY, checkSize);    // ઓનલાઈન
+      if (isCash) drawCheckMark(px(0.660), checkY, checkSize);      // રોકડા
+      if (isCheque) drawCheckMark(px(0.755), checkY, checkSize);    // ચેક
+      if (isOnline) drawCheckMark(px(0.835), checkY, checkSize);    // ઓનલાઈન
 
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.020))
-        .text(`${amountText}`, px(0.725), py(0.705), { width: drawW * 0.20, align: 'center' });
+        .text(`${amountText}`, px(0.725), py(0.720), { width: drawW * 0.20, align: 'center' });
 
       doc.end();
       return;
