@@ -5,6 +5,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import { initDB, isDBInitialized } from './config/db.js';
+import { startCronJob } from './config/cron.js';
 import './models/index.js'; // Register all models & associations before sync
 import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.js';
@@ -70,6 +71,9 @@ if (NODE_ENV !== 'production' && cluster.isPrimary) {
   console.log(`🚀 Primary process ${process.pid} is running`);
   
   initDB().then(() => {
+    // Start Cron Job only in Primary process
+    startCronJob();
+
     for (let i = 0; i < numCPUs; i++) {
       cluster.fork();
     }
@@ -83,6 +87,12 @@ if (NODE_ENV !== 'production' && cluster.isPrimary) {
   // In Vercel or worker processes
   app.listen(port, () => {
     console.log(`👷 Process ${process.pid} started and running at http://localhost:${port}`);
+    
+    // Only start cron job if NOT in clustering mode or if it's the primary process
+    // This prevents multiple cron jobs from running in different worker processes
+    if (NODE_ENV === 'production' || cluster.isPrimary) {
+      startCronJob();
+    }
   });
 }
 

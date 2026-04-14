@@ -12,6 +12,7 @@ import { FRONTEND_URL } from '../config/env.js';
 import { Op } from 'sequelize';
 import { sendEmail, getDonationEmailTemplate } from '../utils/services/email.service.js';
 import { sendDetailedDonationSMS } from '../utils/services/sms.service.js';
+import { sendDetailedDonationSuccessWhatsAppPDF } from '../utils/services/whatsapp.service.js';
 import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/services/donationSlip.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
@@ -238,6 +239,29 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
           .then(async url => {
             await donation.update({ slipUrl: url });
+            
+            // Send WhatsApp notification with PDF slip
+            if (user.mobileNumber) {
+              const category = categoryId ? await Category.findByPk(categoryId) : null;
+              const categoryName = category?.name || causeString || 'ગૌસેવા';
+              
+              let locationName = '';
+              if (targetLocationId) {
+                const loc = await Location.findByPk(targetLocationId);
+                locationName = loc?.nameGuj || loc?.name || 'કોબડી';
+              } else {
+                locationName = 'કોબડી'; // Fallback if no targetLocationId
+              }
+
+              await sendDetailedDonationSuccessWhatsAppPDF(
+                user.mobileNumber, 
+                user.name, 
+                amount, 
+                categoryName, 
+                locationName, 
+                url
+              );
+            }
           })
         .catch(err => {
           console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, {
@@ -586,12 +610,35 @@ export const updateDonation = asyncHandler(async (req, res) => {
         
         const tasks = [];
 
-        const uploadTask = uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id)
-          .then(async cloudinaryUrl => {
-            await donation.update({ slipUrl: cloudinaryUrl });
-          })
-          .catch(err => console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err));
-        tasks.push(uploadTask);
+        const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
+        .then(async cloudinaryUrl => {
+          await donation.update({ slipUrl: cloudinaryUrl });
+          
+          // Send WhatsApp notification with PDF slip
+            if (donor.mobileNumber) {
+              const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
+              const categoryName = category?.name || donation.cause || 'ગૌસેવા';
+              
+              let locationName = '';
+              if (donation.locationId) {
+                const loc = await Location.findByPk(donation.locationId);
+                locationName = loc?.nameGuj || loc?.name || 'કોબડી';
+              } else {
+                locationName = 'કોબડી'; // Fallback if no locationId
+              }
+
+              await sendDetailedDonationSuccessWhatsAppPDF(
+                donor.mobileNumber, 
+                donor.name, 
+                donation.amount, 
+                categoryName, 
+                locationName, 
+                cloudinaryUrl
+              );
+            }
+        })
+        .catch(err => console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err));
+      tasks.push(uploadTask);
 
         if (donor.email) {
           const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);

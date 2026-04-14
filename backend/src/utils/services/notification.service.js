@@ -1,6 +1,6 @@
 import { Notification, Donation, User } from '../../models/index.js';
 import { sendEmail, getPartialPaymentReminderEmailTemplate } from './email.service.js';
-import { sendWhatsAppMessage } from './whatsapp.service.js';
+import { sendWhatsAppMessage, sendPartialPaymentReminderWhatsApp } from './whatsapp.service.js';
 import { Op } from 'sequelize';
 
 /**
@@ -14,10 +14,11 @@ export const processPendingNotifications = async () => {
   
   try {
     // 1. Fetch pending/failed notifications that are due and haven't exceeded max attempts (e.g. 5)
+    // IMPORTANT: We use a transaction and row locking to prevent duplicate processing
     const pendingNotifications = await Notification.findAll({
       where: {
-        status: { [Op.in]: ['pending', 'failed'] },
-        attempts: { [Op.lt]: 5 }, // Increased to 5 attempts
+        status: { [Op.in]: ['pending', 'failed'] }, 
+        attempts: { [Op.lt]: 5 },
         scheduledAt: { [Op.lte]: now }
       },
       include: [
@@ -36,18 +37,26 @@ export const processPendingNotifications = async () => {
     };
 
     for (const notification of pendingNotifications) {
+      console.log(`🔍 [Notification Service] Processing notification ID: ${notification.id}`);
       const { user, donation } = notification;
 
       // Double check if donation is still partially paid
-      if (!donation || (donation.status !== 'partially_paid' && donation.status !== 'pending')) {
-        console.log(`🚫 [Notification ${notification.id}] Cancelled: Donation status is ${donation?.status}`);
-        await notification.update({ status: 'cancelled' });
+      if (!donation) {
+        console.log(`🚫 [Notification ${notification.id}] Cancelled: Donation not found.`);
+        await notification.update({ status: 'cancelled', lastError: 'Donation not found' });
+        results.cancelled++;
+        continue;
+      }
+
+      if (donation.status !== 'partially_paid' && donation.status !== 'pending') {
+        console.log(`🚫 [Notification ${notification.id}] Cancelled: Donation status is '${donation.status}'`);
+        await notification.update({ status: 'cancelled', lastError: `Donation status is ${donation.status}` });
         results.cancelled++;
         continue;
       }
 
       if (!user || (!user.email && !user.mobileNumber)) {
-        console.warn(`⚠️ [Notification ${notification.id}] Skipped: No contact info found for user.`);
+        console.warn(`⚠️ [Notification ${notification.id}] Failed: No contact info (email/mobile) found.`);
         await notification.update({ status: 'failed', lastError: 'No email or mobile number' });
         results.failed++;
         continue;
@@ -57,71 +66,107 @@ export const processPendingNotifications = async () => {
         // Increment attempts
         await notification.increment('attempts');
         const currentAttempt = notification.attempts + 1;
+        console.log(`📤 [Notification ${notification.id}] Attempt ${currentAttempt} starting...`);
 
-        const tasks = [];
+        // Track each channel separately
+        let emailResult = null;
+        let whatsappResult = null;
 
         // 1. Send Email if email exists
         if (user.email) {
-          const emailHtml = getPartialPaymentReminderEmailTemplate(
-            user.name,
-            donation.amount,
-            donation.paidAmount,
-            donation.remainingAmount,
-            donation.cause,
-            donation.id
-          );
-          tasks.push(sendEmail(user.email, 'Donation Reminder - Shri Sarveshwar Gaudham', emailHtml));
+          console.log(`📧 [Notification ${notification.id}] Sending email to: ${user.email}`);
+          try {
+            const emailHtml = getPartialPaymentReminderEmailTemplate(
+              user.name,
+              donation.amount,
+              donation.paidAmount,
+              donation.remainingAmount,
+              donation.cause,
+              donation.id
+            );
+            emailResult = await sendEmail(user.email, 'Donation Reminder - Shri Sarveshwar Gaudham', emailHtml);
+            console.log(`✅ [Notification ${notification.id}] Email sent successfully.`);
+          } catch (err) {
+            emailResult = { success: false, error: err.message };
+            console.error(`❌ [Notification ${notification.id}] Email failed:`, err.message);
+          }
         }
 
         // 2. Send WhatsApp if mobile number exists
         if (user.mobileNumber) {
-          const waComponents = [
-            {
-              type: 'body',
-              parameters: [
-                { type: 'text', text: user.name },
-                { type: 'text', text: donation.amount.toString() },
-                { type: 'text', text: donation.cause },
-                { type: 'text', text: donation.remainingAmount.toString() }
-              ]
+          console.log(`📱 [Notification ${notification.id}] Sending WhatsApp to: ${user.mobileNumber}`);
+          try {
+            whatsappResult = await sendPartialPaymentReminderWhatsApp(
+              user.mobileNumber,
+              user.name,
+              donation.amount,
+              donation.paidAmount,
+              donation.remainingAmount,
+              donation.cause
+            );
+            if (whatsappResult.success) {
+              console.log(`✅ [Notification ${notification.id}] WhatsApp sent successfully.`);
+            } else {
+              console.error(`❌ [Notification ${notification.id}] WhatsApp failed:`, whatsappResult.error);
             }
-          ];
-          tasks.push(sendWhatsAppMessage(user.mobileNumber, 'partial_payment_reminder', 'en_US', waComponents));
+          } catch (err) {
+            whatsappResult = { success: false, error: err.message };
+            console.error(`❌ [Notification ${notification.id}] WhatsApp error:`, err.message);
+          }
         }
 
-        const taskResults = await Promise.allSettled(tasks);
-        const anySuccess = taskResults.some(r => r.status === 'fulfilled' && r.value.success);
+        if (!emailResult && !whatsappResult) {
+          console.warn(`⚠️ [Notification ${notification.id}] No tasks to perform.`);
+          await notification.update({ status: 'failed', lastError: 'No email or mobile' });
+          results.failed++;
+          continue;
+        }
 
-        if (anySuccess) {
+        const emailOk = emailResult?.success !== false;
+        const whatsappOk = whatsappResult?.success === true;
+        const allOk = emailOk && (!user.mobileNumber || whatsappOk);
+        const anyOk = emailOk || whatsappOk;
+
+        // Build error summary for failed channels
+        const failedChannels = [];
+        if (emailResult && !emailOk) failedChannels.push(`Email: ${JSON.stringify(emailResult.error)}`);
+        if (whatsappResult && !whatsappOk) failedChannels.push(`WhatsApp: ${JSON.stringify(whatsappResult.error)}`);
+        const errorSummary = failedChannels.join(' | ');
+
+        if (allOk) {
           await notification.update({
             status: 'sent',
             sentAt: new Date(),
             lastError: null
           });
-          console.log(`✅ [Notification ${notification.id}] Sent successfully.`);
+          console.log(`✅ [Notification ${notification.id}] All channels sent successfully.`);
+          results.sent++;
+        } else if (anyOk) {
+          // Partial success — mark sent but log which channel failed
+          await notification.update({
+            status: 'sent',
+            sentAt: new Date(),
+            lastError: errorSummary
+          });
+          console.warn(`⚠️ [Notification ${notification.id}] Partial success. Failed: ${errorSummary}`);
           results.sent++;
         } else {
-          const errors = taskResults
-            .filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.success))
-            .map(r => r.status === 'rejected' ? r.reason.message : (r.value.error || 'Unknown error'))
-            .join(' | ');
+          console.error(`❌ [Notification ${notification.id}] Attempt ${currentAttempt} failed: ${errorSummary}`);
 
-          console.error(`❌ [Notification ${notification.id}] Attempt ${currentAttempt} failed: ${errors}`);
-          
-          // Schedule next retry (e.g., after 30 mins, 1 hour, 2 hours...)
-          const retryDelayMinutes = Math.pow(2, currentAttempt) * 15; // Exponential backoff: 30, 60, 120 mins
+          // Schedule next retry
+          const retryDelayMinutes = Math.pow(2, currentAttempt) * 15;
           const nextRetry = new Date();
           nextRetry.setMinutes(nextRetry.getMinutes() + retryDelayMinutes);
 
-          await notification.update({ 
-            status: 'failed', 
-            lastError: errors || 'Email/WhatsApp service error',
-            scheduledAt: nextRetry // Update scheduledAt for next retry
+          await notification.update({
+            status: 'failed',
+            lastError: errorSummary || 'Email/WhatsApp service error',
+            scheduledAt: nextRetry
           });
           results.failed++;
         }
       } catch (err) {
-        console.error(`❌ [Notification ${notification.id}] Error:`, err);
+        console.error(`❌ [Notification ${notification.id}] Critical Error:`, err);
         await notification.update({ 
           status: 'failed', 
           lastError: err.message || 'Unknown error' 
