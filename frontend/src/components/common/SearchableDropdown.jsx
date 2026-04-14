@@ -23,9 +23,9 @@ const SearchableDropdown = ({
   inputRef,
   onKeyDown,
   onLoadMore,
+  onClear,
   hasMore = false,
   loading = false,
-  isServerSearch = false,
   allowTransliteration = true
 }) => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -112,7 +112,11 @@ const SearchableDropdown = ({
     e.stopPropagation();
     setHighlightIndex(-1);
     rawInputRef.current = '';
-    onChange({ target: { name, value: '' } });
+    if (onClear) {
+      onClear();
+    } else {
+      onChange({ target: { name, value: '' } });
+    }
   };
 
   const handleKeyDownInternal = (e) => {
@@ -142,9 +146,15 @@ const SearchableDropdown = ({
       }
     }
 
+    // Pass other key events (like Left/Right arrows) to parent if not handled by dropdown list
+    if (onKeyDown) {
+      onKeyDown(e);
+    }
+
+    // Allow backspace to clear even when transliteration is enabled
     if (showGujaratiIndicator) {
       if (e.key === 'Backspace') {
-        e.preventDefault();
+        e.preventDefault(); // Prevent default browser behavior to handle it manually
         const newRaw = rawInputRef.current.slice(0, -1);
         rawInputRef.current = newRaw;
         const transliterated = transliterateToGujarati(newRaw);
@@ -206,6 +216,12 @@ const SearchableDropdown = ({
           value={value}
           onChange={handleInputChange}
           onFocus={handleInputFocus}
+          onBlur={() => {
+            // Small delay to allow clicking on dropdown items
+            setTimeout(() => {
+              if (isActive) setActive(null);
+            }, 200);
+          }}
           onKeyDown={handleKeyDownInternal}
           disabled={disabled}
           autoComplete="off"
