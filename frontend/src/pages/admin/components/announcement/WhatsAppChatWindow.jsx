@@ -1,37 +1,103 @@
-import React, { useState } from 'react';
-import { 
-  Send, 
-  Search, 
-  MoreVertical, 
-  CheckCheck, 
-  Loader2, 
-  MessageSquare, 
+import React, { useState, useEffect } from 'react';
+import {
+  Send,
+  Search,
+  CheckCheck,
+  Loader2,
+  MessageSquare,
   Phone,
   X
 } from 'lucide-react';
 
-const WhatsAppChatWindow = ({ 
-  selectedUser, 
-  message, 
-  setMessage, 
-  handleSendMessage, 
+// Default template: general_notification with 1 body variable {{1}}
+const DEFAULT_TEMPLATE = {
+  id: 'general_notificationn',
+  name: 'General Notification',
+  language: 'gu',
+  variables: [
+    { key: 'message', label: 'Message', placeholder: 'સંદેશ લખો...', multiline: true },
+  ],
+  preview: 'જે સેવા કરો છે... {{1}}'
+};
+
+const WhatsAppChatWindow = ({
+  selectedUser,
+  message,
+  setMessage,
+  handleSendMessage,
   isSending,
   isSelectionMode,
-  selectedUsersCount
+  selectedUsersCount,
+  onTemplateSend,
+  onBulkTemplateSend
 }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
+  const [templateVars, setTemplateVars] = useState({});
+
+  // Reset message when user changes
+  useEffect(() => {
+    setTemplateVars({ message: '' });
+  }, [selectedUser]);
 
   const highlightText = (text, query) => {
     if (!query) return text;
     const parts = text.split(new RegExp(`(${query})`, 'gi'));
-    return parts.map((part, index) => 
-      part.toLowerCase() === query.toLowerCase() 
-        ? <span key={index} className="bg-yellow-300 font-bold">{part}</span> 
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.toLowerCase()
+        ? <span key={index} className="bg-yellow-300 font-bold">{part}</span>
         : part
     );
   };
 
+  const handleVarChange = (key, value) => {
+    setTemplateVars(prev => ({ ...prev, [key]: value }));
+  };
+
+  const getPreviewText = () => {
+    let text = DEFAULT_TEMPLATE.preview;
+    DEFAULT_TEMPLATE.variables.forEach((v, i) => {
+      const val = templateVars[v.key] || v.placeholder;
+      text = text.replace(`{{${i + 1}}}`, val);
+    });
+    return text;
+  };
+
+  const isReady = () => {
+    return DEFAULT_TEMPLATE.variables.every(v => templateVars[v.key]?.toString().trim());
+  };
+
+  const handleTemplateSend = (e) => {
+    e.preventDefault();
+    if (!isReady()) return;
+
+    if (onTemplateSend) {
+      onTemplateSend({
+        templateName: DEFAULT_TEMPLATE.id,
+        language: DEFAULT_TEMPLATE.language,
+        variables: templateVars,
+        hasHeader: false,
+      });
+      setTemplateVars(prev => ({ ...prev, message: '' }));
+    }
+  };
+
+  const handleBulkTemplateSend = (e) => {
+    e.preventDefault();
+    if (!isReady()) return;
+
+    if (onBulkTemplateSend) {
+      onBulkTemplateSend({
+        templateName: DEFAULT_TEMPLATE.id,
+        language: DEFAULT_TEMPLATE.language,
+        variables: templateVars,
+        hasHeader: false,
+      });
+      setTemplateVars(prev => ({ ...prev, message: '' }));
+    }
+  };
+
+  // ---- Selection Mode (Bulk) ----
   if (isSelectionMode) {
     return (
       <div className="flex-1 flex flex-col bg-[#f0f2f5] relative overflow-hidden">
@@ -46,12 +112,11 @@ const WhatsAppChatWindow = ({
             </div>
           </div>
         </div>
-// ... (rest of selection mode code)
 
-        <div 
-          className="flex-1 p-6 overflow-y-auto flex flex-col items-center justify-center text-center" 
-          style={{ 
-            backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', 
+        <div
+          className="flex-1 p-6 overflow-y-auto flex flex-col items-center justify-center text-center"
+          style={{
+            backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
             backgroundSize: 'contain',
             backgroundColor: '#e5ddd5'
           }}
@@ -72,41 +137,60 @@ const WhatsAppChatWindow = ({
           </div>
         </div>
 
-        {/* Message Input Area for Bulk */}
-        <div className="p-3 bg-[#f0f2f5] border-t border-gray-200/50 w-full">
-          <form onSubmit={handleSendMessage} className="flex items-center gap-2 w-full px-2">
-            <div className="flex-1">
-              <textarea
-                rows="1"
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Type bulk announcement message..."
-                className="w-full px-4 py-2.5 bg-white border-none rounded-xl text-sm shadow-sm focus:ring-1 focus:ring-primary outline-none transition resize-none min-h-[42px] max-h-32"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSendMessage(e);
-                  }
-                }}
-              />
-            </div>
+        {/* Template Input & Send */}
+        <div className="bg-white border-t border-gray-200/50">
+          <div className="px-4 pt-3 pb-1">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-200 rounded-full text-[10px] font-bold text-green-700 uppercase tracking-wider">
+              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+              {DEFAULT_TEMPLATE.name} · {selectedUsersCount} recipients
+            </span>
+          </div>
+
+          <div className="px-4 py-2">
+            {DEFAULT_TEMPLATE.variables.map((v) => (
+              <div key={v.key}>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-0.5 block">
+                  {v.label}
+                </label>
+                <textarea
+                  rows="2"
+                  value={templateVars[v.key] || ''}
+                  onChange={(e) => handleVarChange(v.key, e.target.value)}
+                  placeholder={v.placeholder}
+                  className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition resize-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleBulkTemplateSend(e);
+                    }
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="px-4 pb-3 pt-1">
             <button
-              type="submit"
-              disabled={isSending || !message.trim() || selectedUsersCount === 0}
-              className="w-11 h-11 bg-primary hover:bg-primary-hover disabled:bg-gray-300 text-white rounded-full flex items-center justify-center shadow-md transition shrink-0 active:scale-90"
+              onClick={handleBulkTemplateSend}
+              disabled={isSending || !isReady() || selectedUsersCount === 0}
+              className="w-full py-2.5 bg-primary hover:bg-primary-hover disabled:bg-gray-300 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition active:scale-95"
             >
               {isSending ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Send className="w-5 h-5" />
+                <>
+                  <Send className="w-4 h-4" />
+                  Send to {selectedUsersCount} Users
+                </>
               )}
             </button>
-          </form>
+          </div>
         </div>
       </div>
     );
   }
 
+  // ---- No User Selected ----
   if (!selectedUser) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-[#f8f9fa]">
@@ -115,7 +199,7 @@ const WhatsAppChatWindow = ({
         </div>
         <h2 className="text-xl font-bold text-gray-700 mb-2">Shree Sarveshwar Gaudham Announcement</h2>
         <p className="text-gray-500 text-sm max-w-md leading-relaxed">
-          Select a donor from the list to start sending announcements via WhatsApp. 
+          Select a donor from the list to start sending announcements via WhatsApp.
           Keep your community informed with ease.
         </p>
         <div className="mt-8 flex items-center gap-2 text-[10px] text-gray-400 uppercase font-bold tracking-widest">
@@ -125,6 +209,7 @@ const WhatsAppChatWindow = ({
     );
   }
 
+  // ---- Chat Window with general_notification template ----
   return (
     <div className="flex-1 flex flex-col bg-[#f0f2f5] relative overflow-hidden">
       {/* Chat Header */}
@@ -153,7 +238,7 @@ const WhatsAppChatWindow = ({
                   className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent rounded-xl text-sm focus:bg-white focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200"
                 />
               </div>
-              <button 
+              <button
                 onClick={() => {
                   setIsSearching(false);
                   setChatSearchQuery('');
@@ -164,7 +249,7 @@ const WhatsAppChatWindow = ({
               </button>
             </div>
           ) : (
-            <button 
+            <button
               onClick={() => setIsSearching(true)}
               className="p-2 hover:bg-gray-100 rounded-full text-gray-500 transition-colors"
             >
@@ -175,10 +260,10 @@ const WhatsAppChatWindow = ({
       </div>
 
       {/* Chat Messages Area */}
-      <div 
-        className="flex-1 p-6 overflow-y-auto flex flex-col gap-2 custom-scrollbar" 
-        style={{ 
-          backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")', 
+      <div
+        className="flex-1 p-6 overflow-y-auto flex flex-col gap-2 custom-scrollbar"
+        style={{
+          backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
           backgroundSize: 'contain',
           backgroundColor: '#e5ddd5'
         }}
@@ -187,7 +272,6 @@ const WhatsAppChatWindow = ({
           Announcement History
         </div>
 
-        {/* Simulation of a previous message */}
         <div className={`self-start bg-white p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[70%] relative group transition-opacity duration-200 ${
           chatSearchQuery && !'Welcome to Shri Sarveshwar Gaudham announcement portal.'.toLowerCase().includes(chatSearchQuery.toLowerCase()) ? 'opacity-20' : 'opacity-100'
         }`}>
@@ -196,7 +280,6 @@ const WhatsAppChatWindow = ({
           </p>
         </div>
 
-        {/* Another message */}
         <div className={`self-end bg-[#dcf8c6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[70%] relative group transition-opacity duration-200 ${
           chatSearchQuery && !`Ready to send your message to ${selectedUser.name}?`.toLowerCase().includes(chatSearchQuery.toLowerCase()) ? 'opacity-20' : 'opacity-100'
         }`}>
@@ -207,38 +290,61 @@ const WhatsAppChatWindow = ({
             <CheckCheck className="w-3 h-3 text-primary" />
           </div>
         </div>
+
+        {/* Template Preview */}
+        {isReady() && (
+          <div className="self-end bg-[#dcf8c6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[80%] relative group mt-2">
+            <p className="text-[10px] text-green-700 font-bold mb-1 uppercase tracking-wider">Preview</p>
+            <p className="text-sm text-gray-800 whitespace-pre-line">{getPreviewText()}</p>
+            <div className="absolute bottom-1 right-2 flex items-center gap-1">
+              <CheckCheck className="w-3 h-3 text-gray-400" />
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Message Input Area */}
-      <div className="p-3 bg-[#f0f2f5] border-t border-gray-200/50 w-full">
-        <form onSubmit={handleSendMessage} className="flex items-center gap-2 w-full px-2">
-          <div className="flex-1">
-            <textarea
-              rows="1"
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type an announcement message..."
-              className="w-full px-4 py-2.5 bg-white border-none rounded-xl text-sm shadow-sm focus:ring-1 focus:ring-primary outline-none transition resize-none min-h-[42px] max-h-32"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage(e);
-                }
-              }}
-            />
-          </div>
+      {/* Template Variable Input & Send */}
+      <div className="bg-white border-t border-gray-200/50">
+        {/* Template badge */}
+        <div className="px-4 pt-3 pb-1">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-200 rounded-full text-[10px] font-bold text-green-700 uppercase tracking-wider">
+            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            {DEFAULT_TEMPLATE.name}
+          </span>
+        </div>
+
+        {/* Message input */}
+        <div className="px-4 py-2">
+          <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-between">
+            <span>Message</span>
+            <span className="text-gray-400 font-normal">Shift+Enter for new line</span>
+          </label>
+          <textarea
+            rows="5"
+            value={templateVars.message || ''}
+            onChange={(e) => handleVarChange('message', e.target.value)}
+            placeholder="સંદેશ લખો... (emojis, line breaks supported)"
+            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition resize-y min-h-[80px] max-h-[200px]"
+          />
+        </div>
+
+        {/* Send Button */}
+        <div className="px-4 pb-3 pt-1">
           <button
-            type="submit"
-            disabled={isSending || !message.trim()}
-            className="w-11 h-11 bg-primary hover:bg-primary-hover disabled:bg-gray-300 text-white rounded-full flex items-center justify-center shadow-md transition shrink-0 active:scale-90"
+            onClick={handleTemplateSend}
+            disabled={isSending || !isReady()}
+            className="w-full py-2.5 bg-primary hover:bg-primary-hover disabled:bg-gray-300 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition active:scale-95"
           >
             {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
-              <Send className="w-5 h-5" />
+              <>
+                <Send className="w-4 h-4" />
+                Send WhatsApp Message
+              </>
             )}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );

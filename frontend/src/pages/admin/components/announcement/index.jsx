@@ -45,7 +45,7 @@ const AnnouncementPage = () => {
         const currentPagination = userType === 'donor' ? donorPagination : sevakPagination;
         const usersToSend = currentPagination.items.filter(r => selectedUsers.includes(r.id));
 
-        const sendPromises = usersToSend.map(user => 
+        const sendPromises = usersToSend.map(user =>
           sendAnnouncement({
             userId: user.id,
             mobileNumber: user.mobileNumber,
@@ -72,12 +72,61 @@ const AnnouncementPage = () => {
           message: message.trim(),
           templateName: 'general_notification'
         }).unwrap();
-        
+
         toast.success(`Message sent to ${selectedUser.name}`);
         setMessage('');
       } catch (err) {
         toast.error(err?.data?.message || 'Failed to send message');
       }
+    }
+  };
+
+  const handleTemplateSend = async (templateData) => {
+    if (!selectedUser) return;
+    try {
+      await sendAnnouncement({
+        userId: selectedUser.id,
+        mobileNumber: selectedUser.mobileNumber,
+        templateName: templateData.templateName,
+        language: templateData.language,
+        variables: templateData.variables,
+        hasHeader: templateData.hasHeader,
+      }).unwrap();
+
+      toast.success(`Message sent to ${selectedUser.name}`);
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to send message');
+    }
+  };
+
+  const handleBulkTemplateSend = async (templateData) => {
+    if (selectedUsers.length === 0) {
+      toast.warn('Please select at least one recipient');
+      return;
+    }
+
+    try {
+      const currentPagination = userType === 'donor' ? donorPagination : sevakPagination;
+      const usersToSend = currentPagination.items.filter(r => selectedUsers.includes(r.id));
+
+      const sendPromises = usersToSend.map(user =>
+        sendAnnouncement({
+          userId: user.id,
+          mobileNumber: user.mobileNumber,
+          templateName: templateData.templateName,
+          language: templateData.language,
+          variables: templateData.variables,
+          hasHeader: templateData.hasHeader,
+        }).unwrap()
+      );
+
+      await Promise.all(sendPromises);
+      toast.success(`Message sent to ${selectedUsers.length} users`);
+      setSelectedUsers([]);
+      setIsSelectionMode(false);
+    } catch (error) {
+      console.error('Bulk send error:', error);
+      toast.error('Failed to send some messages');
     }
   };
 
@@ -96,7 +145,7 @@ const AnnouncementPage = () => {
           selectedUsers={selectedUsers}
           setSelectedUsers={setSelectedUsers}
         />
-        <WhatsAppChatWindow 
+        <WhatsAppChatWindow
           selectedUser={selectedUser}
           message={message}
           setMessage={setMessage}
@@ -104,6 +153,8 @@ const AnnouncementPage = () => {
           isSending={isSending}
           isSelectionMode={isSelectionMode}
           selectedUsersCount={selectedUsers.length}
+          onTemplateSend={handleTemplateSend}
+          onBulkTemplateSend={handleBulkTemplateSend}
         />
       </div>
 

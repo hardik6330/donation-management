@@ -29,12 +29,23 @@ export const sendWhatsAppMessage = async (to, templateName, languageCode = 'en_U
 
   const url = `https://graph.facebook.com/v25.0/${WHATSAPP_PHONE_NUMBER_ID}/messages`;
 
-  // Sanitize: replace any empty text parameters with a space to prevent WhatsApp API 131008 error
+  // Sanitize text parameters for WhatsApp API:
+  // - Empty → '-' (prevents 131008)
+  // - Replace newlines/tabs with ' | ' separator (prevents 132018)
+  // - Collapse 4+ consecutive spaces to 3 (prevents 132018)
   const sanitizedComponents = components.map(comp => ({
     ...comp,
-    parameters: comp.parameters?.map(param =>
-      param.type === 'text' && !param.text ? { ...param, text: '-' } : param
-    )
+    parameters: comp.parameters?.map(param => {
+      if (param.type !== 'text') return param;
+      if (!param.text?.trim()) return { ...param, text: '-' };
+      const cleaned = param.text
+        .replace(/\r\n/g, ' | ')
+        .replace(/[\n\r]/g, ' | ')
+        .replace(/\t/g, ' ')
+        .replace(/\s{4,}/g, '   ')
+        .trim();
+      return { ...param, text: cleaned || '-' };
+    })
   }));
 
   const payload = {

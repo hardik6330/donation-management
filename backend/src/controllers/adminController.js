@@ -14,7 +14,7 @@ export const processRemindersAdmin = asyncHandler(async (req, res) => {
 });
 
 export const sendAnnouncement = asyncHandler(async (req, res) => {
-  const { mobileNumber, message, templateName, userId } = req.body;
+  const { mobileNumber, templateName, userId, variables, language, hasHeader, message } = req.body;
 
   if (!mobileNumber || !templateName) {
     throw badRequest('Mobile number and template name are required');
@@ -24,21 +24,40 @@ export const sendAnnouncement = asyncHandler(async (req, res) => {
   const user = userId ? await User.findByPk(userId) : null;
   const userName = user?.name || 'Donor';
 
-  // Prepare components for 'general_notification' template
-  // Assuming template: "શ્રી સર્વેશ્વર ગૌધામ: {{1}} બાપજી. {{2}}"
-  // Or whatever the template structure is. 
-  // Based on screenshot, general_notification has "શ્રી સર્વેશ્વર ગૌધામ: {{1}} બાપજી."
-  const components = [
-    {
-      type: 'body',
-      parameters: [
-        { type: 'text', text: userName },
-        { type: 'text', text: message }
-      ]
-    }
-  ];
+  let components = [];
 
-  const result = await sendWhatsAppMessage(mobileNumber, templateName, 'gu', components);
+  if (variables) {
+    // Build components from frontend template variables
+    // Header component (for document/media templates)
+    if (hasHeader && variables.pdfUrl) {
+      components.push({
+        type: 'header',
+        parameters: [
+          { type: 'document', document: { link: variables.pdfUrl, filename: 'Document.pdf' } }
+        ]
+      });
+    }
+
+    // Body parameters - build from variables in the order they appear in the template
+    const bodyParams = [];
+    if (variables.message) bodyParams.push({ type: 'text', text: variables.message });
+
+    if (bodyParams.length > 0) {
+      components.push({ type: 'body', parameters: bodyParams });
+    }
+  } else {
+    // Legacy: simple message-based send
+    components = [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: message || '-' }
+        ]
+      }
+    ];
+  }
+
+  const result = await sendWhatsAppMessage(mobileNumber, templateName, language || 'gu', components);
 
   if (result.success) {
     return sendSuccess(res, result.data, 'Announcement sent successfully');
