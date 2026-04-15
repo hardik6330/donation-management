@@ -27,7 +27,7 @@ const Profile = () => {
               <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
               <p className="text-gray-500 font-medium">{user.email}</p>
               <span className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {user.role || 'Administrator'}
+                {user.role?.name || user.role || 'Administrator'}
               </span>
             </div>
           </div>
