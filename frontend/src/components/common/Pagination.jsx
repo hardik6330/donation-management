@@ -69,7 +69,18 @@ const Pagination = ({
           >
             Prev
           </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+          {(() => {
+            let startPage = Math.max(1, page - 2);
+            let endPage = Math.min(totalPages, startPage + 4);
+            if (endPage - startPage < 4) {
+              startPage = Math.max(1, endPage - 4);
+            }
+            const pages = [];
+            for (let i = startPage; i <= endPage; i++) {
+              pages.push(i);
+            }
+            return pages;
+          })().map((p) => (
             <button
               key={p}
               onClick={() => onPageChange(p)}
