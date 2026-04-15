@@ -41,6 +41,6 @@ export const seedRoles = async () => {
 
     console.log('Default roles checked/seeded');
   } catch (error) {
-    console.error('❌ Error seeding roles:', error.message);
+    console.error('Error seeding roles:', error.message);
   }
 };

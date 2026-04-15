@@ -5,7 +5,7 @@ import { toast } from 'react-toastify';
  * Extracts the message from response and shows a toast.
  */
 export const handleMutationError = (error, defaultMsg = 'Something went wrong') => {
-  console.error('❌ [handleMutationError]:', error);
+  console.error('[handleMutationError]:', error);
 
   let message = defaultMsg;
 

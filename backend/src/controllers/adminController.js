@@ -80,7 +80,7 @@ export const sendAnnouncement = asyncHandler(async (req, res) => {
         sentAt: new Date()
       });
     } catch (dbError) {
-      console.error('❌ Error saving announcement to database:', dbError);
+      console.error('Error saving announcement to database:', dbError);
       // Don't fail the whole request if only history saving fails
     }
 
@@ -98,7 +98,7 @@ export const sendAnnouncement = asyncHandler(async (req, res) => {
         sentAt: new Date()
       });
     } catch (dbError) {
-      console.error('❌ Error saving failed announcement to database:', dbError);
+      console.error('Error saving failed announcement to database:', dbError);
     }
     
     throw badRequest(result.error?.message || 'Failed to send WhatsApp message');

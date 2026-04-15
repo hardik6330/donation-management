@@ -43,7 +43,7 @@ const managePartialPaymentReminder = async (donationId, userId, status) => {
       );
     }
   } catch (error) {
-    console.error(`❌ Error managing reminder for donation ${donationId}:`, error);
+    console.error(`Error managing reminder for donation ${donationId}:`, error);
   }
 };
 
@@ -324,7 +324,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
               village
             });
           } catch (err) {
-            console.error('❌ SMS Task Error:', err);
+            console.error('SMS Task Error:', err);
           }
         })();
         tasks.push(smsTask);
@@ -332,7 +332,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
       await Promise.all(tasks);
     } catch (error) {
-      console.error(`[Donation ${donation.id}] ❌ Error in post-donation tasks:`, error);
+      console.error(`[Donation ${donation.id}] Error in post-donation tasks:`, error);
     }
   }
 

@@ -34,7 +34,7 @@ export const ipAuth = (req, res, next) => {
   if (isAllowed) {
     next();
   } else {
-    console.warn(`🛑 Unauthorized access attempt from IP: ${clientIp}`);
+    console.warn(`Unauthorized access attempt from IP: ${clientIp}`);
     return sendError(res, `Access denied from IP: ${clientIp}`, 403);
   }
 };

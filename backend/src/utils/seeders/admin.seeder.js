@@ -37,6 +37,6 @@ export const seedAdmin = async () => {
       console.log('Admin already exists, skipping creation');
     }
   } catch (error) {
-    console.error('❌ Error seeding admin:', error.message);
+    console.error('Error seeding admin:', error.message);
   }
 };
