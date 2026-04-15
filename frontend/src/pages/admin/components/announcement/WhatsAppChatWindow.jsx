@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Send,
   Search,
@@ -6,8 +6,10 @@ import {
   Loader2,
   MessageSquare,
   Phone,
-  X
+  X,
+  AlertCircle
 } from 'lucide-react';
+import { useGetAnnouncementHistoryQuery } from '../../../../services/donationApi';
 
 // Default template: general_notification with 1 body variable {{1}}
 const DEFAULT_TEMPLATE = {
@@ -22,9 +24,6 @@ const DEFAULT_TEMPLATE = {
 
 const WhatsAppChatWindow = ({
   selectedUser,
-  message,
-  setMessage,
-  handleSendMessage,
   isSending,
   isSelectionMode,
   selectedUsersCount,
@@ -33,12 +32,29 @@ const WhatsAppChatWindow = ({
 }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
-  const [templateVars, setTemplateVars] = useState({});
+  const [templateVars, setTemplateVars] = useState({ message: '' });
+  const messagesEndRef = useRef(null);
 
-  // Reset message when user changes
+  const { data: historyData, isLoading: isHistoryLoading, refetch } = useGetAnnouncementHistoryQuery(
+    { mobileNumber: selectedUser?.mobileNumber, limit: 50 },
+    { skip: !selectedUser || isSelectionMode }
+  );
+
   useEffect(() => {
-    setTemplateVars({ message: '' });
-  }, [selectedUser]);
+    if (selectedUser?.mobileNumber) {
+      refetch();
+    }
+  }, [selectedUser?.mobileNumber, refetch]);
+
+  const history = useMemo(() => historyData?.data?.history || [], [historyData]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [history]);
 
   const highlightText = (text, query) => {
     if (!query) return text;
@@ -215,7 +231,7 @@ const WhatsAppChatWindow = ({
       {/* Chat Header */}
       <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10 min-h-[65px]">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center text-primary font-bold">
+          <div className="w-9 h-9 bg-primary-light rounded-full flex items-center justify-center text-primary text-xs font-bold">
             {selectedUser.name?.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -261,50 +277,71 @@ const WhatsAppChatWindow = ({
 
       {/* Chat Messages Area */}
       <div
-        className="flex-1 p-6 overflow-y-auto flex flex-col gap-2 custom-scrollbar"
+        className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 custom-scrollbar scroll-smooth"
         style={{
           backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
           backgroundSize: 'contain',
           backgroundColor: '#e5ddd5'
         }}
       >
-        <div className="self-center bg-primary-light/80 text-primary px-4 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider mb-4 backdrop-blur-sm">
+        <div className="self-center bg-primary-light/80 text-primary px-4 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider mb-2 backdrop-blur-sm">
           Announcement History
         </div>
 
-        <div className={`self-start bg-white p-3 rounded-2xl rounded-tl-none shadow-sm max-w-[70%] relative group transition-opacity duration-200 ${
-          chatSearchQuery && !'Welcome to Shri Sarveshwar Gaudham announcement portal.'.toLowerCase().includes(chatSearchQuery.toLowerCase()) ? 'opacity-20' : 'opacity-100'
-        }`}>
-          <p className="text-sm text-gray-800">
-            {highlightText('Welcome to Shri Sarveshwar Gaudham announcement portal.', chatSearchQuery)}
-          </p>
-        </div>
-
-        <div className={`self-end bg-[#dcf8c6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[70%] relative group transition-opacity duration-200 ${
-          chatSearchQuery && !`Ready to send your message to ${selectedUser.name}?`.toLowerCase().includes(chatSearchQuery.toLowerCase()) ? 'opacity-20' : 'opacity-100'
-        }`}>
-          <p className="text-sm text-gray-800">
-            {highlightText(`Ready to send your message to ${selectedUser.name}?`, chatSearchQuery)}
-          </p>
-          <div className="absolute bottom-1 right-2 flex items-center gap-1">
-            <CheckCheck className="w-3 h-3 text-primary" />
+        {isHistoryLoading ? (
+          <div className="flex justify-center py-4">
+            <Loader2 className="w-6 h-6 animate-spin text-primary" />
           </div>
-        </div>
-
-        {/* Template Preview */}
-        {isReady() && (
-          <div className="self-end bg-[#dcf8c6] p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[80%] relative group mt-2">
-            <p className="text-[10px] text-green-700 font-bold mb-1 uppercase tracking-wider">Preview</p>
-            <p className="text-sm text-gray-800 whitespace-pre-line">{getPreviewText()}</p>
-            <div className="absolute bottom-1 right-2 flex items-center gap-1">
-              <CheckCheck className="w-3 h-3 text-gray-400" />
+        ) : history.length === 0 ? (
+          <div className="self-center bg-white/50 px-4 py-2 rounded-xl text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-4">
+            No messages sent yet
+          </div>
+        ) : (
+          [...history].reverse().map((msg, index) => (
+            <div 
+              key={msg.id || index}
+              className={`self-end p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] relative group transition-all duration-200 ${
+                msg.status === 'failed' ? 'bg-red-50 border border-red-100' : 'bg-[#dcf8c6]'
+              } ${
+                chatSearchQuery && !msg.message.toLowerCase().includes(chatSearchQuery.toLowerCase()) ? 'opacity-20 scale-95' : 'opacity-100'
+              }`}
+            >
+              {msg.status === 'failed' && (
+                <div className="flex items-center gap-1 text-[9px] text-red-500 font-bold uppercase mb-1">
+                  <AlertCircle className="w-3 h-3" /> Failed to send
+                </div>
+              )}
+              <p className="text-sm text-gray-800 whitespace-pre-line leading-relaxed">
+                {highlightText(msg.message, chatSearchQuery)}
+              </p>
+              <div className="flex items-center justify-end gap-1.5 mt-1">
+                <span className="text-[9px] text-gray-500 font-medium">
+                  {new Date(msg.sentAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+                {msg.status === 'sent' && <CheckCheck className="w-3.5 h-3.5 text-gray-400" />}
+                {msg.status === 'delivered' && <CheckCheck className="w-3.5 h-3.5 text-gray-600" />}
+                {msg.status === 'read' && <CheckCheck className="w-3.5 h-3.5 text-blue-500" />}
+              </div>
             </div>
+          ))
+        )}
+
+        {/* Template Preview (Floating) */}
+        {isReady() && (
+          <div className="sticky bottom-0 self-end bg-white/90 backdrop-blur-sm p-3 rounded-2xl rounded-tr-none shadow-lg max-w-[80%] border border-primary/20 animate-in slide-in-from-bottom-4 duration-300">
+            <p className="text-[10px] text-primary font-bold mb-1 uppercase tracking-wider flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse"></span>
+              Live Preview
+            </p>
+            <p className="text-sm text-gray-800 whitespace-pre-line opacity-70 italic">{getPreviewText()}</p>
           </div>
         )}
+        
+        <div ref={messagesEndRef} />
       </div>
 
       {/* Template Variable Input & Send */}
-      <div className="bg-white border-t border-gray-200/50">
+      <div className="bg-white border-t border-gray-200/50 shadow-[0_-4px_10px_rgba(0,0,0,0.02)]">
         {/* Template badge */}
         <div className="px-4 pt-3 pb-1">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 border border-green-200 rounded-full text-[10px] font-bold text-green-700 uppercase tracking-wider">
@@ -316,15 +353,21 @@ const WhatsAppChatWindow = ({
         {/* Message input */}
         <div className="px-4 py-2">
           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-between">
-            <span>Message</span>
+            <span>Message Content</span>
             <span className="text-gray-400 font-normal">Shift+Enter for new line</span>
           </label>
           <textarea
-            rows="5"
+            rows="4"
             value={templateVars.message || ''}
             onChange={(e) => handleVarChange('message', e.target.value)}
             placeholder="સંદેશ લખો... (emojis, line breaks supported)"
-            className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-1 focus:ring-primary focus:border-primary outline-none transition resize-y min-h-[80px] max-h-[200px]"
+            className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y min-h-[80px] max-h-[180px] leading-relaxed"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && isReady() && !isSending) {
+                e.preventDefault();
+                handleTemplateSend(e);
+              }
+            }}
           />
         </div>
 
@@ -333,14 +376,14 @@ const WhatsAppChatWindow = ({
           <button
             onClick={handleTemplateSend}
             disabled={isSending || !isReady()}
-            className="w-full py-2.5 bg-primary hover:bg-primary-hover disabled:bg-gray-300 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-md transition active:scale-95"
+            className="w-full py-3 bg-primary hover:bg-primary-hover disabled:bg-gray-300 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition active:scale-[0.98] disabled:shadow-none"
           >
             {isSending ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
                 <Send className="w-4 h-4" />
-                Send WhatsApp Message
+                Send Announcement
               </>
             )}
           </button>

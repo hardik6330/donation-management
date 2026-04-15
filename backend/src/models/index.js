@@ -16,6 +16,7 @@ import { MandalPayment } from './mandalPayment.js';
 import { BapuSchedule } from './bapuSchedule.js';
 import { KartalDhun } from './kartalDhun.js';
 import { Notification } from './notification.js';
+import { Announcement } from './announcement.js';
 
 // ──────────────────────────────────────
 // Associations
@@ -28,6 +29,11 @@ Role.hasMany(User, { foreignKey: 'roleId' });
 // Notification associations
 User.hasMany(Notification, { foreignKey: 'userId' });
 Notification.belongsTo(User, { as: 'user', foreignKey: 'userId' });
+
+// Announcement associations
+// No direct foreign key to allow both User and Sevak IDs
+User.hasMany(Announcement, { foreignKey: 'userId', constraints: false });
+Sevak.hasMany(Announcement, { foreignKey: 'userId', constraints: false });
 
 Donation.hasMany(Notification, { foreignKey: 'donationId' });
 Notification.belongsTo(Donation, { as: 'donation', foreignKey: 'donationId' });
@@ -100,4 +106,5 @@ export {
   BapuSchedule,
   KartalDhun,
   Notification,
+  Announcement,
 };

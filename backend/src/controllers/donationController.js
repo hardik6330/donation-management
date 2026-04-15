@@ -449,26 +449,64 @@ export const getDonors = asyncHandler(async (req, res) => {
     'donationCount'
   ];
 
+  const lastMessageLiteral = [
+    sequelize.literal(`(
+      SELECT message
+      FROM Announcements
+      WHERE Announcements.userId = User.id 
+         OR Announcements.mobileNumber = User.mobileNumber
+         OR Announcements.mobileNumber = CONCAT('91', User.mobileNumber)
+         OR User.mobileNumber = CONCAT('91', Announcements.mobileNumber)
+      ORDER BY Announcements.sentAt DESC
+      LIMIT 1
+    )`),
+    'lastMessage'
+  ];
+
+  const lastMessageTimeLiteral = [
+    sequelize.literal(`(
+      SELECT sentAt
+      FROM Announcements
+      WHERE Announcements.userId = User.id 
+         OR Announcements.mobileNumber = User.mobileNumber
+         OR Announcements.mobileNumber = CONCAT('91', User.mobileNumber)
+         OR User.mobileNumber = CONCAT('91', Announcements.mobileNumber)
+      ORDER BY Announcements.sentAt DESC
+      LIMIT 1
+    )`),
+    'lastMessageTime'
+  ];
+
   if (Array.isArray(attributes)) {
     // If specific fields are requested, filter out virtual ones from main selection
     // and add them back as literals
-    const baseFields = attributes.filter(f => f !== 'donationCount' && f !== 'totalDonated');
+    const baseFields = attributes.filter(f => !['donationCount', 'totalDonated', 'lastMessage', 'lastMessageTime'].includes(f));
     const includeLiterals = [];
     if (attributes.includes('totalDonated')) includeLiterals.push(totalDonatedLiteral);
     if (attributes.includes('donationCount')) includeLiterals.push(donationCountLiteral);
+    if (attributes.includes('lastMessage')) includeLiterals.push(lastMessageLiteral);
+    if (attributes.includes('lastMessageTime')) includeLiterals.push(lastMessageTimeLiteral);
     
     attributes = [...baseFields, ...includeLiterals];
   } else {
     // Default behavior (fetch all + virtual fields)
     attributes = {
-      include: [totalDonatedLiteral, donationCountLiteral]
+      include: [totalDonatedLiteral, donationCountLiteral, lastMessageLiteral, lastMessageTimeLiteral]
     };
   }
 
   const { count, rows: donors } = await User.findAndCountAll({
     where: donorWhere,
     attributes,
-    order: requestedFields ? [[sequelize.literal('donationCount'), 'DESC'], ['name', 'ASC']] : [[sequelize.literal('totalDonated'), 'DESC']],
+    order: [
+      [sequelize.literal(`(
+        SELECT COALESCE(MAX(sentAt), '1970-01-01')
+        FROM Announcements
+        WHERE Announcements.userId = User.id
+      )`), 'DESC'],
+      requestedFields ? [sequelize.literal('donationCount'), 'DESC'] : [sequelize.literal('totalDonated'), 'DESC'],
+      ['name', 'ASC']
+    ],
     limit: queryLimit,
     offset
   });

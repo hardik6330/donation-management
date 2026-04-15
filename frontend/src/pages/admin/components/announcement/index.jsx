@@ -8,7 +8,6 @@ import { toast } from 'react-toastify';
 
 const AnnouncementPage = () => {
   const [selectedUser, setSelectedUser] = useState(null);
-  const [message, setMessage] = useState('');
   const [userType, setUserType] = useState('donor');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -18,7 +17,7 @@ const AnnouncementPage = () => {
   const [triggerGetDonors] = useLazyGetDonorsQuery();
   const donorPagination = useDropdownPagination(triggerGetDonors, {
     limit: 20,
-    fields: 'id,name,mobileNumber,donationCount',
+    fields: 'id,name,mobileNumber,donationCount,lastMessage,lastMessageTime',
     rowsKey: 'donors',
     skip: userType !== 'donor'
   });
@@ -26,71 +25,19 @@ const AnnouncementPage = () => {
   const [triggerGetSevaks] = useLazyGetSevaksQuery();
   const sevakPagination = useDropdownPagination(triggerGetSevaks, {
     limit: 20,
-    fields: 'id,name,mobileNumber,city',
+    fields: 'id,name,mobileNumber,city,lastMessage,lastMessageTime',
     rowsKey: 'rows',
     skip: userType !== 'sevak'
   });
-
-  const handleSendMessage = async (e) => {
-    e.preventDefault();
-    if (!message.trim()) return;
-
-    if (isSelectionMode) {
-      if (selectedUsers.length === 0) {
-        toast.warn('Please select at least one recipient');
-        return;
-      }
-
-      try {
-        const currentPagination = userType === 'donor' ? donorPagination : sevakPagination;
-        const usersToSend = currentPagination.items.filter(r => selectedUsers.includes(r.id));
-
-        const sendPromises = usersToSend.map(user =>
-          sendAnnouncement({
-            userId: user.id,
-            mobileNumber: user.mobileNumber,
-            message: message.trim(),
-            templateName: 'general_notification'
-          }).unwrap()
-        );
-
-        await Promise.all(sendPromises);
-        toast.success(`Message sent to ${selectedUsers.length} users`);
-        setMessage('');
-        setSelectedUsers([]);
-        setIsSelectionMode(false);
-      } catch (error) {
-        console.error('Bulk send error:', error);
-        toast.error('Failed to send some messages');
-      }
-    } else {
-      if (!selectedUser) return;
-      try {
-        await sendAnnouncement({
-          userId: selectedUser.id,
-          mobileNumber: selectedUser.mobileNumber,
-          message: message.trim(),
-          templateName: 'general_notification'
-        }).unwrap();
-
-        toast.success(`Message sent to ${selectedUser.name}`);
-        setMessage('');
-      } catch (err) {
-        toast.error(err?.data?.message || 'Failed to send message');
-      }
-    }
-  };
 
   const handleTemplateSend = async (templateData) => {
     if (!selectedUser) return;
     try {
       await sendAnnouncement({
+        ...templateData,
         userId: selectedUser.id,
         mobileNumber: selectedUser.mobileNumber,
-        templateName: templateData.templateName,
-        language: templateData.language,
-        variables: templateData.variables,
-        hasHeader: templateData.hasHeader,
+        userType: userType // 'donor' or 'sevak'
       }).unwrap();
 
       toast.success(`Message sent to ${selectedUser.name}`);
@@ -111,12 +58,10 @@ const AnnouncementPage = () => {
 
       const sendPromises = usersToSend.map(user =>
         sendAnnouncement({
+          ...templateData,
           userId: user.id,
           mobileNumber: user.mobileNumber,
-          templateName: templateData.templateName,
-          language: templateData.language,
-          variables: templateData.variables,
-          hasHeader: templateData.hasHeader,
+          userType: userType // 'donor' or 'sevak'
         }).unwrap()
       );
 
@@ -146,10 +91,8 @@ const AnnouncementPage = () => {
           setSelectedUsers={setSelectedUsers}
         />
         <WhatsAppChatWindow
+          key={isSelectionMode ? 'selection' : selectedUser?.id || 'none'}
           selectedUser={selectedUser}
-          message={message}
-          setMessage={setMessage}
-          handleSendMessage={handleSendMessage}
           isSending={isSending}
           isSelectionMode={isSelectionMode}
           selectedUsersCount={selectedUsers.length}

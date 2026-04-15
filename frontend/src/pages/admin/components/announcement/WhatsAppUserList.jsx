@@ -167,7 +167,7 @@ const WhatsAppUserList = ({
               <div
                 key={item.id}
                 onClick={() => isSelectionMode ? toggleUserSelection(item.id) : setSelectedUser(item)}
-                className={`flex items-center gap-3 p-4 cursor-pointer transition hover:bg-white border-b border-gray-50/50 ${
+                className={`flex items-center gap-3 p-3 cursor-pointer transition hover:bg-white border-b border-gray-50/50 ${
                   selectedUser?.id === item.id && !isSelectionMode ? 'bg-white border-l-4 border-l-primary' : ''
                 }`}
               >
@@ -180,34 +180,49 @@ const WhatsAppUserList = ({
                     )}
                   </div>
                 )}
-                <div className="w-12 h-12 bg-primary-light rounded-full flex items-center justify-center text-primary font-bold shrink-0">
-                  {item.name?.charAt(0).toUpperCase() || <User className="w-6 h-6" />}
+                <div className="w-10 h-10 bg-primary-light rounded-full flex items-center justify-center text-primary text-sm font-bold shrink-0">
+                  {item.name?.charAt(0).toUpperCase() || <User className="w-5 h-5" />}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between mb-0.5">
+                  <div className="flex items-center justify-between">
                     <h4 className="font-bold text-gray-800 text-sm truncate pr-2">{item.name}</h4>
                     {userType === 'donor' && (item.donationCount > 0 || item.donationCount === 0) && (
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span className="bg-primary/10 text-primary text-[9px] font-bold px-1.5 py-0.5 rounded-full">
                           {item.donationCount}
                         </span>
-                        <span className="text-[9px] text-gray-400 mt-0.5 font-medium whitespace-nowrap uppercase tracking-wider">
-                          Donation Count
-                        </span>
-                      </div>
-                    )}
-                    {userType === 'sevak' && item.city && (
-                      <div className="flex flex-col items-end shrink-0">
-                        <span className="bg-green-50 text-green-600 text-[10px] font-bold px-2 py-0.5 rounded-full border border-green-100">
-                          {item.city}
-                        </span>
-                        <span className="text-[9px] text-gray-400 mt-0.5 font-medium whitespace-nowrap uppercase tracking-wider">
-                          City
-                        </span>
+                        <span className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter">Donations</span>
                       </div>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 truncate">{item.mobileNumber}</p>
+                  
+                  <p className="text-[10px] text-gray-400 font-medium leading-none mt-1.5">
+                    {item.mobileNumber}
+                  </p>
+
+                  <div className="flex items-center justify-between gap-2 mt-1.5">
+                    <p className="text-[11px] text-gray-500 truncate flex-1 leading-none">
+                      {item.lastMessage ? (
+                        <span className="text-primary font-semibold">
+                          {item.lastMessage}
+                        </span>
+                      ) : (
+                        <span className="text-gray-300 italic text-[10px]">No messages sent</span>
+                      )}
+                    </p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {item.lastMessageTime && (
+                        <span className="text-[9px] text-gray-400 font-medium">
+                          {new Date(item.lastMessageTime).toLocaleDateString([], { day: '2-digit', month: 'short' })}
+                        </span>
+                      )}
+                      {userType === 'sevak' && item.city && (
+                        <span className="bg-green-50 text-green-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-green-100">
+                          {item.city}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}

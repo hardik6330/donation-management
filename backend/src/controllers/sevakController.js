@@ -1,7 +1,8 @@
-import { Sevak } from '../models/index.js';
+import { Sevak, Announcement } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.js';
 import { Op } from 'sequelize';
+import { sequelize } from '../config/db.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound } from '../utils/httpError.js';
 
@@ -48,10 +49,52 @@ export const getAllSevaks = asyncHandler(async (req, res) => {
     where.isActive = isActive === 'true';
   }
 
+  const lastMessageLiteral = [
+    sequelize.literal(`(
+      SELECT message
+      FROM Announcements
+      WHERE Announcements.userId = Sevak.id OR Announcements.mobileNumber = Sevak.mobileNumber
+      ORDER BY Announcements.sentAt DESC
+      LIMIT 1
+    )`),
+    'lastMessage'
+  ];
+
+  const lastMessageTimeLiteral = [
+    sequelize.literal(`(
+      SELECT sentAt
+      FROM Announcements
+      WHERE Announcements.userId = Sevak.id OR Announcements.mobileNumber = Sevak.mobileNumber
+      ORDER BY Announcements.sentAt DESC
+      LIMIT 1
+    )`),
+    'lastMessageTime'
+  ];
+
+  let attributes = requestedFields || undefined;
+  if (Array.isArray(attributes)) {
+    const baseFields = attributes.filter(f => !['lastMessage', 'lastMessageTime'].includes(f));
+    const includeLiterals = [];
+    if (attributes.includes('lastMessage')) includeLiterals.push(lastMessageLiteral);
+    if (attributes.includes('lastMessageTime')) includeLiterals.push(lastMessageTimeLiteral);
+    attributes = [...baseFields, ...includeLiterals];
+  } else if (attributes === undefined) {
+    attributes = {
+      include: [lastMessageLiteral, lastMessageTimeLiteral]
+    };
+  }
+
   const { count, rows } = await Sevak.findAndCountAll({
     where,
-    attributes: requestedFields || undefined,
-    order: [['name', 'ASC']],
+    attributes,
+    order: [
+      [sequelize.literal(`(
+        SELECT COALESCE(MAX(sentAt), '1970-01-01')
+        FROM Announcements
+        WHERE Announcements.userId = Sevak.id
+      )`), 'DESC'],
+      ['name', 'ASC']
+    ],
     limit,
     offset: (page - 1) * limit
   });

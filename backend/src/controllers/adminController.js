@@ -1,4 +1,4 @@
-import { User, Donation, Gaushala, Katha } from '../models/index.js';
+import { User, Donation, Gaushala, Katha, Announcement, Sevak } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
@@ -14,15 +14,23 @@ export const processRemindersAdmin = asyncHandler(async (req, res) => {
 });
 
 export const sendAnnouncement = asyncHandler(async (req, res) => {
-  const { mobileNumber, templateName, userId, variables, language, hasHeader, message } = req.body;
+  const { mobileNumber, templateName, userId, variables, language, hasHeader, message, userType } = req.body;
 
   if (!mobileNumber || !templateName) {
     throw badRequest('Mobile number and template name are required');
   }
 
-  // Find user to get name if available
-  const user = userId ? await User.findByPk(userId) : null;
-  const userName = user?.name || 'Donor';
+  // Find recipient to get name if available
+  let recipient = null;
+  if (userId) {
+    if (userType === 'sevak') {
+      recipient = await Sevak.findByPk(userId);
+    } else {
+      recipient = await User.findByPk(userId);
+    }
+  }
+  
+  const recipientName = recipient?.name || 'User';
 
   let components = [];
 
@@ -60,10 +68,67 @@ export const sendAnnouncement = asyncHandler(async (req, res) => {
   const result = await sendWhatsAppMessage(mobileNumber, templateName, language || 'gu', components);
 
   if (result.success) {
+    try {
+      // Save to Announcement history
+      await Announcement.create({
+        userId: userId || null,
+        mobileNumber,
+        message: variables?.message || message || '-',
+        templateName,
+        variables: variables || null,
+        status: 'sent',
+        sentAt: new Date()
+      });
+    } catch (dbError) {
+      console.error('❌ Error saving announcement to database:', dbError);
+      // Don't fail the whole request if only history saving fails
+    }
+
     return sendSuccess(res, result.data, 'Announcement sent successfully');
   } else {
+    try {
+      // Save failed attempt
+      await Announcement.create({
+        userId: userId || null,
+        mobileNumber,
+        message: variables?.message || message || '-',
+        templateName,
+        variables: variables || null,
+        status: 'failed',
+        sentAt: new Date()
+      });
+    } catch (dbError) {
+      console.error('❌ Error saving failed announcement to database:', dbError);
+    }
+    
     throw badRequest(result.error?.message || 'Failed to send WhatsApp message');
   }
+});
+
+export const getAnnouncementHistory = asyncHandler(async (req, res) => {
+  const { userId, mobileNumber } = req.query;
+  const { page, limit, offset } = getPaginationParams(req.query);
+
+  const where = {};
+  if (userId) where.userId = userId;
+  if (mobileNumber) where.mobileNumber = mobileNumber;
+
+  const { count, rows: history } = await Announcement.findAndCountAll({
+    where,
+    order: [['sentAt', 'DESC']],
+    limit,
+    offset
+  });
+
+  const responseData = getPaginatedResponse({
+    rows: history,
+    count,
+    limit,
+    page,
+    dataKey: 'history'
+  });
+
+  return sendSuccess(res, responseData, 'Announcement history fetched successfully');
 });
 
 export const getAdminStats = asyncHandler(async (req, res) => {
