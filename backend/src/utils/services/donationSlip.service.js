@@ -65,7 +65,19 @@ const numberToGujaratiWords = (num) => {
  */
 export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null, locationAddress = null) => {
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 0 });
+    const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
+    let docOptions = { size: 'A4', margin: 0 };
+
+    if (slipTemplatePath) {
+      // Get image dimensions to set custom page size and avoid whitespace
+      const templateImage = new PDFDocument().openImage(slipTemplatePath);
+      docOptions = {
+        size: [templateImage.width, templateImage.height],
+        margin: 0
+      };
+    }
+
+    const doc = new PDFDocument(docOptions);
 
     // Register Gujarati Unicode fonts
     if (existsSync(FONTS.REGULAR)) doc.registerFont('Gujarati-Regular', FONTS.REGULAR);
@@ -77,10 +89,9 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     doc.on('end', () => resolve(Buffer.concat(chunks)));
     doc.on('error', reject);
 
-    const W = doc.page.width;   // 595
-    const H = doc.page.height;  // 842
+    const W = doc.page.width;
+    const H = doc.page.height;
 
-    const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
     if (slipTemplatePath) {
       const donorName = user?.name || '-';
       
@@ -91,27 +102,17 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       
       const donorAddress = addressParts.length > 0 ? addressParts.join(', ') : (locationAddress || '-');
       
-      const paymentModeLabel = (paymentMode || 'online').replace('_', ' ').toUpperCase();
       const receiptDate = (paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')).toUpperCase();
       const amountValue = Number(amount || 0);
       const amountText = amountValue.toLocaleString('en-IN');
       const amountInWords = `${numberToGujaratiWords(Math.floor(amountValue))} રૂપિયા માત્ર`;
-      const receiptNo = (donationId?.toString().slice(-8) || '-').toUpperCase();
 
-      // Render template without distortion (keep aspect ratio) and then place text
-      // relative to the fitted image area for consistent alignment.
-      const templateImage = doc.openImage(slipTemplatePath);
-      const scale = Math.min(W / templateImage.width, H / templateImage.height);
-      const drawW = templateImage.width * scale;
-      const drawH = templateImage.height * scale;
-      const drawX = (W - drawW) / 2;
-      const drawY = (H - drawH) / 2;
+      // Render template exactly to the custom page size (no whitespace)
+      doc.image(slipTemplatePath, 0, 0, { width: W, height: H });
 
-      doc.image(templateImage, drawX, drawY, { width: drawW, height: drawH });
-
-      const px = (n) => drawX + drawW * n;
-      const py = (n) => drawY + drawH * n;
-      const fs = (n) => Math.max(9, drawW * n);
+      const px = (n) => W * n;
+      const py = (n) => H * n;
+      const fs = (n) => W * n;
       const normalizedMode = (paymentMode || '').toLowerCase();
       const isCash = normalizedMode === 'cash';
       const isCheque = normalizedMode === 'cheque' || normalizedMode === 'check';
@@ -122,24 +123,26 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       // Helper to detect if string contains non-latin characters (likely Gujarati/Hindi)
       const hasNonLatin = (str) => /[^\u0000-\u007f]/.test(str);
 
-      // Date in left-side "તા." field area (inside the line, not outside template)
+      // Coordinates and font sizes adjusted for full-bleed template
+      // Date
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
-        .text(receiptDate, px(0.1011), py(0.420), { width: drawW * 0.18, align: 'left', lineBreak: false });
+        .text(receiptDate, px(0.1011), py(0.420), { width: W * 0.18, align: 'left', lineBreak: false });
 
       // Handle donor name with fallback font for English characters
       const donorNameFont = (hasGujaratiFont && hasNonLatin(donorName)) ? 'Gujarati-Bold' : 'Helvetica-Bold';
       doc.fillColor('#1f2937').font(donorNameFont).fontSize(fs(0.017))
-        .text(donorName, px(0.1011), py(0.465), { width: drawW * 0.24, lineBreak: false });
+        .text(donorName, px(0.1011), py(0.465), { width: W * 0.24, lineBreak: false });
 
       // Handle address with fallback font for English characters
       const donorAddressFont = (hasGujaratiFont && hasNonLatin(donorAddress)) ? 'Gujarati-Regular' : 'Helvetica';
       doc.fillColor('#1f2937').font(donorAddressFont).fontSize(fs(0.014))
-        .text(donorAddress, px(0.110), py(0.525), { width: drawW * 0.50, lineBreak: false });
+        .text(donorAddress, px(0.110), py(0.525), { width: W * 0.50, lineBreak: false });
 
+      // Amount in words
       doc.fillColor('#1f2937').font(hasGujaratiFont ? 'Gujarati-Bold' : 'Helvetica-Bold').fontSize(fs(0.013))
         .text(amountInWords, px(0.305), py(0.595), {
-          width: drawW * 0.46,
-          height: drawW * 0.06,
+          width: W * 0.46,
+          height: W * 0.06,
           lineBreak: true,  
           lineGap: 1
         });
@@ -159,13 +162,14 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       };
 
       const checkY = py(0.665);
-      const checkSize = drawW * 0.015;
+      const checkSize = W * 0.015;
       if (isCash) drawCheckMark(px(0.620), checkY, checkSize);      // રોકડા
       if (isCheque) drawCheckMark(px(0.735), checkY, checkSize);    // ચેક
       if (isOnline) drawCheckMark(px(0.830), checkY, checkSize);    // ઓનલાઈન
 
+      // Amount in digits
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.020))
-        .text(`${amountText}`, px(0.725), py(0.745), { width: drawW * 0.20, align: 'center' });
+        .text(`${amountText}`, px(0.725), py(0.745), { width: W * 0.20, align: 'center' });
 
       doc.end();
       return;
