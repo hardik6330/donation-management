@@ -14,7 +14,7 @@ import { useGetAnnouncementHistoryQuery } from '../../../../services/donationApi
 // Default template: general_notification with 1 body variable {{1}}
 const DEFAULT_TEMPLATE = {
   id: 'general_notificationn',
-  name: 'General Notification',
+  name: 'General Announcement',
   language: 'gu',
   variables: [
     { key: 'message', label: 'Message', placeholder: 'સંદેશ લખો...', multiline: true },
