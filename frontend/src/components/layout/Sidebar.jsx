@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import logo from '../../../assets/logo.png';
+import logo from '../../assets/logo.png';
 import { 
   LayoutDashboard, 
   HandCoins, 
@@ -21,8 +21,8 @@ import {
   FileText,
   MessageSquare
 } from 'lucide-react';
-import usePermissions from '../../../hooks/usePermissions';
-import { useAuth } from '../../../context/AuthContext';
+import usePermissions from '../../hooks/usePermissions';
+import { useAuth } from '../../context/AuthContext';
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
   const { hasPermission } = usePermissions();

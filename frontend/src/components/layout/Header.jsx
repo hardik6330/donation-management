@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, User } from 'lucide-react';
-import { useAuth } from '../../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 const Header = ({ setIsSidebarOpen }) => {
   const { user } = useAuth();

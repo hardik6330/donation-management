@@ -26,6 +26,13 @@ app.set('trust proxy', 1);
 // Start DB Initialization in background immediately on cold start
 initDB().catch(err => console.error('Background DB Init Error:', err));
 
+// Start Cron Job logic
+const startCrons = () => {
+  if (NODE_ENV === 'production' || cluster.isPrimary) {
+    startCronJob();
+  }
+};
+
 // Middlewares
 app.use(helmet());
 app.use(cors({ origin: FRONTEND_URL || '*' }));
@@ -46,7 +53,7 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// Root route (Moved above ipAuth for public health check/load testing)
+// Root route
 app.get('/', (req, res) => {
   res.send('test complete server running');
 });
@@ -71,9 +78,7 @@ if (NODE_ENV !== 'production' && cluster.isPrimary) {
   console.log(`🚀 Primary process ${process.pid} is running`);
   
   initDB().then(() => {
-    // Start Cron Job only in Primary process
-    startCronJob();
-
+    startCrons();
     for (let i = 0; i < numCPUs; i++) {
       cluster.fork();
     }
@@ -88,10 +93,12 @@ if (NODE_ENV !== 'production' && cluster.isPrimary) {
   app.listen(port, () => {
     console.log(`👷 Process ${process.pid} started and running at http://localhost:${port}`);
     
-    // Only start cron job if NOT in clustering mode or if it's the primary process
-    // This prevents multiple cron jobs from running in different worker processes
-    if (NODE_ENV === 'production' || cluster.isPrimary) {
-      startCronJob();
+    // In production (Vercel/serverless) or worker process, we might want to start cron
+    // but in serverless cron might not work as expected. However, for standalone workers:
+    if (NODE_ENV === 'production' || !cluster.isPrimary) {
+       // Note: In serverless environment, crons are usually separate tasks/lambdas
+       // If this is a standalone node server, we start crons here
+       startCrons();
     }
   });
 }

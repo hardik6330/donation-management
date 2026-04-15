@@ -43,14 +43,22 @@ export const connectDB = async () => {
   }
 };
 
-// Initialize Database logic moved from server.js
+// Initialize Database logic
 let dbInitialized = false;
 let dbInitPromise = null;
 
 export const initDB = async (force = false) => {
-  if (dbInitialized && !force) return { initialized: true };
-  if (dbInitPromise && !force) return dbInitPromise;
+  // 1. Return immediately if already initialized
+  if (dbInitialized && !force) {
+    return { initialized: true };
+  }
 
+  // 2. Return the existing promise if initialization is already in progress
+  if (dbInitPromise && !force) {
+    return dbInitPromise;
+  }
+
+  // 3. Start initialization and store the promise
   dbInitPromise = (async () => {
     try {
       // Dynamic imports to avoid circular dependencies
@@ -74,12 +82,14 @@ export const initDB = async (force = false) => {
       }
       
       dbInitialized = true;
-      dbInitPromise = null;
       return { initialized: true };
     } catch (error) {
       console.error('❌ Database initialization failed:', error);
-      dbInitPromise = null;
       throw error;
+    } finally {
+      // Clear the promise so it can be retried if it failed, 
+      // but keep dbInitialized true if it succeeded.
+      dbInitPromise = null;
     }
   })();
 

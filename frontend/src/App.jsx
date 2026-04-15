@@ -8,7 +8,7 @@ import Home from './pages/Home';
 import Donate from './pages/Donate';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import AdminLayout from './pages/admin/layout/AdminLayout';
+import AdminLayout from './components/layout/AdminLayout';
 import Dashboard from './pages/admin/components/dashboard';
 import DonationList from './pages/admin/components/donations';
 import DonorsList from './pages/admin/components/donors';
