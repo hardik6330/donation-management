@@ -36,9 +36,9 @@ export const sequelize = new Sequelize(
 export const connectDB = async () => {
   try {
     await sequelize.authenticate();
-    console.log('✅ MySQL connected successfully with Sequelize');
+    console.log('MySQL connected successfully with Sequelize');
   } catch (error) {
-    console.error('❌ MySQL connection failed:', error.message);
+    console.error('MySQL connection failed:', error.message);
     process.exit(1);
   }
 };
@@ -73,18 +73,18 @@ export const initDB = async (force = false) => {
       if (shouldSync) {
         const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
         await sequelize.sync(syncOptions);
-        console.log('✅ Database synchronized (Tables created/updated)');
+        console.log('Database synchronized (Tables created/updated)');
 
         await seedRoles();
         await seedAdmin();
       } else {
-        console.log('ℹ️ Database sync skipped (Production mode)');
+        console.log('Database sync skipped (Production mode)');
       }
       
       dbInitialized = true;
       return { initialized: true };
     } catch (error) {
-      console.error('❌ Database initialization failed:', error);
+      console.error('Database initialization failed:', error);
       throw error;
     } finally {
       // Clear the promise so it can be retried if it failed, 

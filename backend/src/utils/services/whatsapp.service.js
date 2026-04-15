@@ -11,13 +11,13 @@ import { WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID } from '../../config/en
  * @returns {Promise<Object>} - API response
  */
 export const sendWhatsAppMessage = async (to, templateName, languageCode = 'en_US', components = []) => {
-  console.log('🔍 [WhatsApp Debug] Checking Configuration...');
+  console.log('[WhatsApp Debug] Checking Configuration...');
   console.log('   - Phone ID:', WHATSAPP_PHONE_NUMBER_ID);
   console.log('   - Token Length:', WHATSAPP_ACCESS_TOKEN ? WHATSAPP_ACCESS_TOKEN.length : 0);
   console.log('   - Recipient:', to);
 
   if (!WHATSAPP_ACCESS_TOKEN || !WHATSAPP_PHONE_NUMBER_ID) {
-    console.error('❌ [WhatsApp Service] ERROR: Credentials missing in .env');
+    console.error('[WhatsApp Service] ERROR: Credentials missing in .env');
     return { success: false, skipped: true };
   }
 
@@ -59,7 +59,7 @@ export const sendWhatsAppMessage = async (to, templateName, languageCode = 'en_U
     }
   };
 
-  console.log('📤 [WhatsApp Debug] Request Payload:', JSON.stringify(payload, null, 2));
+  console.log('[WhatsApp Debug] Request Payload:', JSON.stringify(payload, null, 2));
 
   try {
     const response = await axios.post(url, payload, {
@@ -69,10 +69,10 @@ export const sendWhatsAppMessage = async (to, templateName, languageCode = 'en_U
       }
     });
 
-    console.log('✅ [WhatsApp Debug] FULL SUCCESS RESPONSE:', JSON.stringify(response.data, null, 2));
+    console.log('[WhatsApp Debug] FULL SUCCESS RESPONSE:', JSON.stringify(response.data, null, 2));
     return { success: true, data: response.data };
   } catch (error) {
-    console.error('❌ [WhatsApp Debug] FULL ERROR DETAILS:');
+    console.error('[WhatsApp Debug] FULL ERROR DETAILS:');
     if (error.response) {
       console.error('   - Status:', error.response.status);
       console.error('   - Data:', JSON.stringify(error.response.data, null, 2));

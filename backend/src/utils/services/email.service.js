@@ -34,7 +34,7 @@ export const sendEmail = async (to, subject, html, attachments = []) => {
     });
     return { success: true };
   } catch (error) {
-    console.error(`❌ Error sending email to ${to}:`, error.message);
+    console.error(`Error sending email to ${to}:`, error.message);
     return { success: false, error };
   }
 };

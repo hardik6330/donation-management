@@ -18,7 +18,7 @@ export const seedAdmin = async () => {
       });
 
       if (!adminRole) {
-        console.log('ℹ️ Admin role not found during admin seeding, check roles seeder.');
+        console.log('Admin role not found during admin seeding, check roles seeder.');
         return;
       }
 
@@ -32,9 +32,9 @@ export const seedAdmin = async () => {
         roleId: adminRole.id,
         created_by: 'System',
       });
-      console.log(`✅ Initial Admin created successfully with role: ${adminRole.name}`);
+      console.log(`Initial Admin created successfully with role: ${adminRole.name}`);
     } else {
-      console.log('ℹ️ Admin already exists, skipping creation');
+      console.log('Admin already exists, skipping creation');
     }
   } catch (error) {
     console.error('❌ Error seeding admin:', error.message);

@@ -39,7 +39,7 @@ export const seedRoles = async () => {
       await Role.create({ name: 'Entry Operator', permissions: operatorPerms, description: 'Data entry with limited access' });
     }
 
-    console.log('✅ Default roles checked/seeded');
+    console.log('Default roles checked/seeded');
   } catch (error) {
     console.error('❌ Error seeding roles:', error.message);
   }

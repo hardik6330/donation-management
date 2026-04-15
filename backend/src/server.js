@@ -75,7 +75,7 @@ app.use(errorHandler);
 
 // Only use clustering in local/non-serverless environments
 if (NODE_ENV !== 'production' && cluster.isPrimary) {
-  console.log(`🚀 Primary process ${process.pid} is running`);
+  console.log(`Primary process ${process.pid} is running`);
   
   initDB().then(() => {
     startCrons();
@@ -85,13 +85,13 @@ if (NODE_ENV !== 'production' && cluster.isPrimary) {
   });
 
   cluster.on('exit', (worker) => {
-    console.log(`⚠️ Worker ${worker.process.pid} died. Forking a new one...`);
+    console.log(`Worker ${worker.process.pid} died. Forking a new one...`);
     cluster.fork();
   });
 } else {
   // In Vercel or worker processes
   app.listen(port, () => {
-    console.log(`👷 Process ${process.pid} started and running at http://localhost:${port}`);
+    console.log(`Process ${process.pid} started and running at http://localhost:${port}`);
     
     // In production (Vercel/serverless) or worker process, we might want to start cron
     // but in serverless cron might not work as expected. However, for standalone workers:

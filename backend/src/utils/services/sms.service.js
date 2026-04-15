@@ -34,11 +34,11 @@ export const sendSMS = async (mobileNumber, message) => {
     if (result.return) {
       return { success: true, result };
     } else {
-      console.error(`❌ Fast2SMS Error: ${result.message}`);
+      console.error(`Fast2SMS Error: ${result.message}`);
       return { success: false, error: result.message };
     }
   } catch (error) {
-    console.error(`❌ Error sending SMS to ${mobileNumber}:`, error.message);
+    console.error(`Error sending SMS to ${mobileNumber}:`, error.message);
     return { success: false, error: error.message };
   }
 };

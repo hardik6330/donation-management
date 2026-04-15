@@ -8,7 +8,7 @@ import { Op } from 'sequelize';
  * This can be called by a cron job or a scheduled worker.
  */
 export const processPendingNotifications = async () => {
-  console.log('🔔 [Notification Service] Starting notification processing...');
+  console.log('[Notification Service] Starting notification processing...');
   
   const now = new Date();
   
@@ -27,7 +27,7 @@ export const processPendingNotifications = async () => {
       ]
     });
 
-    console.log(`🔔 [Notification Service] Found ${pendingNotifications.length} notifications to process.`);
+    console.log(`[Notification Service] Found ${pendingNotifications.length} notifications to process.`);
 
     const results = {
       total: pendingNotifications.length,
@@ -37,26 +37,26 @@ export const processPendingNotifications = async () => {
     };
 
     for (const notification of pendingNotifications) {
-      console.log(`🔍 [Notification Service] Processing notification ID: ${notification.id}`);
+      console.log(`[Notification Service] Processing notification ID: ${notification.id}`);
       const { user, donation } = notification;
 
       // Double check if donation is still partially paid
       if (!donation) {
-        console.log(`🚫 [Notification ${notification.id}] Cancelled: Donation not found.`);
+        console.log(`[Notification ${notification.id}] Cancelled: Donation not found.`);
         await notification.update({ status: 'cancelled', lastError: 'Donation not found' });
         results.cancelled++;
         continue;
       }
 
       if (donation.status !== 'partially_paid' && donation.status !== 'pending') {
-        console.log(`🚫 [Notification ${notification.id}] Cancelled: Donation status is '${donation.status}'`);
+        console.log(`[Notification ${notification.id}] Cancelled: Donation status is '${donation.status}'`);
         await notification.update({ status: 'cancelled', lastError: `Donation status is ${donation.status}` });
         results.cancelled++;
         continue;
       }
 
       if (!user || (!user.email && !user.mobileNumber)) {
-        console.warn(`⚠️ [Notification ${notification.id}] Failed: No contact info (email/mobile) found.`);
+        console.warn(`[Notification ${notification.id}] Failed: No contact info (email/mobile) found.`);
         await notification.update({ status: 'failed', lastError: 'No email or mobile number' });
         results.failed++;
         continue;
@@ -66,7 +66,7 @@ export const processPendingNotifications = async () => {
         // Increment attempts
         await notification.increment('attempts');
         const currentAttempt = notification.attempts + 1;
-        console.log(`📤 [Notification ${notification.id}] Attempt ${currentAttempt} starting...`);
+        console.log(`[Notification ${notification.id}] Attempt ${currentAttempt} starting...`);
 
         // Track each channel separately
         let emailResult = null;
@@ -74,7 +74,7 @@ export const processPendingNotifications = async () => {
 
         // 1. Send Email if email exists
         if (user.email) {
-          console.log(`📧 [Notification ${notification.id}] Sending email to: ${user.email}`);
+          console.log(`[Notification ${notification.id}] Sending email to: ${user.email}`);
           try {
             const emailHtml = getPartialPaymentReminderEmailTemplate(
               user.name,
@@ -85,16 +85,16 @@ export const processPendingNotifications = async () => {
               donation.id
             );
             emailResult = await sendEmail(user.email, 'Donation Reminder - Shri Sarveshwar Gaudham', emailHtml);
-            console.log(`✅ [Notification ${notification.id}] Email sent successfully.`);
+            console.log(`[Notification ${notification.id}] Email sent successfully.`);
           } catch (err) {
             emailResult = { success: false, error: err.message };
-            console.error(`❌ [Notification ${notification.id}] Email failed:`, err.message);
+            console.error(`[Notification ${notification.id}] Email failed:`, err.message);
           }
         }
 
         // 2. Send WhatsApp if mobile number exists
         if (user.mobileNumber) {
-          console.log(`📱 [Notification ${notification.id}] Sending WhatsApp to: ${user.mobileNumber}`);
+          console.log(`[Notification ${notification.id}] Sending WhatsApp to: ${user.mobileNumber}`);
           try {
             whatsappResult = await sendPartialPaymentReminderWhatsApp(
               user.mobileNumber,
@@ -105,18 +105,18 @@ export const processPendingNotifications = async () => {
               donation.cause
             );
             if (whatsappResult.success) {
-              console.log(`✅ [Notification ${notification.id}] WhatsApp sent successfully.`);
+              console.log(`[Notification ${notification.id}] WhatsApp sent successfully.`);
             } else {
-              console.error(`❌ [Notification ${notification.id}] WhatsApp failed:`, whatsappResult.error);
+              console.error(`[Notification ${notification.id}] WhatsApp failed:`, whatsappResult.error);
             }
           } catch (err) {
             whatsappResult = { success: false, error: err.message };
-            console.error(`❌ [Notification ${notification.id}] WhatsApp error:`, err.message);
+            console.error(`[Notification ${notification.id}] WhatsApp error:`, err.message);
           }
         }
 
         if (!emailResult && !whatsappResult) {
-          console.warn(`⚠️ [Notification ${notification.id}] No tasks to perform.`);
+          console.warn(`[Notification ${notification.id}] No tasks to perform.`);
           await notification.update({ status: 'failed', lastError: 'No email or mobile' });
           results.failed++;
           continue;
@@ -139,7 +139,7 @@ export const processPendingNotifications = async () => {
             sentAt: new Date(),
             lastError: null
           });
-          console.log(`✅ [Notification ${notification.id}] All channels sent successfully.`);
+          console.log(`[Notification ${notification.id}] All channels sent successfully.`);
           results.sent++;
         } else if (anyOk) {
           // Partial success — mark sent but log which channel failed
@@ -148,10 +148,10 @@ export const processPendingNotifications = async () => {
             sentAt: new Date(),
             lastError: errorSummary
           });
-          console.warn(`⚠️ [Notification ${notification.id}] Partial success. Failed: ${errorSummary}`);
+          console.warn(`[Notification ${notification.id}] Partial success. Failed: ${errorSummary}`);
           results.sent++;
         } else {
-          console.error(`❌ [Notification ${notification.id}] Attempt ${currentAttempt} failed: ${errorSummary}`);
+          console.error(`[Notification ${notification.id}] Attempt ${currentAttempt} failed: ${errorSummary}`);
 
           // Schedule next retry
           const retryDelayMinutes = Math.pow(2, currentAttempt) * 15;
@@ -166,7 +166,7 @@ export const processPendingNotifications = async () => {
           results.failed++;
         }
       } catch (err) {
-        console.error(`❌ [Notification ${notification.id}] Critical Error:`, err);
+        console.error(`[Notification ${notification.id}] Critical Error:`, err);
         await notification.update({ 
           status: 'failed', 
           lastError: err.message || 'Unknown error' 
@@ -175,10 +175,10 @@ export const processPendingNotifications = async () => {
       }
     }
 
-    console.log('🔔 [Notification Service] Processing completed:', results);
+    console.log('[Notification Service] Processing completed:', results);
     return results;
   } catch (error) {
-    console.error('❌ [Notification Service] Critical Error during processing:', error);
+    console.error('[Notification Service] Critical Error during processing:', error);
     throw error;
   }
 };

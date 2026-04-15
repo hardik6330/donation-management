@@ -6,7 +6,7 @@ import { NODE_ENV, ALLOWED_IPS } from '../config/env.js';
  */
 export const ipAuth = (req, res, next) => {
   const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-  console.log(`🌐 [Incoming Request] Method: ${req.method} | Path: ${req.path} | IP: ${clientIp}`);
+  console.log(`[Incoming Request] Method: ${req.method} | Path: ${req.path} | IP: ${clientIp}`);
 
   // Allow all in development mode to avoid dynamic IP issues
   if (NODE_ENV === 'development') {
