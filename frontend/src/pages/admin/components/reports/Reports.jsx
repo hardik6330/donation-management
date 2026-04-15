@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   useGetAllDonationsQuery
 } from '../../../../services/donationApi';
@@ -26,6 +26,38 @@ import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
 
 const Reports = () => {
+  const [gujaratiFontBase64, setGujaratiFontBase64] = useState(null);
+  const [gujaratiBoldFontBase64, setGujaratiBoldFontBase64] = useState(null);
+
+  const loadFontAsBase64 = async (url) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      return new Promise((resolve) => {
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(blob);
+      });
+    } catch (error) {
+      console.error('Error loading font:', error);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    const loadFonts = async () => {
+      const regularFont = await loadFontAsBase64('/fonts/NotoSansGujarati-Regular.ttf');
+      const boldFont = await loadFontAsBase64('/fonts/NotoSansGujarati-Bold.ttf');
+      if (regularFont) {
+        setGujaratiFontBase64(regularFont);
+      }
+      if (boldFont) {
+        setGujaratiBoldFontBase64(boldFont);
+      }
+    };
+    loadFonts();
+  }, []);
+
   const [filters, setFilters] = useState({
     search: '',
     startDate: '',
@@ -230,16 +262,50 @@ const Reports = () => {
     toast.success(`${fileName} downloaded`);
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     if (exportDonations.length === 0) {
       toast.error('No data to export');
       return;
     }
 
     const doc = new jsPDF('landscape');
+    
+    // Load custom fonts if available
+    let fontName = 'helvetica';
+    let boldFontName = 'helvetica';
+    
+    if (gujaratiFontBase64 && gujaratiBoldFontBase64) {
+      try {
+        // Add custom fonts to jsPDF
+        const regularFontData = gujaratiFontBase64.split(',')[1];
+        const boldFontData = gujaratiBoldFontBase64.split(',')[1];
+        
+        doc.addFileToVFS('NotoSansGujarati-Regular.ttf', regularFontData);
+        doc.addFileToVFS('NotoSansGujarati-Bold.ttf', boldFontData);
+        
+        const addedRegularFont = doc.addFont('NotoSansGujarati-Regular.ttf', 'NotoSansGujarati', 'normal');
+        const addedBoldFont = doc.addFont('NotoSansGujarati-Bold.ttf', 'NotoSansGujarati', 'bold');
+        
+        console.log('Fonts added:', { addedRegularFont, addedBoldFont });
+        
+        fontName = 'NotoSansGujarati';
+        boldFontName = 'NotoSansGujarati';
+        
+        doc.setFont(fontName, 'normal');
+      } catch (error) {
+        console.error('Error loading custom fonts:', error);
+        fontName = 'helvetica';
+        boldFontName = 'helvetica';
+      }
+    }
+
     const fileName = getDynamicFileName('pdf');
+    
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
     doc.text("Donations Report", 14, 15);
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
     doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 22);
     
     // Add filter summary to PDF if filters applied
@@ -253,11 +319,35 @@ const Reports = () => {
     
     if (activeFilters.length > 0) {
       doc.setFontSize(8);
-      doc.text(`Filters: ${activeFilters.join(' | ')}`, 14, yPos);
+      let xOffset = 14;
+      doc.text("Filters: ", xOffset, yPos);
+      xOffset += doc.getTextWidth("Filters: ");
+      
+      activeFilters.forEach((filter, index) => {
+        const separator = (index < activeFilters.length - 1 ? ' | ' : '');
+        const text = filter + separator;
+        
+        if (hasNonLatin(text)) {
+          doc.setFont(fontName, 'normal');
+        } else {
+          doc.setFont('helvetica', 'normal');
+        }
+        
+        doc.text(text, xOffset, yPos);
+        xOffset += doc.getTextWidth(text);
+      });
       yPos += 5;
     }
 
     const tableHeaders = [['Donor Name', 'Cause', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Date']];
+    const hasNonLatin = (str) => {
+      const s = String(str || '');
+      for (let i = 0; i < s.length; i++) {
+        if (s.charCodeAt(i) > 127) return true;
+      }
+      return false;
+    };
+
     const tableData = exportDonations.map(d => [
       d.donor?.name || '-',
       d.cause || '-',
@@ -274,8 +364,27 @@ const Reports = () => {
       body: tableData,
       startY: yPos + 2,
       theme: 'striped',
-      headStyles: { fillColor: [63, 81, 181] },
-      styles: { fontSize: 8 }
+      headStyles: { 
+        fillColor: [63, 81, 181], 
+        font: 'helvetica', 
+        fontStyle: 'bold',
+        textColor: 255
+      },
+      styles: { 
+        font: 'helvetica', 
+        fontSize: 8 
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body') {
+          const cellText = data.cell.text.join(' ');
+          if (hasNonLatin(cellText)) {
+            data.cell.styles.font = fontName;
+            if (data.cell.styles.fontStyle === 'bold') {
+              data.cell.styles.font = boldFontName;
+            }
+          }
+        }
+      }
     });
 
     doc.save(fileName);
