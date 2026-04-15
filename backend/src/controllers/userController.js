@@ -92,14 +92,26 @@ export const getSystemUsers = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
   const { search, roleId } = req.query;
 
-  const where = {};
+  const where = {
+    // Super Admin ને લિસ્ટમાં ન બતાવવા માટે (admin@example.com)
+    email: { [Op.ne]: 'admin@example.com' }
+  };
+
   if (search && search.trim() !== '') {
-    where[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { email: { [Op.like]: `%${search}%` } },
-      { mobileNumber: { [Op.like]: `%${search}%` } }
+    where[Op.and] = [
+      { email: { [Op.ne]: 'admin@example.com' } },
+      {
+        [Op.or]: [
+          { name: { [Op.like]: `%${search}%` } },
+          { email: { [Op.like]: `%${search}%` } },
+          { mobileNumber: { [Op.like]: `%${search}%` } }
+        ]
+      }
     ];
+    // remove separate email filter if we use Op.and
+    delete where.email;
   }
+
   if (roleId && roleId.trim() !== '') {
     where.roleId = roleId;
   }

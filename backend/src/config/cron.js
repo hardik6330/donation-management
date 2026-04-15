@@ -8,9 +8,12 @@ import { processPendingNotifications } from '../utils/services/notification.serv
  * Runs every 5 minutes.
  */
 export const startCronJob = () => {
-  console.log('⏰ [Cron] Notification scheduler initialized (Every 1 minutes)');
+  console.log('⏰ [Cron] Notification scheduler initialized (Every 59 minutes)');
 
-  cron.schedule('*/1 * * * *', async () => {
+  cron.schedule('*/59 * * * *', async () => { 
+  // 59 minutes
+  // cron.schedule('0 11 * * *', async () => {
+    // 11:00 AM daily
     console.log('⏰ [Cron] Running scheduled notification job...');
     
     try {
