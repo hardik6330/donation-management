@@ -8,11 +8,6 @@ import {
   useGetBapuSchedulesQuery, 
   useDeleteBapuScheduleMutation
 } from '../../../../services/bapuApi';
-import {
-  useLazyGetCitiesQuery,
-  useLazyGetSubLocationsQuery 
-} from '../../../../services/masterApi';
-import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const BapuSchedule = () => {
@@ -27,11 +22,9 @@ const BapuSchedule = () => {
     endDate: '',
     eventType: '',
     status: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
-    locationId: '',
-    search: '',
+    city: '',
+    state: '',
+    country: '',
     page: 1,
     limit: 10
   });
@@ -39,25 +32,6 @@ const BapuSchedule = () => {
   // API calls moved to index.jsx
   const { data: schedulesData, isLoading: loading } = useGetBapuSchedulesQuery(filters);
   const [deleteSchedule, { isLoading: isDeleting }] = useDeleteBapuScheduleMutation();
-
-  // Dropdown Paginations
-  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
-  const [triggerGetCities] = useLazyGetCitiesQuery();
-  const cityPagination = useDropdownPagination(triggerGetCities, { fields: 'id,name' });
-
-  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
-  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    fields: 'id,name',
-    additionalParams: { parentId: filters.cityId || modalState.cityId },
-    skip: !(filters.cityId || modalState.cityId)
-  });
-
-  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
-  const villagePagination = useDropdownPagination(triggerGetVillages, {
-    fields: 'id,name',
-    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
-    skip: !(filters.talukaId || modalState.talukaId)
-  });
 
   const schedules = schedulesData?.data?.data || [];
   const pagination = {
@@ -95,24 +69,7 @@ const BapuSchedule = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    
-    if (name === 'cityId') {
-      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'talukaId') {
-      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'villageId') {
-      setFilters(prev => ({ ...prev, villageId: value, page: 1 }));
-      return;
-    }
-
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 })); // Reset to page 1 on filter change
+    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
   };
 
   const handlePageChange = (page) => {
@@ -133,17 +90,12 @@ const BapuSchedule = () => {
       endDate: '',
       eventType: '',
       status: '',
-      cityId: '',
-      talukaId: '',
-      villageId: '',
-      locationId: '',
-      search: '',
+      city: '',
+      state: '',
+      country: '',
       page: 1,
       limit: 10
     });
-    cityPagination.reset();
-    talukaPagination.reset();
-    villagePagination.reset();
   };
 
   return (
@@ -158,7 +110,6 @@ const BapuSchedule = () => {
       <BapuScheduleList 
         schedules={schedules}
         isLoading={loading}
-        isDeleting={isDeleting}
         pagination={pagination}
         filters={filters}
         onEdit={handleEdit}
@@ -168,9 +119,6 @@ const BapuSchedule = () => {
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
         hasPermission={hasPermission}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
       />
 
       {isModalOpen && (
@@ -178,10 +126,6 @@ const BapuSchedule = () => {
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
           editingSchedule={editingSchedule}
-          cityPagination={cityPagination}
-          talukaPagination={talukaPagination}
-          villagePagination={villagePagination}
-          setModalState={setModalState}
           key={editingSchedule?.id || 'new'}
         />
       )}

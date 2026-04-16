@@ -28,8 +28,8 @@ const KathaList = ({
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
     {
-      name: 'cityId',
-      label: 'City',
+      name: 'countryId',
+      label: 'Country',
       type: 'select',
       icon: MapPin,
       options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
@@ -40,12 +40,12 @@ const KathaList = ({
       loading: cityPagination.loading
     },
     {
-      name: 'talukaId',
-      label: 'Taluka',
+      name: 'stateId',
+      label: 'State',
       type: 'select',
       icon: MapPin,
       options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
-      disabled: !filters.cityId,
+      disabled: !filters.countryId,
       isServerSearch: true,
       onSearchChange: talukaPagination.handleSearch,
       onLoadMore: talukaPagination.handleLoadMore,
@@ -53,12 +53,12 @@ const KathaList = ({
       loading: talukaPagination.loading
     },
     {
-      name: 'villageId',
-      label: 'Village',
+      name: 'cityId',
+      label: 'City',
       type: 'select',
       icon: MapPin,
       options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
-      disabled: !filters.talukaId,
+      disabled: !filters.stateId,
       isServerSearch: true,
       onSearchChange: villagePagination.handleSearch,
       onLoadMore: villagePagination.handleLoadMore,
@@ -69,9 +69,9 @@ const KathaList = ({
 
   const tableHeaders = [
     { label: 'Katha Name' },
+    { label: 'Country' },
+    { label: 'State' },
     { label: 'City' },
-    { label: 'Taluka' },
-    { label: 'Village' },
     { label: 'Dates' },
     { label: 'Total Donations', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
@@ -100,9 +100,9 @@ const KathaList = ({
             onClick={() => navigate(`/admin/donations?kathaId=${katha.id}`)}
           >
             <td className="p-4 px-6 font-bold text-gray-800">{katha.name}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.country}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.state}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.city}</td>
-            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.taluka}</td>
-            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.village}</td>
             <td className="p-4 px-6">
               <div className="flex items-center gap-1.5 text-xs text-gray-600">
                 <Calendar className="w-3.5 h-3.5" />

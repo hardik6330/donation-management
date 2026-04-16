@@ -13,10 +13,14 @@ export const User = sequelize.define('User', {
   },
   email: {
     type: DataTypes.STRING,
-    allowNull: false,
+    allowNull: true,
     unique: 'users_email_unique',
     validate: {
-      isEmail: true,
+      isEmailOrEmpty(value) {
+        if (value && value.trim() !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          throw new Error('Must be a valid email address');
+        }
+      },
     },
   },
   mobileNumber: {
@@ -37,10 +41,13 @@ export const User = sequelize.define('User', {
   address: {
     type: DataTypes.STRING,
   },
-  village: {
+  city: {
     type: DataTypes.STRING,
   },
-  district: {
+  state: {
+    type: DataTypes.STRING,
+  },
+  country: {
     type: DataTypes.STRING,
   },
   companyName: {

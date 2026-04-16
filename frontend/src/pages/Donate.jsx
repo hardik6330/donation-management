@@ -2,20 +2,18 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCreateOrderMutation } from '../services/donationApi';
 import { useGetUserByMobileQuery } from '../services/authApi';
 import {
-  useGetCitiesQuery,
-  useGetSubLocationsQuery,
   useGetCategoriesQuery
 } from '../services/masterApi';
 import { useGetGaushalasQuery } from '../services/gaushalaApi';
 import { useGetKathasQuery } from '../services/kathaApi';
-import { IndianRupee, User, Mail, Home as HomeIcon, Building, MapPin, Loader2, Phone, CreditCard, Tag, Mic2, Building2, X, ChevronDown, Languages } from 'lucide-react';
+import { IndianRupee, User, Mail, Home as HomeIcon, Building, MapPin, Loader2, Phone, Tag, Mic2, Building2, X, ChevronDown, Languages } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import confetti from 'canvas-confetti';
 import { transliterateToGujarati } from '../utils/gujaratiTransliteration';
 
 // Reusable dropdown for Donate page
-const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false, onDisabledClick, inputRef, onKeyDown, defaultName = '' }) => {
+const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onChange, onClear, disabled = false, onDisabledClick, inputRef, onKeyDown, defaultName = '', onQueryChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -70,6 +68,13 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
     setQuery('');
   };
 
+  const handleInputChangeInternal = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    setHighlightIndex(0);
+    if (onQueryChange) onQueryChange(val);
+  };
+
   const handleKeyDownInternal = (e) => {
     if (!isOpen) {
       if (e.key === 'ArrowDown' || e.key === ' ') {
@@ -86,6 +91,7 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
         setIsOpen(true);
         setQuery(e.key);
         setHighlightIndex(0);
+        if (onQueryChange) onQueryChange(e.key);
       }
       return;
     }
@@ -97,7 +103,14 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
       setHighlightIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (filtered.length === 0) return;
+      if (filtered.length === 0) {
+        // If nothing filtered, treat current query as custom input if supported
+        if (onQueryChange && query) {
+          onQueryChange(query);
+          setIsOpen(false);
+        }
+        return;
+      }
       const selectedIndex = highlightIndex >= 0 ? highlightIndex : 0;
       handleSelect(filtered[selectedIndex]);
     } else if (e.key === 'Escape') {
@@ -125,10 +138,7 @@ const DonateDropdown = ({ label, icon: Icon, value, items = [], placeholder, onC
           <input
             type="text"
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-              setHighlightIndex(0);
-            }}
+            onChange={handleInputChangeInternal}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={handleKeyDownInternal}
             autoFocus
@@ -208,34 +218,29 @@ const Donate = () => {
   const nameRef = useRef(null);
   const emailRef = useRef(null);
   const addressRef = useRef(null);
-  const villageRef = useRef(null);
-  const districtRef = useRef(null);
-  const cityDropdownRef = useRef(null);
-  const talukaDropdownRef = useRef(null);
-  const villageDropdownRef = useRef(null);
+  const countryRef = useRef(null);
+  const stateRef = useRef(null);
+  const cityRef = useRef(null);
+  const companyRef = useRef(null);
   const categoryDropdownRef = useRef(null);
   const gaushalaDropdownRef = useRef(null);
   const kathaDropdownRef = useRef(null);
-  const companyRef = useRef(null);
   const referenceRef = useRef(null);
   const amountRef = useRef(null);
-  const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
 
   const [isGujarati, setIsGujarati] = useState(false);
   const [rawInputs, setRawInputs] = useState({});
-  const TRANSLITERATE_FIELDS = ['name', 'address', 'village', 'district', 'companyName', 'referenceName'];
+  const TRANSLITERATE_FIELDS = ['name', 'referenceName', 'address', 'city', 'state', 'country', 'companyName'];
 
   const [formData, setFormData] = useState({
     mobileNumber: '', name: '', email: '', address: '', village: '', district: '',
     cityId: '', talukaId: '', villageId: '', categoryId: '', gaushalaId: '', kathaId: '',
     companyName: '', referenceName: '', amount: '', paymentMode: 'online', status: 'completed', paidAmount: '',
+    city: '', state: '', country: '',
   });
 
   const [formLabels, setFormLabels] = useState({
-    cityName: '',
-    talukaName: '',
-    villageName: '',
     categoryName: '',
     gaushalaName: '',
     kathaName: '',
@@ -250,24 +255,15 @@ const Donate = () => {
     if (lastDonation) {
       try {
         const { 
-          cityId, cityName, 
-          talukaId, talukaName, 
-          villageId, villageName, 
-          categoryId, categoryName 
+          categoryId, categoryName,
         } = JSON.parse(lastDonation);
         setTimeout(() => {
           setFormData(prev => ({
             ...prev,
-            cityId: cityId || prev.cityId,
-            talukaId: talukaId || prev.talukaId,
-            villageId: villageId || prev.villageId,
             categoryId: categoryId || prev.categoryId,
           }));
           setFormLabels(prev => ({
             ...prev,
-            cityName: cityName || prev.cityName,
-            talukaName: talukaName || prev.talukaName,
-            villageName: villageName || prev.villageName,
             categoryName: categoryName || prev.categoryName,
           }));
         }, 0);
@@ -278,22 +274,9 @@ const Donate = () => {
   }, []);
 
   const { data: categoriesData } = useGetCategoriesQuery({ fetchAll: true });
-  const { data: citiesData } = useGetCitiesQuery({ fetchAll: true });
-  const { data: talukasData } = useGetSubLocationsQuery({ parentId: formData.cityId, fetchAll: true }, { skip: !formData.cityId });
-  const { data: villagesData } = useGetSubLocationsQuery({ parentId: formData.talukaId, fetchAll: true }, { skip: !formData.talukaId });
+  const { data: gaushalasData, isFetching: isFetchingGaushalas } = useGetGaushalasQuery({ fetchAll: 'true' });
+  const { data: kathasData, isFetching: isFetchingKathas } = useGetKathasQuery({ fetchAll: 'true' });
 
-  const filterLocationId = formData.villageId || formData.talukaId || formData.cityId;
-
-  const { data: gaushalasData, isFetching: isFetchingGaushalas } = useGetGaushalasQuery(
-    { locationId: filterLocationId, fetchAll: 'true' }, { skip: !filterLocationId }
-  );
-  const { data: kathasData, isFetching: isFetchingKathas } = useGetKathasQuery(
-    { locationId: filterLocationId, status: 'active', fetchAll: 'true' }, { skip: !filterLocationId }
-  );
-
-  const cities = citiesData?.data?.data || [];
-  const talukas = talukasData?.data?.data || [];
-  const villages = villagesData?.data?.data || [];
   const categories = categoriesData?.data?.data || [];
   const gaushalas = gaushalasData?.data?.rows || [];
   const kathas = kathasData?.data?.rows || [];
@@ -308,8 +291,7 @@ const Donate = () => {
       const timer = setTimeout(() => {
         setFormData(prev => ({
           ...prev, name: user.name || '', email: user.email || '', address: user.address || '',
-          village: user.village || '', district: user.district || '', cityId: user.cityId || '',
-          talukaId: user.talukaId || '', villageId: user.villageId || '', companyName: user.companyName || '',
+          city: user.city || '', state: user.state || '', country: user.country || '', companyName: user.companyName || '',
         }));
       }, 0);
       toast.info('User found! Details auto-filled.');
@@ -328,20 +310,12 @@ const Donate = () => {
       setFormData(prev => ({ ...prev, [name]: cleaned }));
       return;
     }
-    if (name === 'amount' || name === 'paidAmount') {
+    if (name === 'amount') {
       const rawValue = value.replace(/,/g, '');
       if (rawValue === '' || /^\d+$/.test(rawValue)) {
         const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
         setFormData(prev => ({ ...prev, [name]: formattedValue }));
       }
-      return;
-    }
-    if (name === 'paymentMode') {
-      setFormData(prev => ({ ...prev, paymentMode: value }));
-      return;
-    }
-    if (name === 'status') {
-      setFormData(prev => ({ ...prev, status: value, paidAmount: '' }));
       return;
     }
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -384,6 +358,16 @@ const Donate = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
+      toast.warning('Please enter a valid 10-digit mobile number');
+      mobileRef.current?.focus();
+      return;
+    }
+    if (!formData.name.trim()) {
+      toast.warning('Please enter your full name');
+      nameRef.current?.focus();
+      return;
+    }
     const rawAmount = formData.amount.toString().replace(/,/g, '');
     const totalAmount = Number(rawAmount);
     if (!rawAmount || totalAmount <= 0) {
@@ -394,53 +378,22 @@ const Donate = () => {
       toast.warning('Please select at least one: Category, Gaushala, or Active Katha');
       return;
     }
-    if (formData.status === 'partially_paid') {
-      const rawPaid = formData.paidAmount.toString().replace(/,/g, '');
-      const paidAmount = Number(rawPaid);
-      const minimumPaidAmount = Math.ceil(totalAmount * 0.2);
-      if (!rawPaid || paidAmount <= 0) {
-        toast.warning('Please enter the paid amount');
-        return;
-      }
-      if (paidAmount < minimumPaidAmount) {
-        toast.warning(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
-        return;
-      }
-      if (paidAmount === totalAmount) {
-        toast.warning('This is partial payment. Paid amount must be less than total amount.');
-        return;
-      }
-      if (paidAmount > totalAmount) {
-        toast.warning('Paid amount cannot be greater than total donation amount');
-        return;
-      }
-    }
-
     try {
-      const rawPaid = formData.paidAmount.toString().replace(/,/g, '');
+      const { paidAmount: _, ...cleanFormData } = formData;
+      const rawPaid = (formData.paidAmount || '').toString().replace(/,/g, '');
       await createOrder({
-        ...formData,
+        ...cleanFormData,
         amount: Number(rawAmount),
         paidAmount: formData.status === 'partially_paid' ? Number(rawPaid) : undefined,
       }).unwrap();
 
       // Save last donation details for next time
       localStorage.setItem('LAST_DONATION_DETAILS', JSON.stringify({
-        cityId: formData.cityId,
-        cityName: formLabels.cityName,
-        talukaId: formData.talukaId,
-        talukaName: formLabels.talukaName,
-        villageId: formData.villageId,
-        villageName: formLabels.villageName,
         categoryId: formData.categoryId,
         categoryName: formLabels.categoryName,
       }));
 
-      const msg = formData.status === 'pay_later'
-        ? 'Donation Intent Recorded! We will contact you for payment.'
-        : formData.status === 'partially_paid'
-          ? 'Partial Donation Recorded Successfully! Slip sent to your email.'
-          : 'Donation Recorded Successfully! Slip sent to your email.';
+      const msg = 'Donation Recorded Successfully!. Thank you for your support.';
       toast.success(msg, { autoClose: 5000 });
       fireFireworks();
       setTimeout(() => navigate('/'), 6000);
@@ -510,7 +463,7 @@ const Donate = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Phone className="w-4 h-4" /> Mobile Number
+                  <Phone className="w-4 h-4" /> Mobile Number <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <input ref={mobileRef} required type="tel" name="mobileNumber" value={formData.mobileNumber} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, nameRef)}
@@ -519,87 +472,100 @@ const Donate = () => {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4" /> Full Name</label>
-                <input ref={nameRef} required name="name" value={formData.name} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, emailRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="John Doe" />
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4" /> Full Name <span className="text-red-500">*</span></label>
+                <input ref={nameRef} required name="name" value={formData.name} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, referenceRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="John Doe" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4" /> Reference Name</label>
+                <input ref={referenceRef} name="referenceName" value={formData.referenceName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, emailRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter reference person name" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Mail className="w-4 h-4" /> Email Address</label>
-                <input ref={emailRef} required type="email" name="email" value={formData.email} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, addressRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="john@example.com" />
+                <input ref={emailRef} type="email" name="email" value={formData.email} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, addressRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="john@example.com" />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><HomeIcon className="w-4 h-4" /> Address</label>
-                <input ref={addressRef} name="address" value={formData.address} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, villageRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Street name, house no." />
+                <input ref={addressRef} name="address" value={formData.address} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, cityRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Street name, house no." />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><MapPin className="w-4 h-4" /> Village</label>
-                <input ref={villageRef} name="village" value={formData.village} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, districtRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter Village Name" />
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Country
+                </label>
+                <input
+                  name="country"
+                  value={formData.country}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    setFormData(prev => ({ ...prev, country: val }));
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, stateRef)}
+                  inputRef={countryRef}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition uppercase"
+                  placeholder="INDIA"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> State
+                </label>
+                <input
+                  name="state"
+                  value={formData.state}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    setFormData(prev => ({ ...prev, state: val }));
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, cityRef)}
+                  inputRef={stateRef}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition uppercase"
+                  placeholder="GUJARAT"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> City
+                </label>
+                <input
+                  name="city"
+                  value={formData.city}
+                  onChange={(e) => {
+                    const val = e.target.value.toUpperCase();
+                    setFormData(prev => ({ ...prev, city: val }));
+                  }}
+                  onKeyDown={(e) => handleKeyDown(e, companyRef)}
+                  inputRef={cityRef}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition uppercase"
+                  placeholder="SURAT"
+                />
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><MapPin className="w-4 h-4" /> District</label>
-                <input ref={districtRef} name="district" value={formData.district} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, companyRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter District Name" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Building className="w-4 h-4" /> Company Name (Optional)</label>
-                <input ref={companyRef} name="companyName" value={formData.companyName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, cityDropdownRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Business/Org name" />
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><Building className="w-4 h-4" /> Company Name</label>
+                <input ref={companyRef} name="companyName" value={formData.companyName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, categoryDropdownRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Business/Org name" />
               </div>
             </div>
           </div>
 
           {/* Donation Details Section */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider border-b border-blue-50 pb-2">
-              <IndianRupee className="w-4 h-4" /> Donation Details
+            <div className="border-b border-blue-50 pb-2">
+              <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider">
+                <IndianRupee className="w-4 h-4" /> Donation Details
+              </div>
+              <p className="text-xs text-gray-500 mt-1">Please select at least one: Category, Gaushala, or Katha</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-              <DonateDropdown label="City" icon={MapPin} value={formData.cityId} items={cities} placeholder="Select City" required
-                inputRef={cityDropdownRef}
-                onKeyDown={(e) => handleKeyDown(e, talukaDropdownRef)}
-                defaultName={formLabels.cityName}
-                onChange={(id, name) => {
-                  setFormData(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }));
-                  setFormLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '', gaushalaName: '', kathaName: '' }));
-                }}
-                onClear={() => {
-                  setFormData(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }));
-                  setFormLabels(prev => ({ ...prev, cityName: '', talukaName: '', villageName: '', gaushalaName: '', kathaName: '' }));
-                }}
-              />
-              <DonateDropdown label="Taluka" icon={MapPin} value={formData.talukaId} items={talukas} placeholder="Select Taluka" disabled={!formData.cityId}
-                inputRef={talukaDropdownRef}
-                onKeyDown={(e) => handleKeyDown(e, villageDropdownRef)}
-                defaultName={formLabels.talukaName}
-                onChange={(id, name) => {
-                  setFormData(prev => ({ ...prev, talukaId: id, villageId: '', gaushalaId: '', kathaId: '' }));
-                  setFormLabels(prev => ({ ...prev, talukaName: name, villageName: '', gaushalaName: '', kathaName: '' }));
-                }}
-                onClear={() => {
-                  setFormData(prev => ({ ...prev, talukaId: '', villageId: '', gaushalaId: '', kathaId: '' }));
-                  setFormLabels(prev => ({ ...prev, talukaName: '', villageName: '', gaushalaName: '', kathaName: '' }));
-                }}
-              />
-              <DonateDropdown label="Village" icon={MapPin} value={formData.villageId} items={villages} placeholder="Select Village" disabled={!formData.talukaId}
-                inputRef={villageDropdownRef}
-                onKeyDown={(e) => handleKeyDown(e, categoryDropdownRef)}
-                defaultName={formLabels.villageName}
-                onChange={(id, name) => {
-                  setFormData(prev => ({ ...prev, villageId: id, gaushalaId: '', kathaId: '' }));
-                  setFormLabels(prev => ({ ...prev, villageName: name, gaushalaName: '', kathaName: '' }));
-                }}
-                onClear={() => {
-                  setFormData(prev => ({ ...prev, villageId: '', talukaId: '', gaushalaId: '', kathaId: '' }));
-                  setFormLabels(prev => ({ ...prev, villageName: '', gaushalaName: '', kathaName: '' }));
-                }}
-              />
-              <DonateDropdown label="Category" icon={Tag} value={formData.categoryId} items={categories} placeholder="Select Category" required
+              <DonateDropdown label={<>Category <span className="text-red-500">*</span></>} icon={Tag} value={formData.categoryId} items={categories} placeholder="Select Category" required
                 inputRef={categoryDropdownRef}
                 defaultName={formLabels.categoryName}
                 onKeyDown={(e) => {
-                  const hasGaushalas = filterLocationId && gaushalas.length > 0 && !formData.kathaId;
-                  const hasKathas = filterLocationId && kathas.length > 0 && !formData.gaushalaId;
+                  const hasGaushalas = gaushalas.length > 0 && !formData.kathaId;
+                  const hasKathas = kathas.length > 0 && !formData.gaushalaId;
                   if (hasGaushalas) handleKeyDown(e, gaushalaDropdownRef);
                   else if (hasKathas) handleKeyDown(e, kathaDropdownRef);
-                  else handleKeyDown(e, referenceRef);
+                  else handleKeyDown(e, amountRef);
                 }}
                 onChange={(id, name) => {
                   setFormData(prev => ({ ...prev, categoryId: id }));
@@ -614,15 +580,12 @@ const Donate = () => {
                 inputRef={gaushalaDropdownRef}
                 defaultName={formLabels.gaushalaName}
                 onKeyDown={(e) => {
-                  const hasKathas = filterLocationId && kathas.length > 0 && !formData.gaushalaId;
+                  const hasKathas = kathas.length > 0 && !formData.gaushalaId;
                   if (hasKathas) handleKeyDown(e, kathaDropdownRef);
-                  else handleKeyDown(e, referenceRef);
+                  else handleKeyDown(e, amountRef);
                 }}
-                placeholder={isFetchingGaushalas ? 'Loading...' : !formData.cityId ? 'Select City First' : !filterLocationId ? 'Select Location First' : gaushalas.length === 0 ? 'No Gaushalas' : 'Select Gaushala (Optional)'}
-                disabled={!!formData.kathaId || !filterLocationId || isFetchingGaushalas || gaushalas.length === 0}
-                onDisabledClick={() => {
-                  if (!formData.cityId) toast.info('Please select city first');
-                }}
+                placeholder={isFetchingGaushalas ? 'Loading...' : formData.kathaId ? 'Disabled (Katha selected)' : gaushalas.length === 0 ? 'No Gaushalas' : 'Select Gaushala'}
+                disabled={!!formData.kathaId || isFetchingGaushalas || gaushalas.length === 0}
                 onChange={(id, name) => {
                   setFormData(prev => ({ ...prev, gaushalaId: id }));
                   setFormLabels(prev => ({ ...prev, gaushalaName: name }));
@@ -635,12 +598,9 @@ const Donate = () => {
               <DonateDropdown label="Active Katha" icon={Mic2} value={formData.kathaId} items={kathas}
                 inputRef={kathaDropdownRef}
                 defaultName={formLabels.kathaName}
-                onKeyDown={(e) => handleKeyDown(e, referenceRef)}
-                placeholder={isFetchingKathas ? 'Loading...' : !formData.cityId ? 'Select City First' : !filterLocationId ? 'Select Location First' : kathas.length === 0 ? 'No Kathas' : 'Select Katha (Optional)'}
-                disabled={!!formData.gaushalaId || !filterLocationId || isFetchingKathas || kathas.length === 0}
-                onDisabledClick={() => {
-                  if (!formData.cityId) toast.info('Please select city first');
-                }}
+                onKeyDown={(e) => handleKeyDown(e, amountRef)}
+                placeholder={isFetchingKathas ? 'Loading...' : formData.gaushalaId ? 'Disabled (Gaushala selected)' : kathas.length === 0 ? 'No Kathas' : 'Select Katha'}
+                disabled={!!formData.gaushalaId || isFetchingKathas || kathas.length === 0}
                 onChange={(id, name) => {
                   setFormData(prev => ({ ...prev, kathaId: id }));
                   setFormLabels(prev => ({ ...prev, kathaName: name }));
@@ -650,96 +610,21 @@ const Donate = () => {
                   setFormLabels(prev => ({ ...prev, kathaName: '' }));
                 }}
               />
-              <div className="space-y-2">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2"><User className="w-4 h-4" /> Reference Name</label>
-                <input ref={referenceRef} name="referenceName" value={formData.referenceName} onChange={handleInputChange} onKeyDown={(e) => handleKeyDown(e, amountRef)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="Enter reference person name" />
-              </div>
-            </div>
-
-            <div className="space-y-4 pt-2">
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" /> Payment Mode
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  {[{ value: 'online', label: 'UPI' }, { value: 'cash', label: 'Cash' }, { value: 'cheque', label: 'Cheque' }].map(mode => (
-                    <label key={mode.value} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                      formData.paymentMode === mode.value ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
-                    }`}>
-                      <input type="radio" name="paymentMode" value={mode.value} checked={formData.paymentMode === mode.value} onChange={handleInputChange} className="hidden" />
-                      <span className={`font-bold text-xs sm:text-sm ${formData.paymentMode === mode.value ? 'text-blue-700' : 'text-gray-500'}`}>{mode.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                  <Tag className="w-4 h-4" /> Donation Status
-                </label>
-                <div className="flex flex-wrap gap-4">
-                  {[{ value: 'completed', label: 'Completed' }, { value: 'partially_paid', label: 'Partially Pay' }, { value: 'pay_later', label: 'Pay Later' }].map(status => (
-                    <label key={status.value} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                      formData.status === status.value ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
-                    }`}>
-                      <input type="radio" name="status" value={status.value} checked={formData.status === status.value} onChange={handleInputChange} className="hidden" />
-                      <span className={`font-bold text-xs sm:text-sm ${formData.status === status.value ? 'text-blue-700' : 'text-gray-500'}`}>{status.label}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <IndianRupee className="w-4 h-4" /> Donation Amount (INR)
+                <IndianRupee className="w-4 h-4" /> Donation Amount (INR) <span className="text-red-500">*</span>
               </label>
               <input ref={amountRef} required type="text" name="amount" value={formData.amount} onChange={handleInputChange}
-                onKeyDown={(e) => handleKeyDown(e, formData.status === 'partially_paid' ? paidAmountRef : submitRef)}
+                onKeyDown={(e) => handleKeyDown(e, submitRef)}
                 className="w-full px-4 py-3 text-2xl font-bold border border-blue-300 bg-blue-50 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="0" />
             </div>
-
-            {formData.status === 'partially_paid' && (
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <IndianRupee className="w-4 h-4" /> Paid Amount (INR)
-                  </label>
-                  <input ref={paidAmountRef} required type="text" name="paidAmount" value={formData.paidAmount} onChange={handleInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, submitRef)}
-                    className="w-full px-4 py-3 text-xl font-bold border border-green-300 bg-green-50 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition" placeholder="0" />
-                </div>
-              {formData.amount && Number(formData.amount.toString().replace(/,/g, '')) > 0 && (
-                <p className="text-xs text-gray-500">
-                  Minimum paid amount is 20% (
-                  ₹{Math.ceil(Number(formData.amount.toString().replace(/,/g, '')) * 0.2).toLocaleString('en-IN')}
-                  ) of total donation.
-                </p>
-              )}
-                {formData.amount && formData.paidAmount && (() => {
-                  const total = Number(formData.amount.toString().replace(/,/g, ''));
-                  const paid = Number(formData.paidAmount.toString().replace(/,/g, ''));
-                  const remaining = total - paid;
-                  if (remaining > 0) {
-                    return (
-                      <div className="flex items-center justify-between px-4 py-3 bg-orange-50 border border-orange-200 rounded-xl">
-                        <span className="text-sm font-semibold text-orange-700">Remaining Amount</span>
-                        <span className="text-lg font-bold text-orange-600 flex items-center gap-0.5">
-                          <IndianRupee className="w-4 h-4" />
-                          {remaining.toLocaleString('en-IN')}
-                        </span>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            )}
           </div>
 
           <button ref={submitRef} type="submit" disabled={isCreatingOrder}
             className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-blue-200 transition duration-200 flex items-center justify-center gap-2 disabled:opacity-50">
-            {isCreatingOrder ? <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</> : 'Contribute Now'}
+            {isCreatingOrder ? <><Loader2 className="w-5 h-5 animate-spin" /> Processing...</> : 'Donate Now'}
           </button>
         </form>
       </div>

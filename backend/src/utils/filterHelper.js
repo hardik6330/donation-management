@@ -1,5 +1,4 @@
 import { Op } from 'sequelize';
-import { buildLocationFilter } from './locationHelper.js';
 
 /**
  * Builds a Sequelize where clause for donations based on query parameters.
@@ -10,7 +9,7 @@ import { buildLocationFilter } from './locationHelper.js';
 export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
   const { 
     search, startDate, endDate, minAmount, maxAmount, 
-    categoryId, status, cityId, talukaId, villageId, gaushalaId, kathaId 
+    categoryId, status, city, state, country, gaushalaId, kathaId
   } = query;
 
   let whereClause = {};
@@ -45,7 +44,32 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
     }
   }
 
-  // 2. Date Filter
+  // 4. Location Filters (String based)
+  if (city) {
+    if (searchPrefix === '$donor.') {
+      whereClause[`${searchPrefix}city$`] = { [Op.like]: `%${city}%` };
+    } else {
+      donorWhere.city = { [Op.like]: `%${city}%` };
+    }
+  }
+
+  if (state) {
+    if (searchPrefix === '$donor.') {
+      whereClause[`${searchPrefix}state$`] = { [Op.like]: `%${state}%` };
+    } else {
+      donorWhere.state = { [Op.like]: `%${state}%` };
+    }
+  }
+
+  if (country) {
+    if (searchPrefix === '$donor.') {
+      whereClause[`${searchPrefix}country$`] = { [Op.like]: `%${country}%` };
+    } else {
+      donorWhere.country = { [Op.like]: `%${country}%` };
+    }
+  }
+
+  // 5. Date Filter
   if (startDate && endDate) {
     whereClause.createdAt = {
       [Op.between]: [new Date(startDate), new Date(new Date(endDate).setHours(23, 59, 59, 999))]
@@ -74,14 +98,10 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
     }
   }
 
-  // 5. Category Filter
+  // 6. Category Filter
   if (categoryId) {
     whereClause.categoryId = categoryId;
   }
-
-  // 6. Location Filters (Hierarchical)
-  const locationFilter = await buildLocationFilter(villageId, talukaId, cityId);
-  if (locationFilter) whereClause.locationId = locationFilter;
 
   return { whereClause, donorWhere };
 };

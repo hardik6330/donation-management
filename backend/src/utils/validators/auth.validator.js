@@ -28,8 +28,9 @@ export const registerSchema = Joi.object({
   }),
   password: Joi.string().min(6).optional(),
   address: Joi.string().optional().allow(''),
-  village: Joi.string().optional().allow(''),
-  district: Joi.string().optional().allow(''),
+  city: Joi.string().optional().allow(''),
+  state: Joi.string().optional().allow(''),
+  country: Joi.string().optional().allow(''),
   companyName: Joi.string().optional().allow(''),
 });
 

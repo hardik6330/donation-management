@@ -1,8 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   useAddKartalDhunMutation,
   useUpdateKartalDhunMutation
 } from '../../../../services/kartalDhunApi';
+import { 
+  useLazyGetAllCitiesQuery, 
+  useLazyGetAllStatesQuery, 
+  useLazyGetAllCountriesQuery 
+} from '../../../../services/masterApi';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { Loader2, Plus, Tag, Calendar, IndianRupee, MapPin, AlignLeft, Edit, MusicIcon } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -14,57 +20,61 @@ const AddKartalDhunModal = ({
   isOpen,
   onClose,
   editingRecord = null,
-  cityPagination,
-  talukaPagination,
-  villagePagination,
-  setModalState
 }) => {
   const [addRecord, { isLoading: isAdding }] = useAddKartalDhunMutation();
   const [updateRecord, { isLoading: isUpdating }] = useUpdateKartalDhunMutation();
 
+  const [triggerGetCountries] = useLazyGetAllCountriesQuery();
+  const countryPagination = useDropdownPagination(triggerGetCountries);
+  const [triggerGetStates] = useLazyGetAllStatesQuery();
+  const statePagination = useDropdownPagination(triggerGetStates);
+  const [triggerGetCities] = useLazyGetAllCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities);
+
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
   const nameRef = useRef(null);
   const amountRef = useRef(null);
   const cityRef = useRef(null);
-  const talukaRef = useRef(null);
-  const villageRef = useRef(null);
+  const stateRef = useRef(null);
+  const countryRef = useRef(null);
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
   const [form, setForm] = useState({
     name: '', date: '', amount: '', description: '',
-    cityId: '', cityName: '', talukaId: '', talukaName: '', villageId: '', villageName: ''
+    city: '', state: '', country: 'INDIA',
+    cityId: '', stateId: '', countryId: ''
   });
-  const [activeDropdown, setActiveDropdown] = useState(null);
-
-  const cities = cityPagination.items;
-  const talukas = talukaPagination.items;
-  const villages = villagePagination.items;
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (editingRecord) {
-        setForm({
-          name: editingRecord.name || '',
-          date: editingRecord.date || '',
-          amount: editingRecord.amount?.toString() || '',
-          description: editingRecord.description || '',
-          cityId: '', cityName: editingRecord.city || '',
-          talukaId: '', talukaName: editingRecord.taluka || '',
-          villageId: '', villageName: editingRecord.village || '',
-        });
-      } else {
-        setForm({
-          name: '', date: new Date().toISOString().split('T')[0], amount: '', description: '',
-          cityId: '', cityName: '', talukaId: '', talukaName: '', villageId: '', villageName: ''
-        });
-      }
-    }, 0);
-    return () => clearTimeout(timer);
+    if (isOpen) {
+      const timer = setTimeout(() => {
+        if (editingRecord) {
+          setForm({
+            name: editingRecord.name || '',
+            date: editingRecord.date || '',
+            amount: editingRecord.amount?.toString() || '',
+            description: editingRecord.description || '',
+            city: editingRecord.city || '',
+            state: editingRecord.state || '',
+            country: editingRecord.country || 'INDIA',
+            cityId: editingRecord.cityId || '',
+            stateId: editingRecord.stateId || '',
+            countryId: editingRecord.countryId || ''
+          });
+        } else {
+          setForm({
+            name: '', date: new Date().toISOString().split('T')[0], amount: '', description: '',
+            city: '', state: '', country: 'INDIA',
+            cityId: '', stateId: '', countryId: ''
+          });
+        }
+        nameRef.current?.focus();
+      }, 0);
+      return () => clearTimeout(timer);
+    }
   }, [editingRecord, isOpen]);
-
-  useEffect(() => {
-    if (isOpen && nameRef.current) nameRef.current.focus();
-  }, [isOpen]);
 
   const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
@@ -75,41 +85,56 @@ const AddKartalDhunModal = ({
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'cityName') {
-      setForm(prev => ({ ...prev, cityName: value, cityId: '', talukaId: '', talukaName: '', villageId: '', villageName: '' }));
-      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
-      cityPagination.handleSearch(value);
-      setActiveDropdown('cityName');
+    if (name === 'country') {
+      const upperVal = value.toUpperCase();
+      setForm(prev => ({ ...prev, country: upperVal, countryId: '', state: '', stateId: '', city: '', cityId: '' }));
+      countryPagination.handleSearch(upperVal);
+      setActiveDropdown('country');
       return;
     }
-    if (name === 'talukaName') {
-      setForm(prev => ({ ...prev, talukaName: value, talukaId: '', villageId: '', villageName: '' }));
-      setModalState(prev => ({ ...prev, talukaId: '' }));
-      talukaPagination.handleSearch(value);
-      setActiveDropdown('talukaName');
+    if (name === 'state') {
+      const upperVal = value.toUpperCase();
+      setForm(prev => ({ ...prev, state: upperVal, stateId: '', city: '', cityId: '' }));
+      statePagination.handleSearch(upperVal);
+      setActiveDropdown('state');
       return;
     }
-    if (name === 'villageName') {
-      setForm(prev => ({ ...prev, villageName: value, villageId: '' }));
-      villagePagination.handleSearch(value);
-      setActiveDropdown('villageName');
+    if (name === 'city') {
+      const upperVal = value.toUpperCase();
+      setForm(prev => ({ ...prev, city: upperVal, cityId: '' }));
+      cityPagination.handleSearch(upperVal);
+      setActiveDropdown('city');
       return;
     }
     setForm(prev => ({ ...prev, [name]: value }));
   };
 
   const handleDropdownSelect = (field, id, name) => {
-    if (field === 'cityId') {
-      setForm(prev => ({ ...prev, cityId: id, cityName: name, talukaId: '', talukaName: '', villageId: '', villageName: '' }));
-      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
-      talukaPagination.reset();
-      villagePagination.reset();
-    } else if (field === 'talukaId') {
-      setForm(prev => ({ ...prev, talukaId: id, talukaName: name, villageId: '', villageName: '' }));
-      setModalState(prev => ({ ...prev, talukaId: id }));
-      villagePagination.reset();
-    } else if (field === 'villageId') {
-      setForm(prev => ({ ...prev, villageId: id, villageName: name }));
+    const upperName = name.toUpperCase();
+    if (field === 'country') {
+      setForm(prev => ({ ...prev, country: upperName, countryId: id, state: '', stateId: '', city: '', cityId: '' }));
+    } else if (field === 'state') {
+      const selected = statePagination.items.find(s => s.id === id);
+      setForm(prev => ({ 
+        ...prev, 
+        state: upperName, 
+        stateId: id, 
+        country: selected?.countryName?.toUpperCase() || prev.country,
+        countryId: selected?.countryId || prev.countryId,
+        city: '', 
+        cityId: '' 
+      }));
+    } else if (field === 'city') {
+      const selected = cityPagination.items.find(c => c.id === id);
+      setForm(prev => ({ 
+        ...prev, 
+        city: upperName, 
+        cityId: id,
+        state: selected?.stateName?.toUpperCase() || prev.state,
+        stateId: selected?.stateId || prev.stateId,
+        country: selected?.countryName?.toUpperCase() || prev.country,
+        countryId: selected?.countryId || prev.countryId
+      }));
     }
     setActiveDropdown(null);
   };
@@ -124,12 +149,11 @@ const AddKartalDhunModal = ({
       const payload = {
         name: form.name,
         date: form.date,
-        amount: parseFloat(form.amount),
+        amount: parseFloat(form.amount.toString().replace(/,/g, '')),
         description: form.description,
-        city: form.cityName,
-        taluka: form.talukaName,
-        village: form.villageName,
-        locationId: form.villageId || form.talukaId || form.cityId || null,
+        city: form.city,
+        state: form.state,
+        country: form.country,
       };
       if (editingRecord) {
         await updateRecord({ id: editingRecord.id, ...payload }).unwrap();
@@ -165,15 +189,53 @@ const AddKartalDhunModal = ({
 
         <div className="grid grid-cols-3 gap-4">
           <SearchableDropdown
-            label="City"
-            name="cityName"
-            placeholder="Select City"
-            value={form.cityName}
-            items={cities}
+            label="Country"
+            name="country"
+            placeholder="Enter Country"
+            value={form.country}
+            items={countryPagination.items}
             onChange={handleChange}
-            onSelect={(id, name) => handleDropdownSelect('cityId', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, talukaRef)}
-            isActive={activeDropdown === 'cityName'}
+            onSelect={(id, name) => handleDropdownSelect('country', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, stateRef)}
+            isActive={activeDropdown === 'country'}
+            setActive={setActiveDropdown}
+            inputRef={countryRef}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={countryPagination.handleLoadMore}
+            hasMore={countryPagination.hasMore}
+            loading={countryPagination.loading}
+            allowTransliteration={false}
+          />
+          <SearchableDropdown
+            label="State"
+            name="state"
+            placeholder="Enter State"
+            value={form.state}
+            items={statePagination.items}
+            onChange={handleChange}
+            onSelect={(id, name) => handleDropdownSelect('state', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, cityRef)}
+            isActive={activeDropdown === 'state'}
+            setActive={setActiveDropdown}
+            inputRef={stateRef}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={statePagination.handleLoadMore}
+            hasMore={statePagination.hasMore}
+            loading={statePagination.loading}
+            allowTransliteration={false}
+          />
+          <SearchableDropdown
+            label="City"
+            name="city"
+            placeholder="Enter City"
+            value={form.city}
+            items={cityPagination.items}
+            onChange={handleChange}
+            onSelect={(id, name) => handleDropdownSelect('city', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
+            isActive={activeDropdown === 'city'}
             setActive={setActiveDropdown}
             inputRef={cityRef}
             icon={MapPin}
@@ -181,46 +243,6 @@ const AddKartalDhunModal = ({
             onLoadMore={cityPagination.handleLoadMore}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
-            allowTransliteration={false}
-          />
-          <SearchableDropdown
-            label="Taluka"
-            name="talukaName"
-            placeholder="Select Taluka"
-            value={form.talukaName}
-            items={talukas}
-            onChange={handleChange}
-            onSelect={(id, name) => handleDropdownSelect('talukaId', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, villageRef)}
-            isActive={activeDropdown === 'talukaName'}
-            setActive={setActiveDropdown}
-            disabled={!form.cityName}
-            inputRef={talukaRef}
-            icon={MapPin}
-            isServerSearch={true}
-            onLoadMore={talukaPagination.handleLoadMore}
-            hasMore={talukaPagination.hasMore}
-            loading={talukaPagination.loading}
-            allowTransliteration={false}
-          />
-          <SearchableDropdown
-            label="Village"
-            name="villageName"
-            placeholder="Select Village"
-            value={form.villageName}
-            items={villages}
-            onChange={handleChange}
-            onSelect={(id, name) => handleDropdownSelect('villageId', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
-            isActive={activeDropdown === 'villageName'}
-            setActive={setActiveDropdown}
-            disabled={!form.talukaName}
-            inputRef={villageRef}
-            icon={MapPin}
-            isServerSearch={true}
-            onLoadMore={villagePagination.handleLoadMore}
-            hasMore={villagePagination.hasMore}
-            loading={villagePagination.loading}
             allowTransliteration={false}
           />
         </div>

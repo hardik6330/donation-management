@@ -8,13 +8,13 @@ import { notFound, badRequest } from '../utils/httpError.js';
 
 // --- MASTER DATA MANAGEMENT (ADMIN) ---
 
-// 1. Smart Save Location (City -> Taluka -> Village)
+// 1. Smart Save Location (Country -> State -> City)
 export const addLocationMaster = asyncHandler(async (req, res) => {
-  const { city, taluka, village } = req.body;
-  const lastLocation = await findOrCreateLocationStructure(city, taluka, village);
-  
+  const { country, state, city } = req.body;
+  const lastLocation = await findOrCreateLocationStructure(country, state, city);
+
   if (!lastLocation) {
-    throw badRequest('City name is required');
+    throw badRequest('Country name is required');
   }
 
   return sendSuccess(res, lastLocation, 'Location structure saved successfully');
@@ -28,15 +28,15 @@ export const addCategoryMaster = asyncHandler(async (req, res) => {
 });
 
 export const addCombinedMasterData = asyncHandler(async (req, res) => {
-  const { city, taluka, village, categoryName, categoryDescription, isActive } = req.body;
+  const { country, state, city, categoryName, categoryDescription, isActive } = req.body;
 
   let locationResult = null;
   let categoryResult = null;
   let messages = [];
 
   // Handle Location if provided
-  if (city) {
-    locationResult = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    locationResult = await findOrCreateLocationStructure(country, state, city);
     if (locationResult) messages.push('Location structure updated/verified.');
   }
 
@@ -69,7 +69,7 @@ export const getCities = asyncHandler(async (req, res) => {
   const { search } = req.query;
   const { page, limit, offset, isFetchAll, requestedFields } = getPaginationParams(req.query);
 
-  const where = { type: 'city' };
+  const where = { type: 'country' };
   if (search && search.trim() !== '') {
     where.name = { [Op.like]: `%${search}%` };
   }
@@ -94,7 +94,117 @@ export const getCities = asyncHandler(async (req, res) => {
   return sendSuccess(res, response, 'All cities records fetched successfully');
 });
 
-// 4. Get children by parentId (Talukas by City, or Villages by Taluka)
+// 3b. Get all states (type: 'state') with parent (country)
+export const getAllStates = asyncHandler(async (req, res) => {
+  const { search } = req.query;
+  const { page, limit, offset, isFetchAll } = getPaginationParams(req.query);
+
+  const where = { type: 'state' };
+  if (search && search.trim() !== '') {
+    where.name = { [Op.like]: `%${search}%` };
+  }
+
+  const { count, rows } = await Location.findAndCountAll({
+    where,
+    include: [{
+      model: Location,
+      as: 'parent',
+      attributes: ['id', 'name', 'type']
+    }],
+    order: [['name', 'ASC']],
+    limit: isFetchAll ? undefined : limit,
+    offset: isFetchAll ? undefined : offset
+  });
+
+  const formatted = rows.map(s => {
+    const state = s.toJSON();
+    return {
+      id: state.id,
+      name: state.name,
+      type: state.type,
+      countryId: state.parent?.id || null,
+      countryName: state.parent?.name || null,
+    };
+  });
+
+  const response = getPaginatedResponse({ rows: formatted, count, limit, page, isFetchAll, dataKey: 'data' });
+  return sendSuccess(res, response, 'All states fetched successfully');
+});
+
+// 3c. Get all countries (type: 'country')
+export const getAllCountries = asyncHandler(async (req, res) => {
+  const { search } = req.query;
+  const { page, limit, offset, isFetchAll } = getPaginationParams(req.query);
+
+  const where = { type: 'country' };
+  if (search && search.trim() !== '') {
+    where.name = { [Op.like]: `%${search}%` };
+  }
+
+  const { count, rows } = await Location.findAndCountAll({
+    where,
+    order: [['name', 'ASC']],
+    limit: isFetchAll ? undefined : limit,
+    offset: isFetchAll ? undefined : offset
+  });
+
+  const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'data' });
+  return sendSuccess(res, response, 'All countries fetched successfully');
+});
+
+// 3d. Get all cities (type: 'city') with parent hierarchy (state > country)
+export const getAllCities = asyncHandler(async (req, res) => {
+  const { search } = req.query;
+  const { page, limit, offset, isFetchAll } = getPaginationParams(req.query);
+
+  const where = { type: 'city' };
+  if (search && search.trim() !== '') {
+    where.name = { [Op.like]: `%${search}%` };
+  }
+
+  const { count, rows } = await Location.findAndCountAll({
+    where,
+    include: [{
+      model: Location,
+      as: 'parent',
+      attributes: ['id', 'name', 'type'],
+      include: [{
+        model: Location,
+        as: 'parent',
+        attributes: ['id', 'name', 'type']
+      }]
+    }],
+    order: [['name', 'ASC']],
+    limit: isFetchAll ? undefined : limit,
+    offset: isFetchAll ? undefined : offset
+  });
+
+  const formattedCities = rows.map(city => {
+    const c = city.toJSON();
+    return {
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      stateId: c.parent?.id || null,
+      stateName: c.parent?.name || null,
+      countryId: c.parent?.parent?.id || null,
+      countryName: c.parent?.parent?.name || null,
+    };
+  });
+
+  const response = getPaginatedResponse({
+    rows: formattedCities,
+    count,
+    limit,
+    page,
+    isFetchAll,
+    dataKey: 'data'
+  });
+
+  return sendSuccess(res, response, 'All cities fetched successfully');
+});
+
+// 4. Get children by parentId (States by Country, or Cities by State)
 export const getSubLocations = asyncHandler(async (req, res) => {
   const { parentId } = req.params;
   const { search } = req.query;

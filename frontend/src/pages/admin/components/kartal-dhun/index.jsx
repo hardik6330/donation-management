@@ -8,11 +8,6 @@ import {
   useGetKartalDhunQuery, 
   useDeleteKartalDhunMutation
 } from '../../../../services/kartalDhunApi';
-import {
-  useLazyGetCitiesQuery,
-  useLazyGetSubLocationsQuery
-} from '../../../../services/masterApi';
-import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const KartalDhun = () => {
@@ -26,9 +21,7 @@ const KartalDhun = () => {
     search: '',
     startDate: '',
     endDate: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
+    city: '',
     page: 1,
     limit: 10
   });
@@ -36,23 +29,6 @@ const KartalDhun = () => {
   // API calls moved to index.jsx
   const { data: listData, isLoading: loading } = useGetKartalDhunQuery(filters);
   const [deleteRecord, { isLoading: isDeleting }] = useDeleteKartalDhunMutation();
-
-  // Dropdown Paginations
-  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
-  const [triggerGetCities] = useLazyGetCitiesQuery();
-  const cityPagination = useDropdownPagination(triggerGetCities);
-
-  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
-  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.cityId || modalState.cityId },
-    skip: !(filters.cityId || modalState.cityId)
-  });
-
-  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
-  const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
-    skip: !(filters.talukaId || modalState.talukaId)
-  });
 
   const records = listData?.data?.rows || [];
   const pagination = {
@@ -90,23 +66,6 @@ const KartalDhun = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-
-    if (name === 'cityId') {
-      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'talukaId') {
-      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'villageId') {
-      setFilters(prev => ({ ...prev, villageId: value, page: 1 }));
-      return;
-    }
-
     setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
   };
 
@@ -115,15 +74,10 @@ const KartalDhun = () => {
       search: '', 
       startDate: '', 
       endDate: '', 
-      cityId: '', 
-      talukaId: '', 
-      villageId: '', 
+      city: '', 
       page: 1, 
       limit: 10 
     });
-    cityPagination.reset();
-    talukaPagination.reset();
-    villagePagination.reset();
   };
 
   const handlePageChange = (newPage) => {
@@ -159,19 +113,12 @@ const KartalDhun = () => {
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
         hasPermission={hasPermission}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
       />
 
       <AddKartalDhunModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         editingRecord={editingRecord}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
-        setModalState={setModalState}
       />
 
       <DeleteConfirmationModal

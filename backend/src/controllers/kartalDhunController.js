@@ -7,11 +7,11 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { Op } from 'sequelize';
 
 export const addKartalDhun = asyncHandler(async (req, res) => {
-  const { name, date, amount, locationId, city, taluka, village, description } = req.body;
+  const { name, date, amount, locationId, city, state, country, description } = req.body;
 
   let finalLocationId = locationId;
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 
@@ -24,7 +24,7 @@ export const addKartalDhun = asyncHandler(async (req, res) => {
 
 export const getAllKartalDhun = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
-  const { search, startDate, endDate, cityId, talukaId, villageId } = req.query;
+  const { search, startDate, endDate, city, state, country } = req.query;
 
   const where = {};
   if (search && search.trim() !== '') {
@@ -38,9 +38,10 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
     where.date = { [Op.lte]: endDate };
   }
 
-  // Hierarchical Location Filter
-  const locationFilter = await buildLocationFilter(villageId, talukaId, cityId);
-  if (locationFilter) where.locationId = locationFilter;
+  // String-based Location Filter
+  if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
+  if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
+  if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
 
   const { count, rows } = await KartalDhun.findAndCountAll({
     where,
@@ -66,12 +67,12 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
 
   const formattedRows = rows.map(r => {
     const record = r.toJSON();
-    const { city, taluka, village } = extractLocationHierarchy(record.location);
+    const { country, state, city } = extractLocationHierarchy(record.location);
     return { 
       ...record, 
       city, 
-      taluka, 
-      village,
+      state, 
+      country,
       fullLocation: formatLocationAddress(record.location)
     };
   });
@@ -85,10 +86,10 @@ export const updateKartalDhun = asyncHandler(async (req, res) => {
   const record = await KartalDhun.findByPk(id);
   if (!record) throw notFound('Record');
 
-  const { city, taluka, village, locationId, ...rest } = req.body;
+  const { city, state, country, locationId, ...rest } = req.body;
   let finalLocationId = locationId;
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 

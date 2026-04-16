@@ -3,23 +3,24 @@ import {
   useAddKathaMutation,
   useUpdateKathaMutation
 } from '../../../../services/kathaApi';
+import {
+  useLazyGetAllCitiesQuery,
+  useLazyGetAllStatesQuery,
+  useLazyGetAllCountriesQuery
+} from '../../../../services/masterApi';
 import { toast } from 'react-toastify';
-import { useLocationDropdowns } from '../../../../hooks/useLocationDropdowns';
 import { handleMutationError } from '../../../../utils/errorHelper';
-import { MapPin, Mic2, Plus, Loader2, CheckCircle2, Calendar, Tag, CheckCircle, Edit, Mic2Icon } from 'lucide-react';
+import { MapPin, Mic2Icon, Loader2, CheckCircle2, Calendar, Tag, CheckCircle, Edit } from 'lucide-react';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 
 const AddKathaModal = ({
   isOpen,
   onClose,
   editingKatha,
-  cityPagination,
-  talukaPagination,
-  villagePagination,
-  setModalState
 }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -30,34 +31,26 @@ const AddKathaModal = ({
     description: ''
   });
 
-  const {
-    cityRef,
-    talukaRef,
-    villageRef,
-    handleLocationInputChange,
-    handleLocationSelect,
-    locationForm,
-    locationLabels,
-    setLocationForm,
-    setLocationLabels
-  } = useLocationDropdowns({
-    cityPagination,
-    talukaPagination,
-    villagePagination,
-    setModalState
+  const [locationData, setLocationData] = useState({
+    cityId: '',
+    cityName: '',
+    stateId: '',
+    stateName: '',
+    countryId: '',
+    countryName: '',
   });
 
   const [activeDropdown, setActiveDropdown] = useState(null);
 
-  // Refs for Fast Entry
   const nameRef = useRef(null);
-  const statusRef = useRef(null);
-  const descriptionRef = useRef(null);
-  const submitRef = useRef(null);
 
-  const cities = cityPagination.items;
-  const talukas = talukaPagination.items;
-  const villages = villagePagination.items;
+  const [triggerGetAllCountries] = useLazyGetAllCountriesQuery();
+  const [triggerGetAllStates] = useLazyGetAllStatesQuery();
+  const [triggerGetAllCities] = useLazyGetAllCitiesQuery();
+
+  const countryPagination = useDropdownPagination(triggerGetAllCountries);
+  const statePagination = useDropdownPagination(triggerGetAllStates, { countryId: locationData.countryId }, !locationData.countryId);
+  const cityPagination = useDropdownPagination(triggerGetAllCities, { stateId: locationData.stateId }, !locationData.stateId);
 
   const [addKatha, { isLoading: isAdding }] = useAddKathaMutation();
   const [updateKatha, { isLoading: isUpdating }] = useUpdateKathaMutation();
@@ -73,22 +66,19 @@ const AddKathaModal = ({
         statusName: editingKatha.status ? editingKatha.status.charAt(0).toUpperCase() + editingKatha.status.slice(1) : 'Upcoming',
         description: editingKatha.description || ''
       });
-      setLocationForm({
+      setLocationData({
         cityId: editingKatha.locationId || '',
-        talukaId: '',
-        villageId: ''
-      });
-      setLocationLabels({
         cityName: editingKatha.city || '',
-        talukaName: editingKatha.taluka || '',
-        villageName: editingKatha.village || ''
+        stateId: editingKatha.stateId || '',
+        stateName: editingKatha.state || '',
+        countryId: editingKatha.countryId || '',
+        countryName: editingKatha.country || '',
       });
     } else {
       setFormData({
         name: '', startDate: '', endDate: '', status: 'upcoming', statusName: 'Upcoming', description: ''
       });
-      setLocationForm({ cityId: '', talukaId: '', villageId: '' });
-      setLocationLabels({ cityName: '', talukaName: '', villageName: '' });
+      setLocationData({ cityId: '', cityName: '', stateId: '', stateName: '', countryId: '', countryName: '' });
     }
 
     if (isOpen && nameRef.current) {
@@ -96,19 +86,84 @@ const AddKathaModal = ({
     }
   }, [editingKatha, isOpen]);
 
-  const handleKeyDown = (e, nextRef) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (nextRef?.current) nextRef.current.focus();
-    }
+  const handleCountrySelect = (id, name) => {
+    const upperName = name.toUpperCase();
+    setLocationData(prev => ({
+      ...prev,
+      countryId: id,
+      countryName: upperName,
+      stateId: '',
+      stateName: '',
+      cityId: '',
+      cityName: '',
+    }));
+    setActiveDropdown(null);
   };
 
-  const handleSelectOption = (field, name, id = '') => {
-    if (field === 'city' || field === 'taluka' || field === 'village') {
-      const fieldId = field === 'city' ? 'cityId' : field === 'taluka' ? 'talukaId' : 'villageId';
-      handleLocationSelect(fieldId, id, name);
-    }
+  const handleCountryInputChange = (e) => {
+    const upperVal = e.target.value.toUpperCase();
+    setLocationData(prev => ({
+      ...prev,
+      countryName: upperVal,
+      countryId: '',
+      stateId: '',
+      stateName: '',
+      cityId: '',
+      cityName: '',
+    }));
+    countryPagination.handleSearch(upperVal);
+    setActiveDropdown('countryName');
+  };
+
+  const handleStateSelect = (id, name) => {
+    const upperName = name.toUpperCase();
+    setLocationData(prev => ({
+      ...prev,
+      stateId: id,
+      stateName: upperName,
+      cityId: '',
+      cityName: '',
+    }));
     setActiveDropdown(null);
+  };
+
+  const handleStateInputChange = (e) => {
+    const upperVal = e.target.value.toUpperCase();
+    setLocationData(prev => ({
+      ...prev,
+      stateName: upperVal,
+      stateId: '',
+      cityId: '',
+      cityName: '',
+    }));
+    statePagination.handleSearch(upperVal);
+    setActiveDropdown('stateName');
+  };
+
+  const handleCitySelect = (id, name) => {
+    const selectedCity = cityPagination.items.find(c => c.id === id);
+    const upperName = name.toUpperCase();
+    setLocationData(prev => ({
+      ...prev,
+      cityId: id,
+      cityName: upperName,
+      stateId: selectedCity?.stateId || prev.stateId,
+      stateName: selectedCity?.stateName?.toUpperCase() || prev.stateName,
+      countryId: selectedCity?.countryId || prev.countryId,
+      countryName: selectedCity?.countryName?.toUpperCase() || prev.countryName,
+    }));
+    setActiveDropdown(null);
+  };
+
+  const handleCityInputChange = (e) => {
+    const upperVal = e.target.value.toUpperCase();
+    setLocationData(prev => ({
+      ...prev,
+      cityName: upperVal,
+      cityId: '',
+    }));
+    cityPagination.handleSearch(upperVal);
+    setActiveDropdown('cityName');
   };
 
   const handleChange = (e) => {
@@ -117,11 +172,6 @@ const AddKathaModal = ({
     if (name === 'statusName') {
       setFormData(prev => ({ ...prev, statusName: value, status: '' }));
       setActiveDropdown('statusName');
-      return;
-    }
-    if (name === 'cityName' || name === 'talukaName' || name === 'villageName') {
-      const dropdown = handleLocationInputChange(name, value);
-      if (dropdown) setActiveDropdown(dropdown);
       return;
     }
     setFormData(prev => ({
@@ -133,16 +183,15 @@ const AddKathaModal = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.name) return toast.error('Katha name is required');
-
-    if (!locationLabels.cityName) return toast.error('Please select or enter a city');
+    if (!locationData.cityName) return toast.error('Please select a city');
 
     try {
       const payload = {
         name: formData.name,
-        city: locationLabels.cityName,
-        taluka: locationLabels.talukaName,
-        village: locationLabels.villageName,
-        locationId: locationForm.villageId || locationForm.talukaId || locationForm.cityId,
+        country: locationData.countryName,
+        state: locationData.stateName,
+        city: locationData.cityName,
+        locationId: locationData.cityId || undefined,
         startDate: formData.startDate,
         endDate: formData.endDate,
         status: formData.status,
@@ -178,7 +227,6 @@ const AddKathaModal = ({
             required
             value={formData.name}
             onChange={handleChange}
-            onKeyDown={(e) => handleKeyDown(e, cityRef)}
             inputRef={nameRef}
             placeholder="Ex: Bhagvat Katha"
             className="sm:col-span-2"
@@ -186,65 +234,59 @@ const AddKathaModal = ({
           />
 
           <SearchableDropdown
+            label="Country"
+            name="countryName"
+            placeholder="Search Country..."
+            value={locationData.countryName}
+            items={countryPagination.items}
+            onChange={handleCountryInputChange}
+            onSelect={(id, name) => handleCountrySelect(id, name)}
+            isActive={activeDropdown === 'countryName'}
+            setActive={setActiveDropdown}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={countryPagination.handleLoadMore}
+            hasMore={countryPagination.hasMore}
+            loading={countryPagination.loading}
+            allowTransliteration={false}
+          />
+
+          <SearchableDropdown
+            label="State"
+            name="stateName"
+            placeholder="Search State..."
+            value={locationData.stateName}
+            items={statePagination.items}
+            onChange={handleStateInputChange}
+            onSelect={(id, name) => handleStateSelect(id, name)}
+            isActive={activeDropdown === 'stateName'}
+            setActive={setActiveDropdown}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={statePagination.handleLoadMore}
+            hasMore={statePagination.hasMore}
+            loading={statePagination.loading}
+            allowTransliteration={false}
+            disabled={!locationData.countryId && !locationData.countryName}
+          />
+
+          <SearchableDropdown
             label="City"
             name="cityName"
             placeholder="Search City..."
-            value={locationLabels.cityName}
-            items={cities}
-            onChange={handleChange}
-            onSelect={(id, name) => handleSelectOption('city', name, id)}
-            onKeyDown={(e) => handleKeyDown(e, talukaRef)}
+            value={locationData.cityName}
+            items={cityPagination.items}
+            onChange={handleCityInputChange}
+            onSelect={(id, name) => handleCitySelect(id, name)}
             isActive={activeDropdown === 'cityName'}
             setActive={setActiveDropdown}
-            inputRef={cityRef}
             icon={MapPin}
             isServerSearch={true}
             onLoadMore={cityPagination.handleLoadMore}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
             allowTransliteration={false}
-          />
-
-          <SearchableDropdown
-            label="Taluka"
-            name="talukaName"
-            placeholder="Search Taluka..."
-            value={locationLabels.talukaName}
-            items={talukas}
-            onChange={handleChange}
-            onSelect={(id, name) => handleSelectOption('taluka', name, id)}
-            onKeyDown={(e) => handleKeyDown(e, villageRef)}
-            isActive={activeDropdown === 'talukaName'}
-            setActive={setActiveDropdown}
-            disabled={!locationLabels.cityName}
-            inputRef={talukaRef}
-            icon={MapPin}
-            isServerSearch={true}
-            onLoadMore={talukaPagination.handleLoadMore}
-            hasMore={talukaPagination.hasMore}
-            loading={talukaPagination.loading}
-            allowTransliteration={false}
-          />
-
-          <SearchableDropdown
-            label="Village"
-            name="villageName"
-            placeholder="Search Village..."
-            value={locationLabels.villageName}
-            items={villages}
-            onChange={handleChange}
-            onSelect={(id, name) => handleSelectOption('village', name, id)}
-            onKeyDown={(e) => handleKeyDown(e, statusRef)}
-            isActive={activeDropdown === 'villageName'}
-            setActive={setActiveDropdown}
-            disabled={!locationLabels.talukaName}
-            inputRef={villageRef}
-            icon={MapPin}
-            isServerSearch={true}
-            onLoadMore={villagePagination.handleLoadMore}
-            hasMore={villagePagination.hasMore}
-            loading={villagePagination.loading}
-            allowTransliteration={false}
+            disabled={!locationData.stateId && !locationData.stateName}
           />
 
           <SearchableDropdown
@@ -262,10 +304,8 @@ const AddKathaModal = ({
               setFormData(prev => ({ ...prev, status: id, statusName: name }));
               setActiveDropdown(null);
             }}
-            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
             isActive={activeDropdown === 'statusName'}
             setActive={setActiveDropdown}
-            inputRef={statusRef}
             icon={CheckCircle}
             allowTransliteration={false}
           />
@@ -293,8 +333,6 @@ const AddKathaModal = ({
             rows="3"
             value={formData.description}
             onChange={handleChange}
-            onKeyDown={(e) => handleKeyDown(e, submitRef)}
-            inputRef={descriptionRef}
             placeholder="Katha details..."
             className="sm:col-span-2"
           />
@@ -303,13 +341,13 @@ const AddKathaModal = ({
         <div className="flex gap-4 pt-2">
           <button
             type="button"
+            tabIndex={-1}
             onClick={onClose}
             className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition"
           >
             Cancel
           </button>
           <button
-            ref={submitRef}
             type="submit"
             disabled={isLoading}
             className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-blue-200"

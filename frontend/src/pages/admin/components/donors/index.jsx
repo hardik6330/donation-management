@@ -13,7 +13,7 @@ const Donors = () => {
   const [filters, setFilters] = useState({
     name: '',
     mobileNumber: '',
-    district: '',
+    state: '',
     minAmount: '',
     maxAmount: '',
     page: 1,
@@ -39,7 +39,7 @@ const Donors = () => {
     setFilters({ 
       name: '', 
       mobileNumber: '', 
-      district: '',
+      state: '',
       minAmount: '', 
       maxAmount: '', 
       page: 1, 

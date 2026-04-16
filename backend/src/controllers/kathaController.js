@@ -72,13 +72,13 @@ export const getKathas = asyncHandler(async (req, res) => {
 
   const formattedKathas = rows.map(k => {
     const katha = k.toJSON();
-    const { city, taluka, village } = extractLocationHierarchy(katha.location);
+    const { country, state, city } = extractLocationHierarchy(katha.location);
 
     return {
       ...katha,
+      country,
+      state,
       city,
-      taluka,
-      village,
       fullLocation: formatLocationAddress(katha.location),
       totalDonations: parseInt(katha.totalDonations) || 0,
       totalDonationAmount: parseFloat(katha.totalDonationAmount) || 0
@@ -92,13 +92,13 @@ export const getKathas = asyncHandler(async (req, res) => {
 });
 
 export const addKatha = asyncHandler(async (req, res) => {
-  const { name, city, taluka, village, locationId, startDate, endDate, status, description } = req.body;
-  
+  const { name, country, state, city, locationId, startDate, endDate, status, description } = req.body;
+
   let finalLocationId = locationId;
-  
+
   // If location names are provided, use findOrCreate logic
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 
@@ -120,14 +120,14 @@ export const addKatha = asyncHandler(async (req, res) => {
 
 export const updateKatha = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, city, taluka, village, locationId, startDate, endDate, status, description } = req.body;
-  
+  const { name, country, state, city, locationId, startDate, endDate, status, description } = req.body;
+
   const katha = await Katha.findByPk(id);
   if (!katha) throw notFound('Katha');
 
   let finalLocationId = locationId || katha.locationId;
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 

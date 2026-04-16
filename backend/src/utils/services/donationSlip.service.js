@@ -95,10 +95,11 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     if (slipTemplatePath) {
       const donorName = user?.name || '-';
       
-      // Filter out empty or null village/district to avoid extra commas in slip
+      // Filter out empty or null city/state/country to avoid extra commas in slip
       const addressParts = [];
-      if (user?.village && user.village.trim() !== '') addressParts.push(user.village.trim());
-      if (user?.district && user.district.trim() !== '') addressParts.push(user.district.trim());
+      if (user?.city && user.city.trim() !== '') addressParts.push(user.city.trim());
+      if (user?.state && user.state.trim() !== '') addressParts.push(user.state.trim());
+      if (user?.country && user.country.trim() !== '') addressParts.push(user.country.trim());
       
       const donorAddress = addressParts.length > 0 ? addressParts.join(', ') : (locationAddress || '-');
       
@@ -299,7 +300,7 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     drawLine();
     drawRowGuj('Email', user.email, 'Company', user.companyName);
     drawLine();
-    drawFullRowGuj('Address', locationAddress || [user.address, user.village, user.district].filter(Boolean).join(', '));
+    drawFullRowGuj('Address', locationAddress || [user.address, user.city, user.state, user.country].filter(Boolean).join(', '));
 
     y += 8;
 

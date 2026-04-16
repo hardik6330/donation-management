@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, X } from 'lucide-react';
+import { handleFormNavigation } from '../../utils/formNavigation';
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
@@ -130,10 +131,12 @@ const CustomDatePicker = ({
         const selected = `${year}-${String(month + 1).padStart(2, '0')}-${String(viewDate.getDate()).padStart(2, '0')}`;
         onChange({ target: { name, value: selected } });
         setIsOpen(false);
-        if (onKeyDown) {
-          onKeyDown({ key: 'Enter', preventDefault: () => {} });
-        }
         e.preventDefault();
+        
+        // After selection, manually move focus to next element since Enter was intercepted
+        setTimeout(() => {
+          handleFormNavigation({ ...e, key: 'Enter', target: triggerRef.current });
+        }, 0);
       }
     } else if (isOpen) {
       if (e.key === 'ArrowRight') {
@@ -152,8 +155,11 @@ const CustomDatePicker = ({
         setIsOpen(false);
         e.preventDefault();
       }
-    } else if (onKeyDown) {
-      onKeyDown(e);
+    } else {
+      if (onKeyDown) {
+        onKeyDown(e);
+      }
+      handleFormNavigation(e);
     }
   };
 
@@ -164,9 +170,9 @@ const CustomDatePicker = ({
           {Icon && <Icon className="w-3 h-3" />} {label} {required && '*'}
         </label>
       )}
-      <div
+      <button
         ref={triggerRef}
-        tabIndex={0}
+        type="button"
         onKeyDown={handleKeyDownInternal}
         onClick={() => {
           if (disabled) return;
@@ -194,7 +200,7 @@ const CustomDatePicker = ({
             </button>
           )}
         </div>
-      </div>
+      </button>
 
       {isOpen && (
         <div

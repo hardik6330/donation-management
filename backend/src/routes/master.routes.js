@@ -9,6 +9,9 @@ import {
   updateLocationMaster,
   deleteLocationMaster,
   getCities,
+  getAllCities,
+  getAllStates,
+  getAllCountries,
   getSubLocations
 } from '../controllers/masterController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
@@ -19,6 +22,9 @@ const router = express.Router();
 
 router.get('/categories', getCategories);
 router.get('/cities', getCities);
+router.get('/all-cities', getAllCities);
+router.get('/all-states', getAllStates);
+router.get('/all-countries', getAllCountries);
 router.get('/sub-locations/:parentId', getSubLocations);
 
 // --- Admin Only Protected Routes ---

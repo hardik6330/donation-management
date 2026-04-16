@@ -137,6 +137,11 @@ const SearchableDropdown = ({
         onSelect(item.id, item.name);
         setActive(null);
         setHighlightIndex(-1);
+        
+        // After selection, move focus to next element
+        setTimeout(() => {
+          handleFormNavigation(e);
+        }, 0);
         return;
       }
       if (e.key === 'Escape') {

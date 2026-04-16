@@ -5,10 +5,12 @@ import {
   getDonations, 
   generateQRCode, 
   updateDonation,
-  getDonationInstallments 
+  getDonationInstallments,
+  resendSlipWhatsApp 
 } from '../controllers/donationController.js';
 import { validate } from '../utils/validators/validate.js';
 import { donationSchema } from '../utils/validators/donation.validator.js';
+import { protect, adminOnly } from '../middlewares/auth.js';
 
 const router = express.Router();
 
@@ -18,5 +20,6 @@ router.post('/verify', verifyPayment);
 router.get('/', getDonations);
 router.get('/:id/installments', getDonationInstallments);
 router.put('/:id', updateDonation);
+router.post('/:id/resend-whatsapp', protect, adminOnly, resendSlipWhatsApp);
 
 export default router;

@@ -114,6 +114,12 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
       validateField(name, cleaned);
       return;
     }
+    if (['city', 'state', 'country'].includes(name)) {
+      const upperValue = value.toUpperCase();
+      setForm(prev => ({ ...prev, [name]: upperValue }));
+      validateField(name, upperValue);
+      return;
+    }
     setForm(prev => ({ ...prev, [name]: value }));
     validateField(name, value);
   };
@@ -251,6 +257,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
         <div className="pt-4 flex items-center gap-3">
           <button
             type="button"
+            tabIndex={-1}
             onClick={onClose}
             className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all duration-200"
           >

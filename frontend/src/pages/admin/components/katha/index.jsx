@@ -24,32 +24,32 @@ const Katha = () => {
 
   const [filters, setFilters] = useState({
     search: '',
+    countryId: '',
+    stateId: '',
     cityId: '',
-    talukaId: '',
-    villageId: '',
     page: 1,
     limit: 10
   });
 
-  const locationId = filters.villageId || filters.talukaId || filters.cityId;
+  const locationId = filters.cityId || filters.stateId || filters.countryId;
   const { data: kathasData, isLoading: loading } = useGetKathasQuery({ ...filters, locationId });
   const [deleteKatha, { isLoading: isDeleting }] = useDeleteKathaMutation();
 
   // Dropdown Paginations
-  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
+  const [modalState, setModalState] = useState({ countryId: '', stateId: '' });
   const [triggerGetCities] = useLazyGetCitiesQuery();
   const cityPagination = useDropdownPagination(triggerGetCities);
 
   const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
   const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.cityId || modalState.cityId },
-    skip: !(filters.cityId || modalState.cityId)
+    additionalParams: { parentId: filters.countryId || modalState.countryId },
+    skip: !(filters.countryId || modalState.countryId)
   });
 
   const [triggerGetVillages] = useLazyGetSubLocationsQuery();
   const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
-    skip: !(filters.talukaId || modalState.talukaId)
+    additionalParams: { parentId: filters.stateId || modalState.stateId },
+    skip: !(filters.stateId || modalState.stateId)
   });
 
   const kathas = kathasData?.data?.rows || [];
@@ -88,14 +88,14 @@ const Katha = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'cityId') {
-      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
+    if (name === 'countryId') {
+      setFilters(prev => ({ ...prev, countryId: value, stateId: '', cityId: '', page: 1 }));
       talukaPagination.reset();
       villagePagination.reset();
       return;
     }
-    if (name === 'talukaId') {
-      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
+    if (name === 'stateId') {
+      setFilters(prev => ({ ...prev, stateId: value, cityId: '', page: 1 }));
       villagePagination.reset();
       return;
     }
@@ -103,7 +103,7 @@ const Katha = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', cityId: '', talukaId: '', villageId: '', page: 1, limit: 10 });
+    setFilters({ search: '', countryId: '', stateId: '', cityId: '', page: 1, limit: 10 });
     cityPagination.reset();
     talukaPagination.reset();
     villagePagination.reset();
@@ -151,10 +151,6 @@ const Katha = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         editingKatha={editingKatha}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
-        setModalState={setModalState}
       />
 
       <DeleteConfirmationModal

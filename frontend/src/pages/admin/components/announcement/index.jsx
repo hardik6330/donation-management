@@ -17,7 +17,7 @@ const AnnouncementPage = () => {
   const [triggerGetDonors] = useLazyGetDonorsQuery();
   const donorPagination = useDropdownPagination(triggerGetDonors, {
     limit: 20,
-    fields: 'id,name,mobileNumber,donationCount,lastMessage,lastMessageTime',
+    fields: 'id,name,mobileNumber,donationCount,lastMessage,lastMessageTime,city',
     rowsKey: 'donors',
     skip: userType !== 'donor'
   });

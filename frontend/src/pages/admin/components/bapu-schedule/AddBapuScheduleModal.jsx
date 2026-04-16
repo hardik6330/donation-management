@@ -3,6 +3,12 @@ import {
   useAddBapuScheduleMutation,
   useUpdateBapuScheduleMutation
 } from '../../../../services/bapuApi';
+import { 
+  useLazyGetAllCitiesQuery, 
+  useLazyGetAllStatesQuery, 
+  useLazyGetAllCountriesQuery 
+} from '../../../../services/masterApi';
+import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { Calendar, X, ChevronDown, Loader2, Clock, MapPin, User, Phone, Edit, Tag, IndianRupee } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -21,40 +27,32 @@ const AddBapuScheduleModal = ({
   isOpen, 
   onClose, 
   editingSchedule,
-  cityPagination,
-  talukaPagination,
-  villagePagination,
-  setModalState
 }) => {
   const [addSchedule, { isLoading: isAdding }] = useAddBapuScheduleMutation();
   const [updateSchedule, { isLoading: isUpdating }] = useUpdateBapuScheduleMutation();
   const isLoading = isAdding || isUpdating;
 
+  const [triggerGetCountries] = useLazyGetAllCountriesQuery();
+  const countryPagination = useDropdownPagination(triggerGetCountries);
+  const [triggerGetStates] = useLazyGetAllStatesQuery();
+  const statePagination = useDropdownPagination(triggerGetStates);
+  const [triggerGetCities] = useLazyGetAllCitiesQuery();
+  const cityPagination = useDropdownPagination(triggerGetCities);
+
+  const [activeAddDropdown, setActiveAddDropdown] = useState(null);
+
   // Initial state logic moved here
   const getInitialState = () => {
     if (editingSchedule) {
-      let cityId = '', talukaId = '', villageId = '';
-      const loc = editingSchedule.location;
-
-      if (loc) {
-        if (loc.type === 'village') {
-          villageId = loc.id;
-          talukaId = loc.parentId;
-          cityId = loc.parent?.parentId || '';
-        } else if (loc.type === 'taluka') {
-          talukaId = loc.id;
-          cityId = loc.parentId;
-        } else if (loc.type === 'city') {
-          cityId = loc.id;
-        }
-      }
-
       return {
         date: editingSchedule.date ? new Date(editingSchedule.date).toISOString().split('T')[0] : '',
         time: editingSchedule.time || '',
-        cityId: cityId,
-        talukaId: talukaId,
-        villageId: villageId,
+        city: editingSchedule.city || '',
+        state: editingSchedule.state || '',
+        country: editingSchedule.country || 'INDIA',
+        cityId: editingSchedule.cityId || '',
+        stateId: editingSchedule.stateId || '',
+        countryId: editingSchedule.countryId || '',
         eventType: editingSchedule.eventType || 'Padhramani',
         contactPerson: editingSchedule.contactPerson || '',
         mobileNumber: editingSchedule.mobileNumber || '',
@@ -66,9 +64,12 @@ const AddBapuScheduleModal = ({
     return {
       date: '',
       time: '',
+      city: '',
+      state: '',
+      country: 'INDIA',
       cityId: '',
-      talukaId: '',
-      villageId: '',
+      stateId: '',
+      countryId: '',
       eventType: 'Padhramani',
       contactPerson: '',
       mobileNumber: '',
@@ -82,22 +83,21 @@ const AddBapuScheduleModal = ({
     if (editingSchedule) {
       return {
         cityName: editingSchedule.city || '',
-        talukaName: editingSchedule.taluka || '',
-        villageName: editingSchedule.village || '',
+        stateName: editingSchedule.state || '',
+        countryName: editingSchedule.country || 'INDIA',
         eventTypeName: editingSchedule.eventType || 'Padhramani',
       };
     }
     return {
       cityName: '',
-      talukaName: '',
-      villageName: '',
+      stateName: '',
+      countryName: 'INDIA',
       eventTypeName: 'Padhramani',
     };
   };
 
   const [addForm, setAddForm] = useState(getInitialState);
   const [addDropdownLabels, setAddDropdownLabels] = useState(getInitialLabels);
-  const [activeAddDropdown, setActiveAddDropdown] = useState(null);
   const [errors, setErrors] = useState({});
 
   // Refs for Fast Entry
@@ -106,23 +106,24 @@ const AddBapuScheduleModal = ({
   const dateRef = useRef(null);
   const timeRef = useRef(null);
   const eventTypeRef = useRef(null);
+  const countryRef = useRef(null);
+  const stateRef = useRef(null);
   const cityRef = useRef(null);
-  const talukaRef = useRef(null);
-  const villageRef = useRef(null);
   const amountRef = useRef(null);
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
+  const countries = countryPagination.items;
+  const states = statePagination.items;
   const cities = cityPagination.items;
-  const talukas = talukaPagination.items;
-  const villages = villagePagination.items;
 
-  // Focus effect remains
   useEffect(() => {
-    if (isOpen && contactRef.current) {
-      contactRef.current.focus();
+    if (isOpen) {
+      setAddForm(getInitialState());
+      setAddDropdownLabels(getInitialLabels());
+      setTimeout(() => contactRef.current?.focus(), 100);
     }
-  }, [isOpen]);
+  }, [editingSchedule, isOpen]);
 
   const validateField = (name, value) => {
     let error = '';
@@ -155,27 +156,28 @@ const AddBapuScheduleModal = ({
       setActiveAddDropdown('eventTypeName');
       return;
     }
+    if (name === 'countryName') {
+      const upperVal = value.toUpperCase();
+      setAddDropdownLabels(prev => ({ ...prev, countryName: upperVal, stateName: '', cityName: '' }));
+      setAddForm(prev => ({ ...prev, country: upperVal, countryId: '', state: '', stateId: '', city: '', cityId: '' }));
+      countryPagination.handleSearch(upperVal);
+      setActiveAddDropdown('countryName');
+      return;
+    }
+    if (name === 'stateName') {
+      const upperVal = value.toUpperCase();
+      setAddDropdownLabels(prev => ({ ...prev, stateName: upperVal, cityName: '' }));
+      setAddForm(prev => ({ ...prev, state: upperVal, stateId: '', city: '', cityId: '' }));
+      statePagination.handleSearch(upperVal);
+      setActiveAddDropdown('stateName');
+      return;
+    }
     if (name === 'cityName') {
-      setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
-      setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, cityId: '', talukaId: '' }));
-      cityPagination.handleSearch(value);
+      const upperVal = value.toUpperCase();
+      setAddDropdownLabels(prev => ({ ...prev, cityName: upperVal }));
+      setAddForm(prev => ({ ...prev, city: upperVal, cityId: '' }));
+      cityPagination.handleSearch(upperVal);
       setActiveAddDropdown('cityName');
-      return;
-    }
-    if (name === 'talukaName') {
-      setAddDropdownLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
-      setAddForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
-      setModalState(prev => ({ ...prev, talukaId: '' }));
-      talukaPagination.handleSearch(value);
-      setActiveAddDropdown('talukaName');
-      return;
-    }
-    if (name === 'villageName') {
-      setAddDropdownLabels(prev => ({ ...prev, villageName: value }));
-      setAddForm(prev => ({ ...prev, villageId: '' }));
-      villagePagination.handleSearch(value);
-      setActiveAddDropdown('villageName');
       return;
     }
 
@@ -192,26 +194,50 @@ const AddBapuScheduleModal = ({
 
   const handleAddDropdownSelect = (field, id, name) => {
     let nextRef = null;
+    const upperName = name.toUpperCase();
     if (field === 'eventType') {
       setAddForm(prev => ({ ...prev, eventType: id }));
       setAddDropdownLabels(prev => ({ ...prev, eventTypeName: name }));
+      nextRef = countryRef;
+    } else if (field === 'countryId') {
+      setAddForm(prev => ({ ...prev, countryId: id, country: upperName, state: '', stateId: '', city: '', cityId: '' }));
+      setAddDropdownLabels(prev => ({ ...prev, countryName: upperName, stateName: '', cityName: '' }));
+      nextRef = stateRef;
+    } else if (field === 'stateId') {
+      const selected = states.find(s => s.id === id);
+      setAddForm(prev => ({ 
+        ...prev, 
+        stateId: id, 
+        state: upperName, 
+        countryId: selected?.countryId || prev.countryId,
+        country: selected?.countryName?.toUpperCase() || prev.country,
+        city: '', 
+        cityId: '' 
+      }));
+      setAddDropdownLabels(prev => ({ 
+        ...prev, 
+        stateName: upperName, 
+        countryName: selected?.countryName?.toUpperCase() || prev.countryName,
+        cityName: '' 
+      }));
       nextRef = cityRef;
     } else if (field === 'cityId') {
-      setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
-      setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
-      setModalState(prev => ({ ...prev, cityId: id, talukaId: '' }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      nextRef = talukaRef;
-    } else if (field === 'talukaId') {
-      setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
-      setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
-      setModalState(prev => ({ ...prev, talukaId: id }));
-      villagePagination.reset();
-      nextRef = villageRef;
-    } else if (field === 'villageId') {
-      setAddForm(prev => ({ ...prev, villageId: id }));
-      setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
+      const selected = cities.find(c => c.id === id);
+      setAddForm(prev => ({ 
+        ...prev, 
+        cityId: id, 
+        city: upperName,
+        stateId: selected?.stateId || prev.stateId,
+        state: selected?.stateName?.toUpperCase() || prev.state,
+        countryId: selected?.countryId || prev.countryId,
+        country: selected?.countryName?.toUpperCase() || prev.country
+      }));
+      setAddDropdownLabels(prev => ({ 
+        ...prev, 
+        cityName: upperName,
+        stateName: selected?.stateName?.toUpperCase() || prev.stateName,
+        countryName: selected?.countryName?.toUpperCase() || prev.countryName
+      }));
       nextRef = amountRef;
     }
     setActiveAddDropdown(null);
@@ -333,6 +359,48 @@ const AddBapuScheduleModal = ({
           />
 
           <SearchableDropdown
+            label="Country"
+            name="countryName"
+            placeholder="Select or Type Country"
+            value={addDropdownLabels.countryName}
+            items={countries}
+            onChange={handleAddInputChange}
+            onSelect={(id, name) => handleAddDropdownSelect('countryId', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, stateRef)}
+            isActive={activeAddDropdown === 'countryName'}
+            setActive={setActiveAddDropdown}
+            required
+            inputRef={countryRef}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={countryPagination.handleSearch}
+            hasMore={countryPagination.hasMore}
+            loading={countryPagination.loading}
+            allowTransliteration={false}
+          />
+
+          <SearchableDropdown
+            label="State"
+            name="stateName"
+            placeholder="Select or Type State"
+            value={addDropdownLabels.stateName}
+            items={states}
+            onChange={handleAddInputChange}
+            onSelect={(id, name) => handleAddDropdownSelect('stateId', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, cityRef)}
+            isActive={activeAddDropdown === 'stateName'}
+            setActive={setActiveAddDropdown}
+            required
+            inputRef={stateRef}
+            icon={MapPin}
+            isServerSearch={true}
+            onLoadMore={statePagination.handleSearch}
+            hasMore={statePagination.hasMore}
+            loading={statePagination.loading}
+            allowTransliteration={false}
+          />
+
+          <SearchableDropdown
             label="City"
             name="cityName"
             placeholder="Select or Type City"
@@ -340,58 +408,16 @@ const AddBapuScheduleModal = ({
             items={cities}
             onChange={handleAddInputChange}
             onSelect={(id, name) => handleAddDropdownSelect('cityId', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, talukaRef)}
+            onKeyDown={(e) => handleKeyDown(e, amountRef)}
             isActive={activeAddDropdown === 'cityName'}
             setActive={setActiveAddDropdown}
             required
             inputRef={cityRef}
             icon={MapPin}
             isServerSearch={true}
-            onLoadMore={cityPagination.handleLoadMore}
+            onLoadMore={cityPagination.handleSearch}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
-            allowTransliteration={false}
-          />
-
-          <SearchableDropdown
-            label="Taluka"
-            name="talukaName"
-            placeholder="Select or Type Taluka"
-            value={addDropdownLabels.talukaName}
-            items={talukas}
-            onChange={handleAddInputChange}
-            onSelect={(id, name) => handleAddDropdownSelect('talukaId', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, villageRef)}
-            isActive={activeAddDropdown === 'talukaName'}
-            setActive={setActiveAddDropdown}
-            disabled={!addDropdownLabels.cityName}
-            inputRef={talukaRef}
-            icon={MapPin}
-            isServerSearch={true}
-            onLoadMore={talukaPagination.handleLoadMore}
-            hasMore={talukaPagination.hasMore}
-            loading={talukaPagination.loading}
-            allowTransliteration={false}
-          />
-
-          <SearchableDropdown
-            label="Village"
-            name="villageName"
-            placeholder="Select or Type Village"
-            value={addDropdownLabels.villageName}
-            items={villages}
-            onChange={handleAddInputChange}
-            onSelect={(id, name) => handleAddDropdownSelect('villageId', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, amountRef)}
-            isActive={activeAddDropdown === 'villageName'}
-            setActive={setActiveAddDropdown}
-            disabled={!addDropdownLabels.talukaName}
-            inputRef={villageRef}
-            icon={MapPin}
-            isServerSearch={true}
-            onLoadMore={villagePagination.handleLoadMore}
-            hasMore={villagePagination.hasMore}
-            loading={villagePagination.loading}
             allowTransliteration={false}
           />
 

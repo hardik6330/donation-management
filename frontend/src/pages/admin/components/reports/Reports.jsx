@@ -246,7 +246,7 @@ const Reports = () => {
       'Mobile': d.donor?.mobileNumber || '-',
       'Cause': d.cause || '-',
       'Gaushala/Katha': (d.gaushala?.name || d.katha?.name || '-'),
-      'Location': `${d.donor?.village || ''}, ${d.donor?.district || ''}`,
+      'Location': `${d.donor?.city || ''}, ${d.donor?.state || ''}`,
       'Reference': d.referenceName || '-',
       'Mode': d.paymentMode?.toUpperCase() || '-',
       'Amount': d.amount,
@@ -352,7 +352,7 @@ const Reports = () => {
       d.donor?.name || '-',
       d.cause || '-',
       (d.gaushala?.name || d.katha?.name || '-'),
-      `${d.donor?.village || ''}, ${d.donor?.district || ''}`,
+      `${d.donor?.city || ''}, ${d.donor?.state || ''}`,
       d.paymentMode?.toUpperCase() || '-',
       `Rs. ${Number(d.amount).toLocaleString('en-IN')}`,
       d.status?.toUpperCase() || '-',
@@ -560,7 +560,7 @@ const Reports = () => {
               </div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
-              <div className="text-sm text-gray-700">{donation.donor?.village || '-'}, {donation.donor?.district || '-'}</div>
+              <div className="text-sm text-gray-700">{donation.donor?.city || '-'}, {donation.donor?.state || '-'}</div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6 text-right">
               <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">

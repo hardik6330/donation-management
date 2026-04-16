@@ -161,7 +161,7 @@ export const getAdminStats = asyncHandler(async (req, res) => {
       include: [{
         model: User,
         as: 'donor',
-        attributes: ['name', 'email', 'village', 'district']
+        attributes: ['name', 'email', 'city', 'state', 'country']
       }],
       group: ['donorId', 'donor.id'],
       order: [[fn('SUM', col('amount')), 'DESC']],
@@ -182,8 +182,8 @@ export const getAdminStats = asyncHandler(async (req, res) => {
     stats.topDonor = {
       name: topDonor.donor?.name || 'Unknown',
       amount: parseFloat(topDonor.totalAmount),
-      village: topDonor.donor?.village || '-',
-      district: topDonor.donor?.district || '-'
+      city: topDonor.donor?.city || '-',
+      state: topDonor.donor?.state || '-'
     };
   } else {
     stats.topDonor = null;
@@ -205,7 +205,7 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
       {
         model: User,
         as: 'donor',
-        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'village', 'district']
+        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'city', 'state', 'country']
       },
       {
         model: Gaushala,

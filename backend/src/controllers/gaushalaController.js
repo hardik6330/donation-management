@@ -8,17 +8,17 @@ import { notFound, badRequest } from '../utils/httpError.js';
 
 export const getGaushalas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
-  const { locationId, search } = req.query;
+  const { search, city, state, country } = req.query;
   let where = {};
 
   if (search && search.trim() !== '') {
     where.name = { [Op.like]: `%${search}%` };
   }
 
-  if (locationId) {
-    const locationFilter = await buildLocationFilter(null, null, null, locationId);
-    if (locationFilter) where.locationId = locationFilter;
-  }
+  // String-based Location Filter
+  if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
+  if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
+  if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
 
   // If only specific fields are requested (e.g. id, name), avoid complex logic
   if (requestedFields) {
@@ -69,16 +69,16 @@ export const getGaushalas = asyncHandler(async (req, res) => {
     subQuery: false
   });
 
-  // Format the response to include city, taluka, village
+  // Format the response to include country, state, city
   const formattedGaushalas = rows.map(g => {
     const gaushala = g.toJSON();
-    const { city, taluka, village } = extractLocationHierarchy(gaushala.location);
+    const { country, state, city } = extractLocationHierarchy(gaushala.location);
 
     return {
       ...gaushala,
+      country: country || null,
+      state: state || null,
       city: city || null,
-      taluka: taluka || null,
-      village: village || null,
       fullLocation: formatLocationAddress(gaushala.location),
       totalDonations: parseInt(gaushala.totalDonations) || 0,
       totalDonationAmount: parseFloat(gaushala.totalDonationAmount) || 0
@@ -92,13 +92,13 @@ export const getGaushalas = asyncHandler(async (req, res) => {
 });
 
 export const addGaushala = asyncHandler(async (req, res) => {
-  const { name, city, taluka, village, locationId, isActive } = req.body;
-  
+  const { name, country, state, city, locationId, isActive } = req.body;
+
   let finalLocationId = locationId;
-  
+
   // If location names are provided, use findOrCreate logic
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 
@@ -117,14 +117,14 @@ export const addGaushala = asyncHandler(async (req, res) => {
 
 export const updateGaushala = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, city, taluka, village, locationId, isActive } = req.body;
-  
+  const { name, country, state, city, locationId, isActive } = req.body;
+
   const gaushala = await Gaushala.findByPk(id);
   if (!gaushala) throw notFound('Gaushala');
 
   let finalLocationId = locationId || gaushala.locationId;
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 

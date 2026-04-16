@@ -11,7 +11,6 @@ import {
   HandCoins
 } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { useLocationDropdowns } from '../../../../hooks/useLocationDropdowns';
 import { handleMutationError } from '../../../../utils/errorHelper';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
@@ -20,13 +19,9 @@ import FormInput from '../../../../components/common/FormInput';
 const AddDonationModal = ({
   isOpen,
   onClose,
-  cityPagination,
-  talukaPagination,
-  villagePagination,
   gaushalaPagination,
   kathaPagination,
   categoryPagination,
-  setModalState
 }) => {
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
 
@@ -35,11 +30,9 @@ const AddDonationModal = ({
     name: '',
     email: '',
     address: '',
-    village: '',
-    district: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
+    city: '',
+    state: '',
+    country: '',
     categoryId: '',
     gaushalaId: '',
     kathaId: '',
@@ -52,40 +45,11 @@ const AddDonationModal = ({
   });
 
   const [addDropdownLabels, setAddDropdownLabels] = useState({
-    cityName: '',
-    talukaName: '',
-    villageName: '',
     categoryName: '',
     gaushalaName: '',
     kathaName: '',
     paymentModeName: 'Cash',
     statusName: 'Completed',
-  });
-
-  const {
-    cityRef,
-    talukaRef,
-    villageRef,
-    handleLocationInputChange,
-    handleLocationSelect
-  } = useLocationDropdowns({
-    cityPagination,
-    talukaPagination,
-    villagePagination,
-    setModalState,
-    onSelectCallback: (field, id, name) => {
-      if (field === 'cityId') {
-        setAddForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
-        setAddDropdownLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
-      } else if (field === 'talukaId') {
-        setAddForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
-        setAddDropdownLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
-      } else if (field === 'villageId') {
-        setAddForm(prev => ({ ...prev, villageId: id }));
-        setAddDropdownLabels(prev => ({ ...prev, villageName: name }));
-        setTimeout(() => categoryRef.current?.focus(), 100);
-      }
-    }
   });
 
   const [errors, setErrors] = useState({});
@@ -114,10 +78,6 @@ const AddDonationModal = ({
   const [activeAddDropdown, setActiveAddDropdown] = useState(null);
 
   const handleSetActiveAddDropdown = (name) => {
-    if ((name === 'gaushalaName' || name === 'kathaName') && !addForm.cityId) {
-      toast.warn('Pela City select karo');
-      return;
-    }
     setActiveAddDropdown(name);
   };
 
@@ -127,6 +87,9 @@ const AddDonationModal = ({
   const emailRef = useRef(null);
   const companyRef = useRef(null);
   const addressRef = useRef(null);
+  const cityRef = useRef(null);
+  const stateRef = useRef(null);
+  const countryRef = useRef(null);
   const categoryRef = useRef(null);
   const gaushalaRef = useRef(null);
   const kathaRef = useRef(null);
@@ -136,9 +99,6 @@ const AddDonationModal = ({
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
 
-  const cities = cityPagination.items;
-  const talukas = talukaPagination.items;
-  const villages = villagePagination.items;
   const gaushalas = gaushalaPagination.items;
   const kathas = kathaPagination.items;
   const categories = categoryPagination.items;
@@ -156,37 +116,16 @@ const AddDonationModal = ({
       const lastDonation = localStorage.getItem('LAST_DONATION_DETAILS');
       if (lastDonation) {
         try {
-          const { 
-            cityId, cityName, 
-            talukaId, talukaName, 
-            villageId, villageName, 
-            categoryId, categoryName 
-          } = JSON.parse(lastDonation);
+          const { categoryId, categoryName } = JSON.parse(lastDonation);
           setTimeout(() => {
             setAddForm(prev => ({
               ...prev,
-              cityId: cityId || prev.cityId,
-              talukaId: talukaId || prev.talukaId,
-              villageId: villageId || prev.villageId,
               categoryId: categoryId || prev.categoryId,
             }));
             setAddDropdownLabels(prev => ({
               ...prev,
-              cityName: cityName || prev.cityName,
-              talukaName: talukaName || prev.talukaName,
-              villageName: villageName || prev.villageName,
               categoryName: categoryName || prev.categoryName,
             }));
-            
-            // Also update modal state to fetch sub-locations
-            if (cityId || talukaId || villageId) {
-              setModalState(prev => ({
-                ...prev,
-                cityId: cityId || prev.cityId,
-                talukaId: talukaId || prev.talukaId,
-                villageId: villageId || prev.villageId,
-              }));
-            }
           }, 0);
         } catch (e) {
           console.error('Error parsing last donation details', e);
@@ -235,18 +174,10 @@ const AddDonationModal = ({
           name: user.name || '',
           email: user.email || '',
           address: user.address || '',
-          village: user.village || '',
-          district: user.district || '',
-          cityId: user.cityId || '',
-          talukaId: user.talukaId || '',
-          villageId: user.villageId || '',
+          city: user.city || '',
+          state: user.state || '',
+          country: user.country || '',
           companyName: user.companyName || '',
-        }));
-        setAddDropdownLabels(prev => ({
-          ...prev,
-          cityName: user.city?.name || prev.cityName,
-          talukaName: user.taluka?.name || prev.talukaName,
-          villageName: user.village_loc?.name || prev.villageName,
         }));
         toast.info('User found! Details auto-filled.');
       }, 0);
@@ -270,24 +201,6 @@ const AddDonationModal = ({
         const formattedValue = rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN');
         setAddForm(prev => ({ ...prev, [name]: formattedValue }));
         validateField(name, formattedValue);
-      }
-      return;
-    }
-
-    if (name === 'cityName' || name === 'talukaName' || name === 'villageName') {
-      const dropdown = handleLocationInputChange(name, value);
-      if (dropdown) setActiveAddDropdown(dropdown);
-
-      // Also update local state to ensure input reflects the change (including backspace)
-      if (name === 'cityName') {
-        setAddDropdownLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
-        setAddForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
-      } else if (name === 'talukaName') {
-        setAddDropdownLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
-        setAddForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
-      } else if (name === 'villageName') {
-        setAddDropdownLabels(prev => ({ ...prev, villageName: value }));
-        setAddForm(prev => ({ ...prev, villageId: '' }));
       }
       return;
     }
@@ -328,20 +241,18 @@ const AddDonationModal = ({
   const handleAddDropdownSelect = (field, id, name) => {
     let nextRef = null;
 
-    if (field === 'cityId' || field === 'talukaId' || field === 'villageId') {
-      nextRef = handleLocationSelect(field, id, name);
-    } else if (field === 'categoryId') {
+    if (field === 'categoryId') {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
-      nextRef = referenceRef;
+      nextRef = paymentModeRef;
     } else if (field === 'gaushalaId') {
       setAddForm(prev => ({ ...prev, gaushalaId: id, kathaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, gaushalaName: name, kathaName: '' }));
-      nextRef = referenceRef;
+      nextRef = paymentModeRef;
     } else if (field === 'kathaId') {
       setAddForm(prev => ({ ...prev, kathaId: id, gaushalaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, kathaName: name, gaushalaName: '' }));
-      nextRef = referenceRef;
+      nextRef = paymentModeRef;
     } else if (field === 'paymentMode') {
       setAddForm(prev => ({ ...prev, paymentMode: id }));
       setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
@@ -396,19 +307,10 @@ const AddDonationModal = ({
         ...addForm,
         amount: Number(rawAmount),
         paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
-        cityName: addDropdownLabels.cityName,
-        talukaName: addDropdownLabels.talukaName,
-        villageName: addDropdownLabels.villageName,
       }).unwrap();
 
       // Save last donation details for next time
       localStorage.setItem('LAST_DONATION_DETAILS', JSON.stringify({
-        cityId: addForm.cityId,
-        cityName: addDropdownLabels.cityName,
-        talukaId: addForm.talukaId,
-        talukaName: addDropdownLabels.talukaName,
-        villageId: addForm.villageId,
-        villageName: addDropdownLabels.villageName,
         categoryId: addForm.categoryId,
         categoryName: addDropdownLabels.categoryName,
       }));
@@ -438,11 +340,9 @@ const AddDonationModal = ({
       name: '',
       email: '',
       address: '',
-      village: '',
-      district: '',
-      cityId: lastDetails.cityId || '',
-      talukaId: lastDetails.talukaId || '',
-      villageId: lastDetails.villageId || '',
+      city: '',
+      state: '',
+      country: '',
       categoryId: lastDetails.categoryId || '',
       gaushalaId: '',
       kathaId: '',
@@ -453,9 +353,6 @@ const AddDonationModal = ({
       paymentMode: 'cash',
     });
     setAddDropdownLabels({
-      cityName: lastDetails.cityName || '',
-      talukaName: lastDetails.talukaName || '',
-      villageName: lastDetails.villageName || '',
       categoryName: lastDetails.categoryName || '',
       gaushalaName: '',
       kathaName: '',
@@ -501,10 +398,21 @@ const AddDonationModal = ({
                 required
                 value={addForm.name}
                 onChange={handleAddInputChange}
-                onKeyDown={(e) => handleKeyDown(e, emailRef, mobileRef)}
+                onKeyDown={(e) => handleKeyDown(e, referenceRef, mobileRef)}
                 inputRef={nameRef}
                 icon={UserCheck}
                 error={errors.name}
+              />
+
+              <FormInput
+                label="Reference Name"
+                name="referenceName"
+                placeholder="Reference person name"
+                value={addForm.referenceName}
+                onChange={handleAddInputChange}
+                onKeyDown={(e) => handleKeyDown(e, emailRef, nameRef)}
+                inputRef={referenceRef}
+                icon={User}
               />
 
               <div className="grid grid-cols-2 gap-4">
@@ -515,7 +423,7 @@ const AddDonationModal = ({
                   placeholder="Email address"
                   value={addForm.email}
                   onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, companyRef, nameRef)}
+                  onKeyDown={(e) => handleKeyDown(e, companyRef, referenceRef)}
                   inputRef={emailRef}
                   icon={Mail}
                 />
@@ -552,61 +460,42 @@ const AddDonationModal = ({
             </h4>
 
             <div className="grid grid-cols-1 gap-4">
-              <div className="grid grid-cols-2 gap-4">
-                <SearchableDropdown
+              {/* Row 1: City, State, Country */}
+              <div className="grid grid-cols-3 gap-4">
+                <FormInput
                   label="City"
-                  name="cityName"
-                  placeholder="Select City"
-                  value={addDropdownLabels.cityName}
-                  items={cities}
+                  name="city"
+                  placeholder="Enter city"
+                  value={addForm.city}
                   onChange={handleAddInputChange}
-                  onSelect={(id, name) => handleAddDropdownSelect('cityId', id, name)}
-                  onClear={() => handleAddDropdownSelect('cityId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, talukaRef, addressRef)}
-                  isActive={activeAddDropdown === 'cityName'}
-                  setActive={handleSetActiveAddDropdown}
-                  required
+                  onKeyDown={(e) => handleKeyDown(e, stateRef, addressRef)}
                   inputRef={cityRef}
                   icon={MapPin}
-                  allowTransliteration={false}
                 />
-                <SearchableDropdown
-                  label="Taluka"
-                  name="talukaName"
-                  placeholder="Select Taluka"
-                  value={addDropdownLabels.talukaName}
-                  items={talukas}
+                <FormInput
+                  label="State"
+                  name="state"
+                  placeholder="Enter state"
+                  value={addForm.state}
                   onChange={handleAddInputChange}
-                  onSelect={(id, name) => handleAddDropdownSelect('talukaId', id, name)}
-                  onClear={() => handleAddDropdownSelect('talukaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, villageRef, cityRef)}
-                  isActive={activeAddDropdown === 'talukaName'}
-                  setActive={handleSetActiveAddDropdown}
-                  disabled={!addDropdownLabels.cityName}
-                  inputRef={talukaRef}
+                  onKeyDown={(e) => handleKeyDown(e, countryRef, cityRef)}
+                  inputRef={stateRef}
                   icon={MapPin}
-                  allowTransliteration={false}
+                />
+                <FormInput
+                  label="Country"
+                  name="country"
+                  placeholder="Enter country"
+                  value={addForm.country}
+                  onChange={handleAddInputChange}
+                  onKeyDown={(e) => handleKeyDown(e, categoryRef, stateRef)}
+                  inputRef={countryRef}
+                  icon={MapPin}
                 />
               </div>
 
+              {/* Row 2: Category, Gaushala */}
               <div className="grid grid-cols-2 gap-4">
-                <SearchableDropdown
-                  label="Village"
-                  name="villageName"
-                  placeholder="Select Village"
-                  value={addDropdownLabels.villageName}
-                  items={villages}
-                  onChange={handleAddInputChange}
-                  onSelect={(id, name) => handleAddDropdownSelect('villageId', id, name)}
-                  onClear={() => handleAddDropdownSelect('villageId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, categoryRef, talukaRef)}
-                  isActive={activeAddDropdown === 'villageName'}
-                  setActive={handleSetActiveAddDropdown}
-                  disabled={!addDropdownLabels.talukaName}
-                  inputRef={villageRef}
-                  icon={MapPin}
-                  allowTransliteration={false}
-                />
                 <SearchableDropdown
                   label="Category"
                   name="categoryName"
@@ -616,25 +505,12 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('categoryId', id, name)}
                   onClear={() => handleAddDropdownSelect('categoryId', '', '')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      // If no selection, just move to next logical field
-                      if (gaushalas.length > 0) gaushalaRef.current?.focus();
-                      else if (kathas.length > 0) kathaRef.current?.focus();
-                      else referenceRef.current?.focus();
-                    } else {
-                      handleKeyDown(e, gaushalaRef, villageRef);
-                    }
-                  }}
+                  onKeyDown={(e) => handleKeyDown(e, gaushalaRef, countryRef)}
                   isActive={activeAddDropdown === 'categoryName'}
                   setActive={handleSetActiveAddDropdown}
                   inputRef={categoryRef}
                   icon={Tag}
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <SearchableDropdown
                   label="Gaushala"
                   name="gaushalaName"
@@ -644,21 +520,17 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('gaushalaId', id, name)}
                   onClear={() => handleAddDropdownSelect('gaushalaId', '', '')}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      if (kathas.length > 0) kathaRef.current?.focus();
-                      else referenceRef.current?.focus();
-                    } else {
-                      handleKeyDown(e, kathaRef, categoryRef);
-                    }
-                  }}
+                  onKeyDown={(e) => handleKeyDown(e, kathaRef, categoryRef)}
                   isActive={activeAddDropdown === 'gaushalaName'}
                   setActive={handleSetActiveAddDropdown}
-                  disabled={!!addForm.kathaId || (!!addForm.cityId && gaushalas.length === 0)}
+                  disabled={!!addForm.kathaId}
                   inputRef={gaushalaRef}
                   icon={Building2}
                 />
+              </div>
+
+              {/* Row 3: Active Katha */}
+              <div className="grid grid-cols-2 gap-4">
                 <SearchableDropdown
                   label="Active Katha"
                   name="kathaName"
@@ -668,28 +540,19 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('kathaId', id, name)}
                   onClear={() => handleAddDropdownSelect('kathaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, referenceRef, gaushalaRef)}
+                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, gaushalaRef)}
                   isActive={activeAddDropdown === 'kathaName'}
                   setActive={handleSetActiveAddDropdown}
-                  disabled={!!addForm.gaushalaId || (!!addForm.cityId && kathas.length === 0)}
+                  disabled={!!addForm.gaushalaId}
                   inputRef={kathaRef}
                   icon={Tag}
                 />
               </div>
 
+              {/* Row 4: Payment Mode, Status */}
               <div className="grid grid-cols-2 gap-4">
-                <FormInput
-                  label="Reference"
-                  name="referenceName"
-                  placeholder="Reference name"
-                  value={addForm.referenceName}
-                  onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, kathaRef)}
-                  inputRef={referenceRef}
-                  icon={User}
-                />
                 <SearchableDropdown
-                  label="Mode"
+                  label="Payment Mode"
                   name="paymentModeName"
                   placeholder="Select Mode"
                   value={addDropdownLabels.paymentModeName}
@@ -700,7 +563,7 @@ const AddDonationModal = ({
                   ]}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('paymentMode', id, name)}
-                  onKeyDown={(e) => handleKeyDown(e, amountRef, referenceRef)}
+                  onKeyDown={(e) => handleKeyDown(e, amountRef, kathaRef)}
                   isActive={activeAddDropdown === 'paymentModeName'}
                   setActive={handleSetActiveAddDropdown}
                   inputRef={paymentModeRef}
@@ -708,9 +571,6 @@ const AddDonationModal = ({
                   icon={CreditCard}
                   allowTransliteration={false}
                 />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <SearchableDropdown
                   label="Status"
                   name="statusName"
@@ -729,6 +589,10 @@ const AddDonationModal = ({
                   icon={CreditCard}
                   allowTransliteration={false}
                 />
+              </div>
+
+              {/* Row 5: Amount (+ Paid Amount if partial) */}
+              <div className={`grid ${addForm.status === 'partially_paid' ? 'grid-cols-2' : 'grid-cols-1'} gap-4`}>
                 <FormInput
                   label="Donation Amount"
                   name="amount"
@@ -739,13 +603,9 @@ const AddDonationModal = ({
                   onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : submitRef, paymentModeRef)}
                   inputRef={amountRef}
                   icon={IndianRupee}
-                  className="donation-amount-field"
                   error={errors.amount}
                 />
-              </div>
-
-              {addForm.status === 'partially_paid' && (
-                <>
+                {addForm.status === 'partially_paid' && (
                   <FormInput
                     label="Paid Amount"
                     name="paidAmount"
@@ -758,25 +618,26 @@ const AddDonationModal = ({
                     icon={IndianRupee}
                     error={errors.paidAmount}
                   />
-                  {addForm.amount && addForm.paidAmount && (() => {
-                    const total = Number(addForm.amount.toString().replace(/,/g, ''));
-                    const paid = Number(addForm.paidAmount.toString().replace(/,/g, ''));
-                    const remaining = total - paid;
-                    if (remaining > 0) {
-                      return (
-                        <div className="flex items-center justify-between px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
-                          <span className="text-xs font-semibold text-orange-700">Remaining</span>
-                          <span className="text-sm font-bold text-orange-600 flex items-center gap-0.5">
-                            <IndianRupee className="w-3.5 h-3.5" />
-                            {remaining.toLocaleString('en-IN')}
-                          </span>
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </>
-              )}
+                )}
+              </div>
+
+              {addForm.status === 'partially_paid' && addForm.amount && addForm.paidAmount && (() => {
+                const total = Number(addForm.amount.toString().replace(/,/g, ''));
+                const paid = Number(addForm.paidAmount.toString().replace(/,/g, ''));
+                const remaining = total - paid;
+                if (remaining > 0) {
+                  return (
+                    <div className="flex items-center justify-between px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                      <span className="text-xs font-semibold text-orange-700">Remaining</span>
+                      <span className="text-sm font-bold text-orange-600 flex items-center gap-0.5">
+                        <IndianRupee className="w-3.5 h-3.5" />
+                        {remaining.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
         </div>
@@ -784,6 +645,7 @@ const AddDonationModal = ({
         <div className="flex gap-4 pt-2">
           <button
             type="button"
+            tabIndex={-1}
             onClick={onClose}
             className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold rounded-xl transition"
           >

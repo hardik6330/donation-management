@@ -17,18 +17,15 @@ const BapuScheduleList = ({
   onClearFilters, 
   onPageChange, 
   onLimitChange,
-  hasPermission,
-  cityPagination,
-  talukaPagination,
-  villagePagination
+  hasPermission
 }) => {
 
   const tableHeaders = [
     { label: 'Date & Time' },
     { label: 'Event Details' },
     { label: 'City' },
-    { label: 'Taluka' },
-    { label: 'Village' },
+    { label: 'State' },
+    { label: 'Country' },
     { label: 'Contact' },
     { label: 'Amount', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
@@ -37,44 +34,7 @@ const BapuScheduleList = ({
 
   const filterFields = [
     { name: 'startDate', label: 'Event Date', type: 'date', icon: Calendar },
-    { 
-      name: 'cityId', 
-      label: 'City', 
-      type: 'select', 
-      icon: MapPin,
-      options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
-      isServerSearch: true,
-      onSearchChange: cityPagination.handleSearch,
-      onLoadMore: cityPagination.handleLoadMore,
-      hasMore: cityPagination.hasMore,
-      loading: cityPagination.loading
-    },
-    { 
-      name: 'talukaId', 
-      label: 'Taluka', 
-      type: 'select', 
-      icon: MapPin,
-      options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
-      disabled: !filters.cityId,
-      isServerSearch: true,
-      onSearchChange: talukaPagination.handleSearch,
-      onLoadMore: talukaPagination.handleLoadMore,
-      hasMore: talukaPagination.hasMore,
-      loading: talukaPagination.loading
-    },
-    { 
-      name: 'villageId', 
-      label: 'Village', 
-      type: 'select', 
-      icon: MapPin,
-      options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
-      disabled: !filters.talukaId,
-      isServerSearch: true,
-      onSearchChange: villagePagination.handleSearch,
-      onLoadMore: villagePagination.handleLoadMore,
-      hasMore: villagePagination.hasMore,
-      loading: villagePagination.loading
-    },
+    { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     { 
       name: 'eventType', 
       label: 'Event Type', 
@@ -138,21 +98,9 @@ const BapuScheduleList = ({
                 </span>
               </div>
             </td>
-            <td className="p-4 px-6">
-              <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                <td className="px-1 py-4 text-sm text-gray-500 uppercase">{schedule.city || '-'}</td>
-              </div>
-            </td>
-            <td className="p-4 px-6">
-              <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                <td className="px-1py-4 text-sm text-gray-500 uppercase">{schedule.taluka || '-'}</td>
-              </div>
-            </td>
-            <td className="p-4 px-6">
-              <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                <td className="px-1 py-4 text-sm text-gray-500 uppercase">{schedule.village || '-'}</td>
-              </div>
-            </td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{schedule.city || '-'}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{schedule.state || '-'}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{schedule.country || '-'}</td>
 
             <td className="p-4 px-6">
               <div className="flex flex-col gap-1">

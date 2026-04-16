@@ -12,9 +12,6 @@ const KartalDhunList = ({
   isDeleting, 
   pagination, 
   filters, 
-  cityPagination,
-  talukaPagination,
-  villagePagination,
   onEdit, 
   onDelete, 
   onFilterChange, 
@@ -28,51 +25,14 @@ const KartalDhunList = ({
     { label: 'Date' },
     { label: 'Amount (₹)', className: 'text-right' },
     { label: 'City' },
-    { label: 'Taluka' },
-    { label: 'Village' },
+    { label: 'State' },
+    { label: 'Country' },
     { label: 'Actions' }
   ];
 
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
-    { 
-      name: 'cityId', 
-      label: 'City', 
-      type: 'select', 
-      icon: MapPin,
-      options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
-      isServerSearch: true,
-      onSearchChange: cityPagination.handleSearch,
-      onLoadMore: cityPagination.handleLoadMore,
-      hasMore: cityPagination.hasMore,
-      loading: cityPagination.loading
-    },
-    { 
-      name: 'talukaId', 
-      label: 'Taluka', 
-      type: 'select', 
-      icon: MapPin,
-      options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
-      disabled: !filters.cityId,
-      isServerSearch: true,
-      onSearchChange: talukaPagination.handleSearch,
-      onLoadMore: talukaPagination.handleLoadMore,
-      hasMore: talukaPagination.hasMore,
-      loading: talukaPagination.loading
-    },
-    { 
-      name: 'villageId', 
-      label: 'Village', 
-      type: 'select', 
-      icon: MapPin,
-      options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
-      disabled: !filters.talukaId,
-      isServerSearch: true,
-      onSearchChange: villagePagination.handleSearch,
-      onLoadMore: villagePagination.handleLoadMore,
-      hasMore: villagePagination.hasMore,
-      loading: villagePagination.loading
-    },
+    { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     { name: 'startDate', label: 'From Date', type: 'date', icon: Calendar },
     { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
   ];
@@ -98,8 +58,8 @@ const KartalDhunList = ({
               </div>
             </td>
             <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.city || '-'}</td>
-            <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.taluka || '-'}</td>
-            <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.village || '-'}</td>
+            <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.state || '-'}</td>
+            <td className="px-6 py-4 text-sm text-gray-500 uppercase">{record.country || '-'}</td>
             <td className="px-6 py-4 text-sm font-medium">
               <div className="flex items-center gap-2">
                 {hasPermission('kartalDhun', 'entry') && (

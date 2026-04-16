@@ -1,72 +1,72 @@
 import { useState, useRef, useEffect } from 'react';
 
 /**
- * Custom hook to manage hierarchical location dropdowns (City > Taluka > Village)
+ * Custom hook to manage hierarchical location dropdowns (Country > State > City)
  * and their respective refs for form navigation.
  */
-export const useLocationDropdowns = ({ 
-  initialValues = {}, 
-  cityPagination, 
-  talukaPagination, 
+export const useLocationDropdowns = ({
+  initialValues = {},
+  cityPagination,
+  talukaPagination,
   villagePagination,
   setModalState,
-  onSelectCallback = null 
+  onSelectCallback = null
 }) => {
   // Form State
   const [locationForm, setLocationForm] = useState({
+    countryId: initialValues.countryId || '',
+    stateId: initialValues.stateId || '',
     cityId: initialValues.cityId || '',
-    talukaId: initialValues.talukaId || '',
-    villageId: initialValues.villageId || '',
   });
 
   // Dropdown Label State
   const [locationLabels, setLocationLabels] = useState({
+    countryName: initialValues.countryName || '',
+    stateName: initialValues.stateName || '',
     cityName: initialValues.cityName || '',
-    talukaName: initialValues.talukaName || '',
-    villageName: initialValues.villageName || '',
   });
 
   // Refs for navigation
+  const countryRef = useRef(null);
+  const stateRef = useRef(null);
   const cityRef = useRef(null);
-  const talukaRef = useRef(null);
-  const villageRef = useRef(null);
 
   // Sync with initial values if they change (e.g., when editing or user auto-fill)
   useEffect(() => {
-    if (initialValues.cityId !== undefined || initialValues.talukaId !== undefined || initialValues.villageId !== undefined) {
+    if (initialValues.countryId !== undefined || initialValues.stateId !== undefined || initialValues.cityId !== undefined) {
       setLocationForm(prev => ({
         ...prev,
+        countryId: initialValues.countryId || prev.countryId,
+        stateId: initialValues.stateId || prev.stateId,
         cityId: initialValues.cityId || prev.cityId,
-        talukaId: initialValues.talukaId || prev.talukaId,
-        villageId: initialValues.villageId || prev.villageId,
       }));
       setLocationLabels(prev => ({
         ...prev,
+        countryName: initialValues.countryName || prev.countryName,
+        stateName: initialValues.stateName || prev.stateName,
         cityName: initialValues.cityName || prev.cityName,
-        talukaName: initialValues.talukaName || prev.talukaName,
-        villageName: initialValues.villageName || prev.villageName,
       }));
     }
-  }, [initialValues.cityId, initialValues.talukaId, initialValues.villageId, initialValues.cityName, initialValues.talukaName, initialValues.villageName]);
+  }, [initialValues.countryId, initialValues.stateId, initialValues.cityId, initialValues.countryName, initialValues.stateName, initialValues.cityName]);
 
   const handleLocationInputChange = (name, value) => {
+    if (name === 'countryName') {
+      setLocationLabels(prev => ({ ...prev, countryName: value, stateName: '', cityName: '' }));
+      setLocationForm(prev => ({ ...prev, countryId: '', stateId: '', cityId: '' }));
+      if (setModalState) setModalState(prev => ({ ...prev, countryId: '', stateId: '', cityId: '' }));
+      return 'countryName';
+    }
+    if (name === 'stateName') {
+      setLocationLabels(prev => ({ ...prev, stateName: value, cityName: '' }));
+      setLocationForm(prev => ({ ...prev, stateId: '', cityId: '' }));
+      if (setModalState) setModalState(prev => ({ ...prev, stateId: '', cityId: '' }));
+      return 'stateName';
+    }
     if (name === 'cityName') {
-      setLocationLabels(prev => ({ ...prev, cityName: value, talukaName: '', villageName: '' }));
-      setLocationForm(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
-      if (setModalState) setModalState(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
+      setLocationLabels(prev => ({ ...prev, cityName: value }));
+      setLocationForm(prev => ({ ...prev, cityId: '' }));
+      if (setModalState) setModalState(prev => ({ ...prev, cityId: '' }));
       return 'cityName';
-    }
-    if (name === 'talukaName') {
-      setLocationLabels(prev => ({ ...prev, talukaName: value, villageName: '' }));
-      setLocationForm(prev => ({ ...prev, talukaId: '', villageId: '' }));
-      if (setModalState) setModalState(prev => ({ ...prev, talukaId: '', villageId: '' }));
-      return 'talukaName';
-    }
-    if (name === 'villageName') {
-      setLocationLabels(prev => ({ ...prev, villageName: value }));
-      setLocationForm(prev => ({ ...prev, villageId: '' }));
-      if (setModalState) setModalState(prev => ({ ...prev, villageId: '' }));
-      return 'villageName';
     }
     return null;
   };
@@ -74,23 +74,23 @@ export const useLocationDropdowns = ({
   const handleLocationSelect = (field, id, name) => {
     let nextRef = null;
 
-    if (field === 'cityId') {
-      setLocationForm(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
-      setLocationLabels(prev => ({ ...prev, cityName: name, talukaName: '', villageName: '' }));
-      if (setModalState) setModalState(prev => ({ ...prev, cityId: id, talukaId: '', villageId: '' }));
+    if (field === 'countryId') {
+      setLocationForm(prev => ({ ...prev, countryId: id, stateId: '', cityId: '' }));
+      setLocationLabels(prev => ({ ...prev, countryName: name, stateName: '', cityName: '' }));
+      if (setModalState) setModalState(prev => ({ ...prev, countryId: id, stateId: '', cityId: '' }));
       if (talukaPagination?.reset) talukaPagination.reset();
       if (villagePagination?.reset) villagePagination.reset();
-      nextRef = talukaRef;
-    } else if (field === 'talukaId') {
-      setLocationForm(prev => ({ ...prev, talukaId: id, villageId: '' }));
-      setLocationLabels(prev => ({ ...prev, talukaName: name, villageName: '' }));
-      if (setModalState) setModalState(prev => ({ ...prev, talukaId: id, villageId: '' }));
+      nextRef = stateRef;
+    } else if (field === 'stateId') {
+      setLocationForm(prev => ({ ...prev, stateId: id, cityId: '' }));
+      setLocationLabels(prev => ({ ...prev, stateName: name, cityName: '' }));
+      if (setModalState) setModalState(prev => ({ ...prev, stateId: id, cityId: '' }));
       if (villagePagination?.reset) villagePagination.reset();
-      nextRef = villageRef;
-    } else if (field === 'villageId') {
-      setLocationForm(prev => ({ ...prev, villageId: id }));
-      setLocationLabels(prev => ({ ...prev, villageName: name }));
-      if (setModalState) setModalState(prev => ({ ...prev, villageId: id }));
+      nextRef = cityRef;
+    } else if (field === 'cityId') {
+      setLocationForm(prev => ({ ...prev, cityId: id }));
+      setLocationLabels(prev => ({ ...prev, cityName: name }));
+      if (setModalState) setModalState(prev => ({ ...prev, cityId: id }));
     }
 
     if (onSelectCallback) {
@@ -101,9 +101,9 @@ export const useLocationDropdowns = ({
   };
 
   const resetLocations = () => {
-    setLocationForm({ cityId: '', talukaId: '', villageId: '' });
-    setLocationLabels({ cityName: '', talukaName: '', villageName: '' });
-    if (setModalState) setModalState(prev => ({ ...prev, cityId: '', talukaId: '', villageId: '' }));
+    setLocationForm({ countryId: '', stateId: '', cityId: '' });
+    setLocationLabels({ countryName: '', stateName: '', cityName: '' });
+    if (setModalState) setModalState(prev => ({ ...prev, countryId: '', stateId: '', cityId: '' }));
   };
 
   return {
@@ -111,9 +111,9 @@ export const useLocationDropdowns = ({
     locationLabels,
     setLocationForm,
     setLocationLabels,
+    countryRef,
+    stateRef,
     cityRef,
-    talukaRef,
-    villageRef,
     handleLocationInputChange,
     handleLocationSelect,
     resetLocations

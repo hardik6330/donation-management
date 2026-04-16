@@ -216,8 +216,8 @@ const WhatsAppUserList = ({
                           {new Date(item.lastMessageTime).toLocaleDateString([], { day: '2-digit', month: 'short' })}
                         </span>
                       )}
-                      {userType === 'sevak' && item.city && (
-                        <span className="bg-green-50 text-green-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-green-100">
+                      {item.city && (
+                        <span className="bg-green-50 text-green-600 text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-green-100 uppercase">
                           {item.city}
                         </span>
                       )}

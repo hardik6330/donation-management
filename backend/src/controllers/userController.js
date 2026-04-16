@@ -25,7 +25,7 @@ const generateRefreshToken = async (userId) => {
 
 // Override create (Registration)
 export const createUser = asyncHandler(async (req, res) => {
-  const { name, email, password, address, village, district, companyName, mobileNumber } = req.body;
+  const { name, email, password, address, city, state, country, companyName, mobileNumber } = req.body;
   const createdBy = req.user && req.user.id ? req.user.id : 'System';
 
   const hashedPassword = password ? bcrypt.hashSync(password, 10) : undefined;
@@ -35,8 +35,9 @@ export const createUser = asyncHandler(async (req, res) => {
     email,
     password: hashedPassword,
     address,
-    village,
-    district,
+    city,
+    state,
+    country,
     companyName,
     mobileNumber,
     created_by: createdBy,

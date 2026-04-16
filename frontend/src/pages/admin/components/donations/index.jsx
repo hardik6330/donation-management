@@ -8,15 +8,12 @@ import AddPartialPaymentModal from './AddPartialPaymentModal';
 import EditPayLaterModal from './EditPayLaterModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { useGetAllDonationsQuery } from '../../../../services/donationApi';
-import {
-  useLazyGetCitiesQuery,
-  useLazyGetSubLocationsQuery
-} from '../../../../services/masterApi';
+import { useGetAllDonationsQuery, useResendWhatsAppMutation } from '../../../../services/donationApi';
 import { useLazyGetGaushalasQuery } from '../../../../services/gaushalaApi';
 import { useLazyGetKathasQuery } from '../../../../services/kathaApi';
 import { useLazyGetCategoriesQuery } from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
+import { toast } from 'react-toastify';
 
 const Donation = () => {
   const { hasPermission } = usePermissions();
@@ -26,6 +23,8 @@ const Donation = () => {
   const [editingPayLaterDonation, setEditingPayLaterDonation] = useState(null);
   const [searchParams] = useSearchParams();
 
+  const [resendWhatsApp, { isLoading: isResending }] = useResendWhatsAppMutation();
+
   const [filters, setFilters] = useState({
     search: '',
     startDate: '',
@@ -33,9 +32,7 @@ const Donation = () => {
     minAmount: '',
     maxAmount: '',
     categoryId: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
+    city: '',
     gaushalaId: searchParams.get('gaushalaId') || '',
     kathaId: searchParams.get('kathaId') || '',
     status: '',
@@ -55,36 +52,13 @@ const Donation = () => {
   // API calls
   const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(queryFilters);
   
-  // Dropdown Paginations
-  const [modalState, setModalState] = useState({ cityId: '', talukaId: '', villageId: '' });
-  const [triggerGetCities] = useLazyGetCitiesQuery();
-  const cityPagination = useDropdownPagination(triggerGetCities);
-
-  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
-  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.cityId || modalState.cityId },
-    skip: !(filters.cityId || modalState.cityId)
-  });
-
-  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
-  const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
-    skip: !(filters.talukaId || modalState.talukaId)
-  });
-
   const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
   const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, {
-    additionalParams: { 
-      locationId: modalState.villageId || modalState.talukaId || modalState.cityId || filters.villageId || filters.talukaId || filters.cityId 
-    },
     rowsKey: 'rows'
   });
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
   const kathaPagination = useDropdownPagination(triggerGetKathas, {
-    additionalParams: { 
-      locationId: modalState.villageId || modalState.talukaId || modalState.cityId || filters.villageId || filters.talukaId || filters.cityId 
-    },
     rowsKey: 'rows'
   });
 
@@ -110,22 +84,6 @@ const Donation = () => {
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
     
-    if (name === 'cityId') {
-      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'talukaId') {
-      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'villageId') {
-      setFilters(prev => ({ ...prev, villageId: value, gaushalaId: '', kathaId: '', page: 1 }));
-      return;
-    }
-
     setFilters(prev => ({ 
       ...prev, 
       [name]: type === 'checkbox' ? checked : value,
@@ -141,9 +99,7 @@ const Donation = () => {
       minAmount: '',
       maxAmount: '',
       categoryId: '',
-      cityId: '',
-      talukaId: '',
-      villageId: '',
+      city: '',
       gaushalaId: '',
       kathaId: '',
       status: '',
@@ -152,9 +108,6 @@ const Donation = () => {
       fetchAll: false,
       fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount'
     });
-    cityPagination.reset();
-    talukaPagination.reset();
-    villagePagination.reset();
     gaushalaPagination.reset();
     kathaPagination.reset();
     categoryPagination.reset();
@@ -190,6 +143,15 @@ const Donation = () => {
     setEditingPayLaterDonation(donation);
   };
 
+  const handleResendWhatsApp = async (donation) => {
+    try {
+      await resendWhatsApp(donation.id).unwrap();
+      toast.success('WhatsApp message resent successfully');
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to resend WhatsApp message');
+    }
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader 
@@ -204,9 +166,6 @@ const Donation = () => {
         isLoading={loading}
         pagination={pagination}
         filters={filters}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
         gaushalaPagination={gaushalaPagination}
         kathaPagination={kathaPagination}
         categoryPagination={categoryPagination}
@@ -218,6 +177,8 @@ const Donation = () => {
         onEditPartialPayment={handleEditPartialPayment}
         onAddPartialPayment={handleAddPartialPayment}
         onEditPayLater={handleEditPayLater}
+        onResendWhatsApp={handleResendWhatsApp}
+        isResending={isResending}
         hasPermission={hasPermission} 
       />
 
@@ -225,13 +186,9 @@ const Donation = () => {
         <AddDonationModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          cityPagination={cityPagination}
-          talukaPagination={talukaPagination}
-          villagePagination={villagePagination}
           gaushalaPagination={gaushalaPagination}
           kathaPagination={kathaPagination}
           categoryPagination={activeCategoryPagination}
-          setModalState={setModalState}
         />
       )}
 

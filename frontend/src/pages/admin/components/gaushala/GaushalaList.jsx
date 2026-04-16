@@ -8,9 +8,6 @@ import { getActiveColor, getActiveLabel } from '../../../../utils/tableUtils';
 
 const GaushalaList = ({
   gaushalas,
-  cityPagination,
-  talukaPagination,
-  villagePagination,
   isLoading,
   isDeleting,
   pagination,
@@ -27,51 +24,14 @@ const GaushalaList = ({
 
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
-    {
-      name: 'cityId',
-      label: 'City',
-      type: 'select',
-      icon: MapPin,
-      options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
-      isServerSearch: true,
-      onSearchChange: cityPagination.handleSearch,
-      onLoadMore: cityPagination.handleLoadMore,
-      hasMore: cityPagination.hasMore,
-      loading: cityPagination.loading
-    },
-    {
-      name: 'talukaId',
-      label: 'Taluka',
-      type: 'select',
-      icon: MapPin,
-      options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
-      disabled: !filters.cityId,
-      isServerSearch: true,
-      onSearchChange: talukaPagination.handleSearch,
-      onLoadMore: talukaPagination.handleLoadMore,
-      hasMore: talukaPagination.hasMore,
-      loading: talukaPagination.loading
-    },
-    {
-      name: 'villageId',
-      label: 'Village',
-      type: 'select',
-      icon: MapPin,
-      options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
-      disabled: !filters.talukaId,
-      isServerSearch: true,
-      onSearchChange: villagePagination.handleSearch,
-      onLoadMore: villagePagination.handleLoadMore,
-      hasMore: villagePagination.hasMore,
-      loading: villagePagination.loading
-    },
+    { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
+    { name: 'state', label: 'State', icon: MapPin, placeholder: 'Search by state...' },
   ];
 
   const tableHeaders = [
     { label: 'Gaushala Name' },
+    { label: 'State' },
     { label: 'City' },
-    { label: 'Taluka' },
-    { label: 'Village' },
     { label: 'Total Donations', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
@@ -98,9 +58,8 @@ const GaushalaList = ({
             onClick={() => navigate(`/admin/donations?gaushalaId=${gaushala.id}`)}
           >
             <td className="p-4 px-6 font-bold text-gray-800">{gaushala.name}</td>
+            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.state}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.city}</td>
-            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.taluka}</td>
-            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{gaushala.village}</td>
             <td className="p-4 px-6 text-right">
               <div className="text-sm font-bold text-blue-600 flex items-center justify-end gap-0.5">
                 <IndianRupee className="w-3.5 h-3.5" />

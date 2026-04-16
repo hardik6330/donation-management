@@ -15,20 +15,15 @@ export const donationSchema = Joi.object({
   paymentMode: Joi.string().valid('online', 'cash', 'pay_later', 'cheque', 'partially_paid').required().messages({
     'any.only': 'Invalid payment mode'
   }),
-  cityId: Joi.string().optional().allow(''),
-  talukaId: Joi.string().optional().allow(''),
-  villageId: Joi.string().optional().allow(''),
   categoryId: Joi.string().optional().allow(''),
   gaushalaId: Joi.string().optional().allow(''),
   kathaId: Joi.string().optional().allow(''),
   email: Joi.string().email().optional().allow(''),
   address: Joi.string().optional().allow(''),
-  village: Joi.string().optional().allow(''),
-  district: Joi.string().optional().allow(''),
+  city: Joi.string().optional().allow(''),
+  state: Joi.string().optional().allow(''),
+  country: Joi.string().optional().allow(''),
   companyName: Joi.string().optional().allow(''),
   referenceName: Joi.string().optional().allow(''),
-  paidAmount: Joi.number().min(0).optional().allow(null),
-  cityName: Joi.string().optional().allow(''),
-  talukaName: Joi.string().optional().allow(''),
-  villageName: Joi.string().optional().allow('')
+  paidAmount: Joi.number().min(0).optional().allow(null)
 });

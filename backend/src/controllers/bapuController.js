@@ -9,7 +9,7 @@ import { notFound, badRequest } from '../utils/httpError.js';
 // Get all schedules with filtering
 export const getBapuSchedules = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
-  const { startDate, endDate, eventType, status, locationId, cityId, talukaId, villageId } = req.query;
+  const { startDate, endDate, eventType, status, locationId, city, state, country } = req.query;
   let where = {};
 
   if (startDate && endDate) {
@@ -21,13 +21,11 @@ export const getBapuSchedules = asyncHandler(async (req, res) => {
   if (eventType) where.eventType = eventType;
   if (status) where.status = status;
   
-  // Hierarchical Location Filter
-  if (locationId) {
-    where.locationId = locationId;
-  } else {
-    const locationFilter = await buildLocationFilter(villageId, talukaId, cityId);
-    if (locationFilter) where.locationId = locationFilter;
-  }
+  // String-based Location Filter
+  let donorWhere = {};
+  if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
+  if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
+  if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
 
   const { count, rows: schedules } = await BapuSchedule.findAndCountAll({
     where,
@@ -74,13 +72,13 @@ export const getBapuSchedules = asyncHandler(async (req, res) => {
 
 // Add new schedule
 export const addBapuSchedule = asyncHandler(async (req, res) => {
-  const { date, time, city, taluka, village, locationId, eventType, contactPerson, mobileNumber, description, amount } = req.body;
+  const { date, time, city, state, country, locationId, eventType, contactPerson, mobileNumber, description, amount } = req.body;
   
   let finalLocationId = locationId;
   
   // If location names are provided, use findOrCreate logic
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 
@@ -102,14 +100,14 @@ export const addBapuSchedule = asyncHandler(async (req, res) => {
 // Update schedule
 export const updateBapuSchedule = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { city, taluka, village, locationId, ...rest } = req.body;
+  const { city, state, country, locationId, ...rest } = req.body;
 
   const schedule = await BapuSchedule.findByPk(id);
   if (!schedule) throw notFound('Schedule');
 
   let finalLocationId = locationId;
-  if (city) {
-    const location = await findOrCreateLocationStructure(city, taluka, village);
+  if (country) {
+    const location = await findOrCreateLocationStructure(country, state, city);
     if (location) finalLocationId = location.id;
   }
 

@@ -8,11 +8,6 @@ import {
   useGetGaushalasQuery, 
   useDeleteGaushalaMutation
 } from '../../../../services/gaushalaApi';
-import { 
-  useLazyGetCitiesQuery, 
-  useLazyGetSubLocationsQuery 
-} from '../../../../services/masterApi';
-import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const Gaushala = () => {
@@ -25,33 +20,14 @@ const Gaushala = () => {
   const [filters, setFilters] = useState({
     search: '',
     gaushalaName: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
+    city: '',
+    state: '',
     page: 1,
     limit: 10
   });
 
-  const locationId = filters.villageId || filters.talukaId || filters.cityId;
-  const { data: gaushalasData, isLoading: loading } = useGetGaushalasQuery({ ...filters, locationId });
+  const { data: gaushalasData, isLoading: loading } = useGetGaushalasQuery(filters);
   const [deleteGaushala, { isLoading: isDeleting }] = useDeleteGaushalaMutation();
-
-  // Dropdown Paginations
-  const [modalState, setModalState] = useState({ cityId: '', talukaId: '' });
-  const [triggerGetCities] = useLazyGetCitiesQuery();
-  const cityPagination = useDropdownPagination(triggerGetCities);
-
-  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
-  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.cityId || modalState.cityId },
-    skip: !(filters.cityId || modalState.cityId)
-  });
-
-  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
-  const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.talukaId || modalState.talukaId },
-    skip: !(filters.talukaId || modalState.talukaId)
-  });
 
   const gaushalas = gaushalasData?.data?.rows || [];
   const pagination = {
@@ -89,25 +65,11 @@ const Gaushala = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'cityId') {
-      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', page: 1 }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'talukaId') {
-      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', page: 1 }));
-      villagePagination.reset();
-      return;
-    }
     setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', gaushalaName: '', cityId: '', talukaId: '', villageId: '', page: 1, limit: 10 });
-    cityPagination.reset();
-    talukaPagination.reset();
-    villagePagination.reset();
+    setFilters({ search: '', gaushalaName: '', city: '', state: '', page: 1, limit: 10 });
   };
 
   const handlePageChange = (newPage) => {
@@ -133,9 +95,6 @@ const Gaushala = () => {
 
       <GaushalaList
         gaushalas={gaushalas}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
         isLoading={loading}
         pagination={pagination}
         filters={filters}
@@ -152,10 +111,6 @@ const Gaushala = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         editingGaushala={editingGaushala}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
-        setModalState={setModalState}
         key={editingGaushala?.id || 'new'}
       />
 

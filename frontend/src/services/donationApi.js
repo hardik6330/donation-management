@@ -65,6 +65,12 @@ const donationApi = apiSlice.injectEndpoints({
       query: (id) => `/donations/${id}/installments`,
       providesTags: (result, error, id) => [{ type: 'Donations', id }],
     }),
+    resendWhatsApp: builder.mutation({
+      query: (id) => ({
+        url: `/donations/${id}/resend-whatsapp`,
+        method: 'POST',
+      }),
+    }),
   }),
 });
 
@@ -80,4 +86,5 @@ export const {
   useSendAnnouncementMutation,
   useGetAnnouncementHistoryQuery,
   useGetDonationInstallmentsQuery,
+  useResendWhatsAppMutation,
 } = donationApi;

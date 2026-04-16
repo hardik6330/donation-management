@@ -12,7 +12,7 @@ export const Location = sequelize.define('Location', {
     allowNull: false,
   },
   type: {
-    type: DataTypes.ENUM('city', 'taluka', 'village'),
+    type: DataTypes.ENUM('country', 'state', 'city'),
     allowNull: false,
   },
   parentId: {

@@ -17,7 +17,7 @@ const DonorsList = ({
   const filterFields = [
     { name: 'name', label: 'Donor Name', icon: Search, placeholder: 'Search by name...' },
     { name: 'mobileNumber', label: 'Mobile Number', icon: Phone, placeholder: 'Search by mobile...' },
-    { name: 'district', label: 'District', icon: MapPin, placeholder: 'Search by district name...' },
+    { name: 'state', label: 'State', icon: MapPin, placeholder: 'Search by state name...' },
     { name: 'minAmount', label: 'Min Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 0' },
     { name: 'maxAmount', label: 'Max Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 10000+' },
   ];
@@ -26,7 +26,7 @@ const DonorsList = ({
     { label: 'Donor Info' },
     { label: 'Address' },
     { label: 'City' },
-    { label: 'Village' },
+    { label: 'State' },
     { label: 'Company Name' },
     { label: 'Donations', className: 'text-center' },
     { label: 'Total Amount', className: 'text-right' },
@@ -68,14 +68,14 @@ const DonorsList = ({
               <td className="p-4 px-6">
               <div className="flex items-center gap-3">
                 <div>
-                  <div className="text-sm text-gray-500 uppercase">{donor.district || '-'}</div>    
+                  <div className="text-sm text-gray-500 uppercase">{donor.city || '-'}</div>
                 </div>
               </div>
             </td>
               <td className="p-4 px-6">
               <div className="flex items-center gap-3">
                 <div>
-                  <div className="text-sm text-gray-500 uppercase">{donor.village || '-'}</div>
+                  <div className="text-sm text-gray-500 uppercase">{donor.state || '-'}</div>
                 </div>
               </div>
             </td>

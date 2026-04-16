@@ -62,11 +62,9 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     name, 
     email, 
     address, 
-    village,
-    district,
-    villageId, 
-    talukaId, 
-    cityId, 
+    city,
+    state,
+    country,
     categoryId, 
     gaushalaId,
     kathaId,
@@ -75,28 +73,24 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     paymentMode,
     status,
     referenceName,
-    paidAmount,
-    cityName,
-    talukaName,
-    villageName
+    paidAmount
   } = req.body;
-
-  // 0. Handle Dynamic Location Creation
-  let targetLocationId = villageId || talukaId || cityId;
-  if (!targetLocationId && cityName) {
-    const newLoc = await findOrCreateLocationStructure(cityName, talukaName, villageName);
-    if (newLoc) targetLocationId = newLoc.id;
-  }
 
   // 1. Generate Cause String based on Category, Location, and Katha
   let causeString = '';
   let categoryName = 'General Donation';
-  let locationName = '';
+  let locationName = city || state || country || '';
   let kathaName = '';
+  let gaushalaName = '';
 
   if (categoryId) {
     const category = await Category.findByPk(categoryId);
     if (category) categoryName = category.name;
+  }
+
+  if (gaushalaId) {
+    const gaushala = await Gaushala.findByPk(gaushalaId);
+    if (gaushala) gaushalaName = gaushala.name;
   }
 
   if (kathaId) {
@@ -104,31 +98,10 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     if (katha) kathaName = katha.name;
   }
 
-  if (targetLocationId) {
-    const location = await Location.findByPk(targetLocationId, {
-      include: [{ 
-        model: Location, 
-        as: 'parent',
-        include: [{ model: Location, as: 'parent' }] 
-      }]
-    });
-    
-    if (location) {
-      // Build location path: "Village, Taluka, City" in Gujarati
-      locationName = formatLocationAddress(location, { useGujarati: true });
-    }
-  }
-
-  // Example Cause: "મોરારી બાપુ કથા જે ડુંગરા, કામરેજ, સુરત માં છે તેના માટે"
-  if (kathaName && locationName) {
-    causeString = `${kathaName} જે ${locationName} માં છે તેના માટે`;
-  } else if (kathaName) {
-    causeString = `${kathaName} માટે`;
-  } else if (categoryName && locationName) {
-    causeString = `${categoryName} જે ${locationName} માં છે તેના માટે`;
-  } else {
-    causeString = `${categoryName} માટે`;
-  }
+  // New Cause Format: "[Category/Gaushala/Katha] માટે [City] માંથી [Name] એ દાન આપ્યું"
+  const targetName = kathaName || gaushalaName || categoryName;
+  const fromCity = city ? `${city} માંથી ` : '';
+  causeString = `${targetName} માટે ${fromCity}${name} એ દાન આપ્યું`;
 
   // 2. Check user (create or update if exists)
   let user = await User.findOne({ where: { mobileNumber } });
@@ -136,18 +109,16 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     // Generate a secure random temporary password
     const tempPassword = crypto.randomBytes(8).toString('hex');
     
-    user = await User.create({ 
-      name, 
-      email, 
-      address, 
-      village,
-      district,
-      companyName, 
-      mobileNumber, 
-      password: tempPassword,
-      cityId,
-      talukaId,
-      villageId
+    user = await User.create({
+      name,
+      email: email || null,
+      address,
+      city: city?.toUpperCase() || null,
+      state: state?.toUpperCase() || null,
+      country: country?.toUpperCase() || null,
+      companyName,
+      mobileNumber,
+      password: tempPassword
     });
   } else {
     // Update existing user details if provided
@@ -155,12 +126,10 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       name: name || user.name,
       email: email || user.email,
       address: address || user.address,
-      village: village || user.village,
-      district: district || user.district,
-      companyName: companyName || user.companyName,
-      cityId: cityId || user.cityId,
-      talukaId: talukaId || user.talukaId,
-      villageId: villageId || user.villageId
+      city: city?.toUpperCase() || user.city,
+      state: state?.toUpperCase() || user.state,
+      country: country?.toUpperCase() || user.country,
+      companyName: companyName || user.companyName
     });
   }
 
@@ -191,7 +160,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     categoryId: categoryId || null,
     gaushalaId: gaushalaId || null,
     kathaId: kathaId || null,
-    locationId: targetLocationId || null,
+    locationId: null,
     paymentMode,
     referenceName,
     status: status || 'pending',
@@ -227,13 +196,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
       ]);
 
-      let locationAddress = '';
-      if (targetLocationId) {
-        const loc = await Location.findByPk(targetLocationId, {
-          include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
-        });
-        locationAddress = formatLocationAddress(loc);
-      }
+      let locationAddress = user.city || user.state || user.country || '';
 
       const pdfBuffer = await generateDonationSlipBuffer(
         user,
@@ -258,13 +221,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
               const category = categoryId ? await Category.findByPk(categoryId) : null;
               const categoryName = category?.name || causeString || 'ગૌસેવા';
               
-              let locationName = '';
-              if (targetLocationId) {
-                const loc = await Location.findByPk(targetLocationId);
-                locationName = loc?.nameGuj || loc?.name || 'કોબડી';
-              } else {
-                locationName = 'કોબડી'; // Fallback if no targetLocationId
-              }
+              let locationName = user.city || user.state || user.country || 'કોબડી';
 
               await sendDetailedDonationSuccessWhatsAppPDF(
                 user.mobileNumber, 
@@ -303,38 +260,15 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       if (user.mobileNumber) {
         const smsTask = (async () => {
           try {
-            const [category, locData] = await Promise.all([
-              categoryId ? Category.findByPk(categoryId) : Promise.resolve(null),
-              (async () => {
-                const locId = villageId || talukaId || cityId;
-                if (!locId) return null;
-                return Location.findByPk(locId, {
-                  include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
-                });
-              })()
-            ]);
-
-            let city = '', taluka = '', village = '';
-            if (locData) {
-              if (locData.type === 'village') {
-                village = locData.nameGuj || locData.name;
-                taluka = locData.parent?.nameGuj || locData.parent?.name || '';
-                city = locData.parent?.parent?.nameGuj || locData.parent?.parent?.name || '';
-              } else if (locData.type === 'taluka') {
-                taluka = locData.nameGuj || locData.name;
-                city = locData.parent?.nameGuj || locData.parent?.name || '';
-              } else {
-                city = locData.nameGuj || locData.name;
-              }
-            }
+            const category = categoryId ? await Category.findByPk(categoryId) : null;
 
             await sendDetailedDonationSMS(user.name, amount, donation.id, user.mobileNumber, {
               category: category?.name,
               gaushala: gaushala?.name,
               katha: katha?.name,
-              city,
-              taluka,
-              village
+              city: user.city,
+              state: user.state,
+              country: user.country
             });
           } catch (err) {
             console.error('SMS Task Error:', err);
@@ -371,7 +305,7 @@ export const getDonations = asyncHandler(async (req, res) => {
       model: User, 
       as: 'donor', 
       where: Object.keys(donorWhere).length > 0 ? donorWhere : null,
-      attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'village', 'district'] 
+      attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'city', 'state', 'country']
     }],
     order: [['createdAt', 'DESC']],
     limit: queryLimit,
@@ -406,10 +340,10 @@ export const getDonors = asyncHandler(async (req, res) => {
     search,
     name,
     mobileNumber,
-    district,
+    state,
+    countryId,
+    stateId,
     cityId,
-    talukaId,
-    villageId,
     minAmount,
     maxAmount
   } = req.query;
@@ -432,23 +366,22 @@ export const getDonors = asyncHandler(async (req, res) => {
     donorWhere.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
   }
 
-  if (district) {
-    donorWhere.district = { [Op.like]: `%${district}%` };
+  if (state) {
+    donorWhere.state = { [Op.like]: `%${state}%` };
   }
 
-  if (villageId || talukaId || cityId) {
-    const targetId = villageId || talukaId || cityId;
+  if (cityId || stateId || countryId) {
+    const targetId = cityId || stateId || countryId;
     const location = await Location.findByPk(targetId);
     if (location) {
-      if (location.type === 'village') {
-        donorWhere.village = location.name;
+      if (location.type === 'city') {
+        donorWhere.city = location.name;
+      } else if (location.type === 'state') {
+        donorWhere.state = location.name;
       } else {
-        // For taluka or city, we'll search in district for now as per user's request
-        // or we could be more specific if needed. 
-        // User specifically said "direct je district che ae search karvanu"
-        donorWhere.district = location.name;
+        donorWhere.country = location.name;
       }
-    }
+    } 
   }
 
   // Handle attributes and virtual fields (donationCount, totalDonated)
@@ -733,17 +666,17 @@ export const updateDonation = asyncHandler(async (req, res) => {
               const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId) : null;
               const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
               
-              let city = '', taluka = '', village = '';
+              let country = '', state = '', city = '';
               const locId = donation.locationId;
               if (locId) {
                 const loc = await Location.findByPk(locId, {
                   include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
                 });
-                
+
                 const hierarchy = extractLocationHierarchy(loc, { useGujarati: true });
+                country = hierarchy.country;
+                state = hierarchy.state;
                 city = hierarchy.city;
-                taluka = hierarchy.taluka;
-                village = hierarchy.village;
               }
 
               await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
@@ -751,8 +684,8 @@ export const updateDonation = asyncHandler(async (req, res) => {
                 gaushala: gaushala?.name,
                 katha: katha?.name,
                 city,
-                taluka,
-                village
+                state,
+                country
               });
             } catch (err) {
               console.error(`[Donation ${donation.id}] ❌ SMS Error:`, err);
@@ -769,4 +702,35 @@ export const updateDonation = asyncHandler(async (req, res) => {
   }
 
   return sendSuccess(res, donation, 'Donation updated successfully');
+});
+
+// 5. Resend Donation Slip WhatsApp
+export const resendSlipWhatsApp = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const donation = await Donation.findByPk(id, {
+    include: [
+      { model: User, as: 'donor' },
+      { model: Category, as: 'category' }
+    ]
+  });
+
+  if (!donation) throw notFound('Donation');
+  if (donation.status !== 'completed') throw badRequest('WhatsApp slip can only be sent for completed donations');
+  if (!donation.slipUrl) throw badRequest('Donation slip not found. Please regenerate or contact support.');
+  if (!donation.donor?.mobileNumber) throw badRequest('Donor mobile number not found');
+
+  const donor = donation.donor;
+  const categoryName = donation.category?.name || donation.cause || 'ગૌસેવા';
+  const locationName = donor.city || donor.state || donor.country || 'કોબડી';
+
+  await sendDetailedDonationSuccessWhatsAppPDF(
+    donor.mobileNumber, 
+    donor.name, 
+    donation.amount, 
+    categoryName, 
+    locationName, 
+    donation.slipUrl
+  );
+
+  return sendSuccess(res, null, 'WhatsApp message resent successfully');
 });

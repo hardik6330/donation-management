@@ -9,6 +9,27 @@ const masterApi = apiSlice.injectEndpoints({
       }),
       providesTags: ['Cities'],
     }),
+    getAllCities: builder.query({
+      query: (params) => ({
+        url: '/master/all-cities',
+        params,
+      }),
+      providesTags: ['Cities'],
+    }),
+    getAllStates: builder.query({
+      query: (params) => ({
+        url: '/master/all-states',
+        params,
+      }),
+      providesTags: ['Cities'],
+    }),
+    getAllCountries: builder.query({
+      query: (params) => ({
+        url: '/master/all-countries',
+        params,
+      }),
+      providesTags: ['Cities'],
+    }),
     getSubLocations: builder.query({
       query: ({ parentId, ...params }) => ({
         url: `/master/sub-locations/${parentId}`,
@@ -83,6 +104,12 @@ const masterApi = apiSlice.injectEndpoints({
 export const {
   useGetCitiesQuery,
   useLazyGetCitiesQuery,
+  useGetAllCitiesQuery,
+  useLazyGetAllCitiesQuery,
+  useGetAllStatesQuery,
+  useLazyGetAllStatesQuery,
+  useGetAllCountriesQuery,
+  useLazyGetAllCountriesQuery,
   useGetSubLocationsQuery,
   useLazyGetSubLocationsQuery,
   useGetCategoriesQuery,
