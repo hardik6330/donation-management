@@ -142,15 +142,15 @@ const AddDonationModal = ({
       } else if (nextRef?.current) {
         nextRef.current.focus();
       }
-    } else if (e.key === 'ArrowLeft' && prevRef?.current) {
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && prevRef?.current) {
       // Only move if cursor is at the beginning or everything is selected
-      if (e.target.selectionStart === 0) {
+      if (e.target.selectionStart === 0 || e.target.selectionStart === undefined) {
         e.preventDefault();
         prevRef.current.focus();
       }
-    } else if (e.key === 'ArrowRight' && nextRef?.current) {
+    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && nextRef?.current) {
       // Only move if cursor is at the end or everything is selected
-      if (e.target.selectionStart === e.target.value.length) {
+      if (e.target.selectionStart === e.target.value.length || e.target.selectionStart === undefined) {
         e.preventDefault();
         nextRef.current.focus();
       }
@@ -661,6 +661,7 @@ const AddDonationModal = ({
             ref={submitRef}
             type="submit"
             disabled={isAdding}
+            onKeyDown={(e) => handleKeyDown(e, null, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
             className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-50 shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
           >
             {isAdding ? <Loader2 className="animate-spin" /> : <Plus className="w-5 h-5" />}
