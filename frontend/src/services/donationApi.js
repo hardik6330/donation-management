@@ -61,6 +61,10 @@ const donationApi = apiSlice.injectEndpoints({
       }),
       providesTags: ['AnnouncementHistory'],
     }),
+    getDonationInstallments: builder.query({
+      query: (id) => `/donations/${id}/installments`,
+      providesTags: (result, error, id) => [{ type: 'Donations', id }],
+    }),
   }),
 });
 
@@ -75,4 +79,5 @@ export const {
   useLazyGetDonorsQuery,
   useSendAnnouncementMutation,
   useGetAnnouncementHistoryQuery,
+  useGetDonationInstallmentsQuery,
 } = donationApi;

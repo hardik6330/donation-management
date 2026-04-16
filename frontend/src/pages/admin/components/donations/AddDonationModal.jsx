@@ -48,6 +48,7 @@ const AddDonationModal = ({
     amount: '',
     paidAmount: '',
     paymentMode: 'cash',
+    status: 'completed',
   });
 
   const [addDropdownLabels, setAddDropdownLabels] = useState({
@@ -58,6 +59,7 @@ const AddDonationModal = ({
     gaushalaName: '',
     kathaName: '',
     paymentModeName: 'Cash',
+    statusName: 'Completed',
   });
 
   const {
@@ -98,7 +100,7 @@ const AddDonationModal = ({
     } else if (name === 'amount') {
       const amt = Number(value.toString().replace(/,/g, ''));
       if (!value || amt <= 0) error = 'Enter valid amount';
-    } else if (name === 'paidAmount' && addForm.paymentMode === 'partially_paid') {
+    } else if (name === 'paidAmount' && addForm.status === 'partially_paid') {
       const total = Number(addForm.amount.toString().replace(/,/g, ''));
       const paid = Number(value.toString().replace(/,/g, ''));
       if (!value || paid <= 0) error = 'Enter paid amount';
@@ -313,6 +315,11 @@ const AddDonationModal = ({
       setActiveAddDropdown('paymentModeName');
       return;
     }
+    if (name === 'statusName') {
+      setAddDropdownLabels(prev => ({ ...prev, statusName: value }));
+      setActiveAddDropdown('statusName');
+      return;
+    }
 
     setAddForm(prev => ({ ...prev, [name]: value }));
     validateField(name, value);
@@ -336,8 +343,12 @@ const AddDonationModal = ({
       setAddDropdownLabels(prev => ({ ...prev, kathaName: name, gaushalaName: '' }));
       nextRef = referenceRef;
     } else if (field === 'paymentMode') {
-      setAddForm(prev => ({ ...prev, paymentMode: id, paidAmount: '' }));
+      setAddForm(prev => ({ ...prev, paymentMode: id }));
       setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
+      nextRef = amountRef;
+    } else if (field === 'status') {
+      setAddForm(prev => ({ ...prev, status: id, paidAmount: '' }));
+      setAddDropdownLabels(prev => ({ ...prev, statusName: name }));
       nextRef = amountRef;
     }
     setActiveAddDropdown(null);
@@ -353,7 +364,7 @@ const AddDonationModal = ({
     const mobileErr = validateField('mobileNumber', addForm.mobileNumber);
     const nameErr = validateField('name', addForm.name);
     const amountErr = validateField('amount', addForm.amount);
-    const paidAmountErr = addForm.paymentMode === 'partially_paid' ? validateField('paidAmount', addForm.paidAmount) : '';
+    const paidAmountErr = addForm.status === 'partially_paid' ? validateField('paidAmount', addForm.paidAmount) : '';
 
     if (mobileErr || nameErr || amountErr || paidAmountErr) {
       toast.error('Please fix the errors in the form');
@@ -383,8 +394,8 @@ const AddDonationModal = ({
       const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
       await createDonation({
         ...addForm,
-        amount: rawAmount,
-        paidAmount: addForm.paymentMode === 'partially_paid' ? Number(rawPaid) : undefined,
+        amount: Number(rawAmount),
+        paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
         cityName: addDropdownLabels.cityName,
         talukaName: addDropdownLabels.talukaName,
         villageName: addDropdownLabels.villageName,
@@ -685,9 +696,7 @@ const AddDonationModal = ({
                   items={[
                     { id: 'cash', name: 'Cash' },
                     { id: 'online', name: 'Online' },
-                    { id: 'cheque', name: 'Cheque' },
-                    { id: 'partially_paid', name: 'Partially Pay' },
-                    { id: 'pay_later', name: 'Pay Later' }
+                    { id: 'cheque', name: 'Cheque' }
                   ]}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('paymentMode', id, name)}
@@ -701,21 +710,41 @@ const AddDonationModal = ({
                 />
               </div>
 
-              <FormInput
-                label="Donation Amount"
-                name="amount"
-                required
-                placeholder="0"
-                value={addForm.amount}
-                onChange={handleAddInputChange}
-                onKeyDown={(e) => handleKeyDown(e, addForm.paymentMode === 'partially_paid' ? paidAmountRef : submitRef, paymentModeRef)}
-                inputRef={amountRef}
-                icon={IndianRupee}
-                className="donation-amount-field"
-                error={errors.amount}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <SearchableDropdown
+                  label="Status"
+                  name="statusName"
+                  placeholder="Select Status"
+                  value={addDropdownLabels.statusName}
+                  items={[
+                    { id: 'completed', name: 'Completed' },
+                    { id: 'partially_paid', name: 'Partially Pay' },
+                    { id: 'pay_later', name: 'Pay Later' }
+                  ]}
+                  onChange={handleAddInputChange}
+                  onSelect={(id, name) => handleAddDropdownSelect('status', id, name)}
+                  isActive={activeAddDropdown === 'statusName'}
+                  setActive={handleSetActiveAddDropdown}
+                  required
+                  icon={CreditCard}
+                  allowTransliteration={false}
+                />
+                <FormInput
+                  label="Donation Amount"
+                  name="amount"
+                  required
+                  placeholder="0"
+                  value={addForm.amount}
+                  onChange={handleAddInputChange}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : submitRef, paymentModeRef)}
+                  inputRef={amountRef}
+                  icon={IndianRupee}
+                  className="donation-amount-field"
+                  error={errors.amount}
+                />
+              </div>
 
-              {addForm.paymentMode === 'partially_paid' && (
+              {addForm.status === 'partially_paid' && (
                 <>
                   <FormInput
                     label="Paid Amount"

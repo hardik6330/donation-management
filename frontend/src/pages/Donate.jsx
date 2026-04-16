@@ -229,7 +229,7 @@ const Donate = () => {
   const [formData, setFormData] = useState({
     mobileNumber: '', name: '', email: '', address: '', village: '', district: '',
     cityId: '', talukaId: '', villageId: '', categoryId: '', gaushalaId: '', kathaId: '',
-    companyName: '', referenceName: '', amount: '', paymentMode: 'online', paidAmount: '',
+    companyName: '', referenceName: '', amount: '', paymentMode: 'online', status: 'completed', paidAmount: '',
   });
 
   const [formLabels, setFormLabels] = useState({
@@ -337,7 +337,11 @@ const Donate = () => {
       return;
     }
     if (name === 'paymentMode') {
-      setFormData(prev => ({ ...prev, paymentMode: value, paidAmount: '' }));
+      setFormData(prev => ({ ...prev, paymentMode: value }));
+      return;
+    }
+    if (name === 'status') {
+      setFormData(prev => ({ ...prev, status: value, paidAmount: '' }));
       return;
     }
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -390,7 +394,7 @@ const Donate = () => {
       toast.warning('Please select at least one: Category, Gaushala, or Active Katha');
       return;
     }
-    if (formData.paymentMode === 'partially_paid') {
+    if (formData.status === 'partially_paid') {
       const rawPaid = formData.paidAmount.toString().replace(/,/g, '');
       const paidAmount = Number(rawPaid);
       const minimumPaidAmount = Math.ceil(totalAmount * 0.2);
@@ -417,7 +421,7 @@ const Donate = () => {
       await createOrder({
         ...formData,
         amount: Number(rawAmount),
-        paidAmount: formData.paymentMode === 'partially_paid' ? Number(rawPaid) : undefined,
+        paidAmount: formData.status === 'partially_paid' ? Number(rawPaid) : undefined,
       }).unwrap();
 
       // Save last donation details for next time
@@ -432,9 +436,9 @@ const Donate = () => {
         categoryName: formLabels.categoryName,
       }));
 
-      const msg = formData.paymentMode === 'pay_later'
+      const msg = formData.status === 'pay_later'
         ? 'Donation Intent Recorded! We will contact you for payment.'
-        : formData.paymentMode === 'partially_paid'
+        : formData.status === 'partially_paid'
           ? 'Partial Donation Recorded Successfully! Slip sent to your email.'
           : 'Donation Recorded Successfully! Slip sent to your email.';
       toast.success(msg, { autoClose: 5000 });
@@ -652,19 +656,37 @@ const Donate = () => {
               </div>
             </div>
 
-            <div className="space-y-3 pt-2">
-              <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                <CreditCard className="w-4 h-4" /> Payment Mode
-              </label>
-              <div className="flex flex-wrap gap-4">
-                {[{ value: 'online', label: 'UPI' }, { value: 'cash', label: 'Cash' }, { value: 'cheque', label: 'Cheque' }, { value: 'partially_paid', label: 'Partially Pay' }, { value: 'pay_later', label: 'Pay Later' }].map(mode => (
-                  <label key={mode.value} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
-                    formData.paymentMode === mode.value ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
-                  }`}>
-                    <input type="radio" name="paymentMode" value={mode.value} checked={formData.paymentMode === mode.value} onChange={handleInputChange} className="hidden" />
-                    <span className={`font-bold text-xs sm:text-sm ${formData.paymentMode === mode.value ? 'text-blue-700' : 'text-gray-500'}`}>{mode.label}</span>
-                  </label>
-                ))}
+            <div className="space-y-4 pt-2">
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" /> Payment Mode
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {[{ value: 'online', label: 'UPI' }, { value: 'cash', label: 'Cash' }, { value: 'cheque', label: 'Cheque' }].map(mode => (
+                    <label key={mode.value} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.paymentMode === mode.value ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
+                    }`}>
+                      <input type="radio" name="paymentMode" value={mode.value} checked={formData.paymentMode === mode.value} onChange={handleInputChange} className="hidden" />
+                      <span className={`font-bold text-xs sm:text-sm ${formData.paymentMode === mode.value ? 'text-blue-700' : 'text-gray-500'}`}>{mode.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                  <Tag className="w-4 h-4" /> Donation Status
+                </label>
+                <div className="flex flex-wrap gap-4">
+                  {[{ value: 'completed', label: 'Completed' }, { value: 'partially_paid', label: 'Partially Pay' }, { value: 'pay_later', label: 'Pay Later' }].map(status => (
+                    <label key={status.value} className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 p-3 border-2 rounded-xl cursor-pointer transition-all ${
+                      formData.status === status.value ? 'border-blue-500 bg-blue-50 shadow-sm' : 'border-gray-200 hover:border-blue-200'
+                    }`}>
+                      <input type="radio" name="status" value={status.value} checked={formData.status === status.value} onChange={handleInputChange} className="hidden" />
+                      <span className={`font-bold text-xs sm:text-sm ${formData.status === status.value ? 'text-blue-700' : 'text-gray-500'}`}>{status.label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -673,11 +695,11 @@ const Donate = () => {
                 <IndianRupee className="w-4 h-4" /> Donation Amount (INR)
               </label>
               <input ref={amountRef} required type="text" name="amount" value={formData.amount} onChange={handleInputChange}
-                onKeyDown={(e) => handleKeyDown(e, formData.paymentMode === 'partially_paid' ? paidAmountRef : submitRef)}
+                onKeyDown={(e) => handleKeyDown(e, formData.status === 'partially_paid' ? paidAmountRef : submitRef)}
                 className="w-full px-4 py-3 text-2xl font-bold border border-blue-300 bg-blue-50 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none transition" placeholder="0" />
             </div>
 
-            {formData.paymentMode === 'partially_paid' && (
+            {formData.status === 'partially_paid' && (
               <div className="space-y-3">
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">

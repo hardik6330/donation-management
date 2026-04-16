@@ -16,11 +16,11 @@ export const Donation = sequelize.define('Donation', {
     allowNull: false,
   },
   status: {
-    type: DataTypes.ENUM('pending', 'completed', 'failed', 'partially_paid'),
+    type: DataTypes.ENUM('pending', 'completed', 'failed', 'partially_paid', 'pay_later'),
     defaultValue: 'pending',
   },
   paymentMode: {
-    type: DataTypes.ENUM('online', 'cash', 'pay_later', 'cheque', 'partially_paid'),
+    type: DataTypes.ENUM('online', 'cash', 'cheque'),
     defaultValue: 'online',
     allowNull: false,
   },

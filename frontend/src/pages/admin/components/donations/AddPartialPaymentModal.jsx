@@ -1,15 +1,32 @@
 import { useEffect, useState } from 'react';
-import { IndianRupee, Loader2, PlusCircle } from 'lucide-react';
+import { IndianRupee, Loader2, PlusCircle, MessageSquare, CreditCard } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
+import FormInput from '../../../../components/common/FormInput';
+import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import { useUpdateDonationMutation } from '../../../../services/donationApi';
 
 const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
   const [addAmount, setAddAmount] = useState('');
+  const [notes, setNotes] = useState('');
+  const [paymentMode, setPaymentMode] = useState('cash');
+  const [paymentModeName, setPaymentModeName] = useState('Cash');
+  const [activeDropdown, setActiveDropdown] = useState(null);
+
+  const paymentModes = [
+    { id: 'cash', name: 'Cash' },
+    { id: 'online', name: 'Online' },
+    { id: 'cheque', name: 'Cheque' }
+  ];
 
   useEffect(() => {
-    if (!isOpen) setAddAmount('');
+    if (!isOpen) {
+      setAddAmount('');
+      setNotes('');
+      setPaymentMode('cash');
+      setPaymentModeName('Cash');
+    }
   }, [isOpen]);
 
   if (!donation) return null;
@@ -44,8 +61,9 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
     try {
       await updateDonation({
         id: donation.id,
-        paymentMode: 'cash',
-        remainingAmount: updatedRemainingAmount
+        paymentMode: paymentMode,
+        remainingAmount: updatedRemainingAmount,
+        notes: notes
       }).unwrap();
 
       toast.success('Partial payment added successfully');
@@ -62,7 +80,7 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
       title="Add Partial Payment"
       icon={<PlusCircle />}
       maxWidth="max-w-lg"
-      showLanguageToggle={false}
+      showLanguageToggle={true}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
@@ -83,21 +101,53 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-            <IndianRupee className="w-4 h-4" /> Add Payment Amount (INR)
-          </label>
-          <input
-            type="text"
-            value={addAmount}
-            onChange={handleAddAmountChange}
+        <div className="space-y-4">
+          <SearchableDropdown
+            label="Payment Mode"
+            name="paymentModeName"
+            placeholder="Select Mode"
+            value={paymentModeName}
+            items={paymentModes}
+            onChange={(e) => {
+              setPaymentModeName(e.target.value);
+              setActiveDropdown('paymentModeName');
+            }}
+            onSelect={(id, name) => {
+              setPaymentMode(id);
+              setPaymentModeName(name);
+              setActiveDropdown(null);
+            }}
+            isActive={activeDropdown === 'paymentModeName'}
+            setActive={setActiveDropdown}
             required
-            placeholder="0"
-            className="w-full px-4 py-3 text-lg font-bold border border-emerald-300 bg-emerald-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
+            icon={CreditCard}
+            allowTransliteration={false}
           />
-          <p className="text-xs text-gray-500">
-            Enter only extra paid amount. System will auto update paid/remaining values.
-          </p>
+
+          <div className="space-y-2">
+            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+              <IndianRupee className="w-4 h-4" /> Add Payment Amount (INR)
+            </label>
+            <input
+              type="text"
+              value={addAmount}
+              onChange={handleAddAmountChange}
+              required
+              placeholder="0"
+              className="w-full px-4 py-3 text-lg font-bold border border-emerald-300 bg-emerald-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <FormInput
+            label="Notes / Remark"
+            name="notes"
+            placeholder="Add some notes about this payment..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            icon={MessageSquare}
+          />
         </div>
 
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-1">

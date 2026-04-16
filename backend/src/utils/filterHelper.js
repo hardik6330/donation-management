@@ -67,7 +67,11 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
 
   // 4. Status Filter
   if (status) {
-    whereClause.status = status;
+    if (status === 'pay_later') {
+      whereClause.paymentMode = 'pay_later';
+    } else {
+      whereClause.status = status;
+    }
   }
 
   // 5. Category Filter

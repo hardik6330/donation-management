@@ -69,6 +69,10 @@ export const useDropdownPagination = (triggerQuery, options = {}) => {
     if (!skip) {
       setPage(1);
       fetchItems(1, search, false);
+    } else {
+      setItems([]);
+      setPage(1);
+      setHasMore(false);
     }
   }, [search, skip, JSON.stringify(additionalParams)]);
 

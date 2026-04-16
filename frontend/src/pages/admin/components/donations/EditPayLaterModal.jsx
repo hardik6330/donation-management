@@ -10,6 +10,8 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
   const [paymentMode, setPaymentMode] = useState('cash');
   const [paymentModeName, setPaymentModeName] = useState('Cash');
+  const [status, setStatus] = useState('completed');
+  const [statusName, setStatusName] = useState('Completed');
   const [paidAmount, setPaidAmount] = useState('');
   const [activeDropdown, setActiveDropdown] = useState(null);
   const paidAmountRef = useRef(null);
@@ -17,7 +19,11 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
   const paymentModes = [
     { id: 'cash', name: 'Cash' },
     { id: 'online', name: 'Online' },
-    { id: 'cheque', name: 'Cheque' },
+    { id: 'cheque', name: 'Cheque' }
+  ];
+
+  const statuses = [
+    { id: 'completed', name: 'Completed' },
     { id: 'partially_paid', name: 'Partially Paid' }
   ];
 
@@ -32,11 +38,12 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
     const updateData = {
       id: donation.id,
       paymentMode,
+      status,
       paymentDate: new Date().toISOString()
     };
 
-    if (paymentMode === 'partially_paid') {
-      const numericPaid = Number(paidAmount.replace(/,/g, ''));
+    if (status === 'partially_paid') {
+      const numericPaid = Number(String(paidAmount).replace(/,/g, ''));
       if (!paidAmount || numericPaid <= 0) {
         toast.error('Please enter paid amount');
         return;
@@ -50,9 +57,6 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
         return;
       }
       updateData.paidAmount = numericPaid;
-      updateData.status = 'partially_paid';
-    } else {
-      updateData.status = 'completed';
     }
 
     try {
@@ -89,32 +93,55 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
         </div>
 
         <div className="space-y-4">
-          <SearchableDropdown
-            label="Actual Payment Mode"
-            name="paymentModeName"
-            placeholder="Select Mode"
-            value={paymentModeName}
-            items={paymentModes}
-            onChange={(e) => {
-              setPaymentModeName(e.target.value);
-              setActiveDropdown('paymentModeName');
-            }}
-            onSelect={(id, name) => {
-              setPaymentMode(id);
-              setPaymentModeName(name);
-              setActiveDropdown(null);
-              if (id === 'partially_paid') {
-                setTimeout(() => paidAmountRef.current?.focus(), 100);
-              }
-            }}
-            isActive={activeDropdown === 'paymentModeName'}
-            setActive={setActiveDropdown}
-            required
-            icon={CreditCard}
-            allowTransliteration={false}
-          />
+          <div className="grid grid-cols-2 gap-4">
+            <SearchableDropdown
+              label="Payment Mode"
+              name="paymentModeName"
+              placeholder="Select Mode"
+              value={paymentModeName}
+              items={paymentModes}
+              onChange={(e) => {
+                setPaymentModeName(e.target.value);
+                setActiveDropdown('paymentModeName');
+              }}
+              onSelect={(id, name) => {
+                setPaymentMode(id);
+                setPaymentModeName(name);
+                setActiveDropdown(null);
+              }}
+              isActive={activeDropdown === 'paymentModeName'}
+              setActive={setActiveDropdown}
+              required
+              icon={CreditCard}
+              allowTransliteration={false}
+            />
+            <SearchableDropdown
+              label="Status"
+              name="statusName"
+              placeholder="Select Status"
+              value={statusName}
+              items={statuses}
+              onChange={(e) => {
+                setStatusName(e.target.value);
+                setActiveDropdown('statusName');
+              }}
+              onSelect={(id, name) => {
+                setStatus(id);
+                setStatusName(name);
+                setActiveDropdown(null);
+                if (id === 'partially_paid') {
+                  setTimeout(() => paidAmountRef.current?.focus(), 100);
+                }
+              }}
+              isActive={activeDropdown === 'statusName'}
+              setActive={setActiveDropdown}
+              required
+              icon={CreditCard}
+              allowTransliteration={false}
+            />
+          </div>
 
-          {paymentMode === 'partially_paid' && (
+          {status === 'partially_paid' && (
             <div className="animate-in fade-in slide-in-from-top-2 duration-200 space-y-3">
               <FormInput
                 label="Paid Amount"
@@ -127,7 +154,7 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
                 icon={IndianRupee}
               />
               {paidAmount && (() => {
-                const paid = Number(paidAmount.replace(/,/g, ''));
+                const paid = Number(String(paidAmount).replace(/,/g, ''));
                 const remaining = totalAmount - paid;
                 if (remaining > 0) {
                   return (

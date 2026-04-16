@@ -6,6 +6,7 @@ export const getStatusColor = (status) => {
     paid: 'text-green-600',
     active: 'text-green-600',
     partially_paid: 'text-orange-600',
+    pay_later: 'text-orange-600',
     pending: 'text-yellow-600',
     scheduled: 'text-blue-600',
     upcoming: 'text-blue-600',

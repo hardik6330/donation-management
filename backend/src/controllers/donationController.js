@@ -1,4 +1,4 @@
-import { Donation, User, Category, Gaushala, Katha, Location, Notification } from '../models/index.js';
+import { Donation, DonationInstallment, User, Category, Gaushala, Katha, Location, Notification } from '../models/index.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
@@ -73,6 +73,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     companyName, 
     mobileNumber, 
     paymentMode,
+    status,
     referenceName,
     paidAmount,
     cityName,
@@ -164,8 +165,9 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   }
 
   // 3. Handle Donation creation
-  const isDirectPay = ['cash', 'online', 'cheque'].includes(paymentMode);
-  const isPartialPay = paymentMode === 'partially_paid';
+  const isDirectPay = status === 'completed';
+  const isPartialPay = status === 'partially_paid';
+  const isPayLater = status === 'pay_later';
   const totalAmount = Number(amount);
   const partialPaidAmount = Number(paidAmount);
 
@@ -192,13 +194,24 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     locationId: targetLocationId || null,
     paymentMode,
     referenceName,
-    status: isDirectPay ? 'completed' : isPartialPay ? 'partially_paid' : 'pending',
+    status: status || 'pending',
     paymentDate: (isDirectPay || isPartialPay) ? new Date() : null,
     paidAmount: isPartialPay ? partialPaidAmount : isDirectPay ? amount : null,
     remainingAmount: isPartialPay ? (amount - partialPaidAmount) : null,
   };
 
   const donation = await Donation.create(donationData);
+
+  // 4. Create Initial Installment Record
+  if (isDirectPay || isPartialPay) {
+    await DonationInstallment.create({
+      donationId: donation.id,
+      amount: isPartialPay ? partialPaidAmount : amount,
+      paymentMode: paymentMode,
+      paymentDate: new Date(),
+      notes: isPartialPay ? 'Initial partial payment' : 'Full payment'
+    });
+  }
 
   // 4. Handle Partial Payment Reminder (Send email after 5 days)
   if (isPartialPay) {
@@ -378,6 +391,16 @@ export const getDonations = asyncHandler(async (req, res) => {
   return sendSuccess(res, responseData, 'All donations records fetched successfully');
 });
 
+export const getDonationInstallments = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const installments = await DonationInstallment.findAll({
+    where: { donationId: id },
+    order: [['paymentDate', 'ASC']]
+  });
+
+  return sendSuccess(res, installments, 'Donation installments fetched successfully');
+});
+
 export const getDonors = asyncHandler(async (req, res) => {
   const {
     search,
@@ -537,7 +560,7 @@ export const getDonors = asyncHandler(async (req, res) => {
 // 4. Update Donation
 export const updateDonation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { amount, cause, status, paymentMode, paymentDate, categoryId, locationId, paidAmount, remainingAmount } = req.body;
+  const { amount, cause, status, paymentMode, paymentDate, categoryId, locationId, paidAmount, remainingAmount, notes } = req.body;
 
   const donation = await Donation.findByPk(id);
   if (!donation) {
@@ -560,7 +583,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
     locationId: locationId || donation.locationId,
   };
 
-  if (nextPaymentMode === 'partially_paid') {
+  if (nextStatus === 'partially_paid') {
     const minimumPaidAmount = Math.ceil(Number(nextAmount) * 0.2);
     const currentPaidAmount = Number(donation.paidAmount || 0);
     const finalPaidAmount = incomingRemainingAmount !== null
@@ -609,6 +632,21 @@ export const updateDonation = asyncHandler(async (req, res) => {
     updateData.paymentDate = new Date();
   }
 
+  // Create installment record if paid amount increased
+  if (updateData.paidAmount !== undefined) {
+    const currentPaid = Number(donation.paidAmount || 0);
+    const newPaid = Number(updateData.paidAmount);
+    if (newPaid > currentPaid) {
+      await DonationInstallment.create({
+        donationId: donation.id,
+        amount: newPaid - currentPaid,
+        paymentMode: nextPaymentMode,
+        paymentDate: new Date(),
+        notes: notes || (updateData.status === 'completed' ? 'Final payment' : 'Partial payment installment')
+      });
+    }
+  }
+
   await donation.update(updateData);
 
   // Manage reminders if status changed to partially_paid or completed
@@ -648,7 +686,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
         
         const tasks = [];
 
-        const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
+        const uploadTask = uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id)
         .then(async cloudinaryUrl => {
           await donation.update({ slipUrl: cloudinaryUrl });
           

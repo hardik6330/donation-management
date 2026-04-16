@@ -4,6 +4,7 @@ import { sequelize } from '../config/db.js';
 import { User } from './user.js';
 import { Role } from './role.js';
 import { Donation } from './donation.js';
+import { DonationInstallment } from './donationInstallment.js';
 import { Location } from './location.js';
 import { Category } from './category.js';
 import { Gaushala } from './gaushala.js';
@@ -58,6 +59,10 @@ Donation.belongsTo(Gaushala, { as: 'gaushala', foreignKey: 'gaushalaId' });
 Katha.hasMany(Donation, { foreignKey: 'kathaId' });
 Donation.belongsTo(Katha, { as: 'katha', foreignKey: 'kathaId' });
 
+// Donation <-> DonationInstallment
+Donation.hasMany(DonationInstallment, { as: 'installments', foreignKey: 'donationId' });
+DonationInstallment.belongsTo(Donation, { as: 'donation', foreignKey: 'donationId' });
+
 // Gaushala <-> Location
 Location.hasMany(Gaushala, { foreignKey: 'locationId' });
 Gaushala.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
@@ -94,6 +99,7 @@ export {
   User,
   Role,
   Donation,
+  DonationInstallment,
   Location,
   Category,
   Gaushala,
