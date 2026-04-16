@@ -340,6 +340,7 @@ export const getDonors = asyncHandler(async (req, res) => {
     search,
     name,
     mobileNumber,
+    city,
     state,
     countryId,
     stateId,
@@ -364,6 +365,10 @@ export const getDonors = asyncHandler(async (req, res) => {
 
   if (mobileNumber) {
     donorWhere.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
+  }
+
+  if (city) {
+    donorWhere.city = { [Op.like]: `%${city}%` };
   }
 
   if (state) {

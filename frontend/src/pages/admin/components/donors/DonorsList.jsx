@@ -17,6 +17,7 @@ const DonorsList = ({
   const filterFields = [
     { name: 'name', label: 'Donor Name', icon: Search, placeholder: 'Search by name...' },
     { name: 'mobileNumber', label: 'Mobile Number', icon: Phone, placeholder: 'Search by mobile...' },
+    { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     { name: 'state', label: 'State', icon: MapPin, placeholder: 'Search by state name...' },
     { name: 'minAmount', label: 'Min Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 0' },
     { name: 'maxAmount', label: 'Max Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 10000+' },
