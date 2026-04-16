@@ -187,100 +187,95 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     await managePartialPaymentReminder(donation.id, user.id, 'partially_paid');
   }
 
-  // Generate slip, upload to Cloudinary, save URL, and send email/SMS
+  // Generate slip, upload to Cloudinary, save URL, and send email/SMS in background
   // Only for fully paid donations at creation time.
   if (isDirectPay) {
-    try {
-      const [gaushala, katha] = await Promise.all([
-        gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
-        kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
-      ]);
+    // Run background tasks without awaiting them to speed up response
+    (async () => {
+      try {
+        const [gaushala, katha] = await Promise.all([
+          gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
+          kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
+        ]);
 
-      let locationAddress = user.city || user.state || user.country || '';
+        let locationAddress = user.city || user.state || user.country || '';
 
-      const pdfBuffer = await generateDonationSlipBuffer(
-        user,
-        amount,
-        causeString,
-        donation.id,
-        paymentMode,
-        donation.paymentDate,
-        gaushala,
-        katha,
-        locationAddress
-      );
+        const pdfBuffer = await generateDonationSlipBuffer(
+          user,
+          amount,
+          causeString,
+          donation.id,
+          paymentMode,
+          donation.paymentDate,
+          gaushala,
+          katha,
+          locationAddress
+        );
 
-      const tasks = [];
+        const tasks = [];
 
-      const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
-          .then(async url => {
-            await donation.update({ slipUrl: url });
-            
-            // Send WhatsApp notification with PDF slip
-            if (user.mobileNumber) {
-              const category = categoryId ? await Category.findByPk(categoryId) : null;
-              const categoryName = category?.name || causeString || 'ગૌસેવા';
+        const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
+            .then(async url => {
+              await donation.update({ slipUrl: url });
               
-              let locationName = user.city || user.state || user.country || 'કોબડી';
+              // Send WhatsApp notification with PDF slip
+              if (user.mobileNumber) {
+                const category = categoryId ? await Category.findByPk(categoryId) : null;
+                const categoryName = category?.name || causeString || 'ગૌસેવા';
+                
+                let locationName = user.city || user.state || user.country || 'કોબડી';
 
-              await sendDetailedDonationSuccessWhatsAppPDF(
-                user.mobileNumber, 
-                user.name, 
-                amount, 
-                categoryName, 
-                locationName, 
-                url
-              );
+                await sendDetailedDonationSuccessWhatsAppPDF(
+                  user.mobileNumber, 
+                  user.name, 
+                  amount, 
+                  categoryName, 
+                  locationName, 
+                  url
+                );
+              }
+            })
+          .catch(err => {
+            console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err);
+          });
+        tasks.push(uploadTask);
+
+        if (user.email) {
+          const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
+          const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
+            { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+          ])
+          .catch(err => {
+            console.error(`[Donation ${donation.id}] ❌ Email Error for ${user.email}:`, err);
+          });
+          tasks.push(emailTask);
+        }
+
+        if (user.mobileNumber) {
+          const smsTask = (async () => {
+            try {
+              const category = categoryId ? await Category.findByPk(categoryId) : null;
+
+              await sendDetailedDonationSMS(user.name, amount, donation.id, user.mobileNumber, {
+                category: category?.name,
+                gaushala: gaushala?.name,
+                katha: katha?.name,
+                city: user.city,
+                state: user.state,
+                country: user.country
+              });
+            } catch (err) {
+              console.error('SMS Task Error:', err);
             }
-          })
-        .catch(err => {
-          console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, {
-            message: err.message,
-            stack: err.stack,
-            details: err
-          });
-        });
-      tasks.push(uploadTask);
+          })();
+          tasks.push(smsTask);
+        }
 
-      if (user.email) {
-        const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
-        const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
-          { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-        ])
-        .catch(err => {
-          console.error(`[Donation ${donation.id}] ❌ Email Error for ${user.email}:`, {
-            message: err.message,
-            stack: err.stack,
-            details: err
-          });
-        });
-        tasks.push(emailTask);
+        await Promise.all(tasks);
+      } catch (error) {
+        console.error(`[Donation ${donation.id}] Background processing error:`, error);
       }
-
-      if (user.mobileNumber) {
-        const smsTask = (async () => {
-          try {
-            const category = categoryId ? await Category.findByPk(categoryId) : null;
-
-            await sendDetailedDonationSMS(user.name, amount, donation.id, user.mobileNumber, {
-              category: category?.name,
-              gaushala: gaushala?.name,
-              katha: katha?.name,
-              city: user.city,
-              state: user.state,
-              country: user.country
-            });
-          } catch (err) {
-            console.error('SMS Task Error:', err);
-          }
-        })();
-        tasks.push(smsTask);
-      }
-
-      await Promise.all(tasks);
-    } catch (error) {
-      console.error(`[Donation ${donation.id}] Error in post-donation tasks:`, error);
-    }
+    })();
   }
 
   return sendSuccess(res, donation, 'Donation order created successfully');
@@ -592,118 +587,121 @@ export const updateDonation = asyncHandler(async (req, res) => {
     await managePartialPaymentReminder(donation.id, donation.donorId, updateData.status);
   }
 
-  // Generate slip/email/SMS when donation becomes fully completed
+  // Generate slip/email/SMS in background when donation becomes fully completed
   if (updateData.status === 'completed' && wasNotCompleted) {
-    const donor = await User.findByPk(donation.donorId);
-    if (donor) {
+    // Run background tasks without awaiting them to speed up response
+    (async () => {
       try {
-        const [gaushala, katha] = await Promise.all([
-          donation.gaushalaId ? Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null,
-          donation.kathaId ? Katha.findByPk(donation.kathaId) : null,
-        ]);
+        const donor = await User.findByPk(donation.donorId);
+        if (donor) {
+          const [gaushala, katha] = await Promise.all([
+            donation.gaushalaId ? Gaushala.findByPk(donation.gaushalaId, { include: [{ model: Location, as: 'location' }] }) : null,
+            donation.kathaId ? Katha.findByPk(donation.kathaId) : null,
+          ]);
 
-        let locationAddress = '';
-        if (donation.locationId) {
-          const loc = await Location.findByPk(donation.locationId, {
-            include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
-          });
-          locationAddress = formatLocationAddress(loc);
-        }
+          let locationAddress = '';
+          if (donation.locationId) {
+            const loc = await Location.findByPk(donation.locationId, {
+              include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+            });
+            locationAddress = formatLocationAddress(loc);
+          }
 
-        const pdfBuffer = await generateDonationSlipBuffer(
-          donor, 
-          donation.amount, 
-          donation.cause, 
-          donation.id, 
-          donation.paymentMode, 
-          donation.paymentDate, 
-          gaushala, 
-          katha,
-          locationAddress
-        );
-        
-        const tasks = [];
-
-        const uploadTask = uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id)
-        .then(async cloudinaryUrl => {
-          await donation.update({ slipUrl: cloudinaryUrl });
+          const pdfBuffer = await generateDonationSlipBuffer(
+            donor, 
+            donation.amount, 
+            donation.cause, 
+            donation.id, 
+            donation.paymentMode, 
+            donation.paymentDate, 
+            gaushala, 
+            katha,
+            locationAddress
+          );
           
-          // Send WhatsApp notification with PDF slip
-            if (donor.mobileNumber) {
-              const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
-              const categoryName = category?.name || donation.cause || 'ગૌસેવા';
-              
-              let locationName = '';
-              if (donation.locationId) {
-                const loc = await Location.findByPk(donation.locationId);
-                locationName = loc?.nameGuj || loc?.name || 'કોબડી';
-              } else {
-                locationName = 'કોબડી'; // Fallback if no locationId
+          const tasks = [];
+
+          const uploadTask = uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id)
+          .then(async cloudinaryUrl => {
+            await donation.update({ slipUrl: cloudinaryUrl });
+            
+            // Send WhatsApp notification with PDF slip
+              if (donor.mobileNumber) {
+                const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
+                const categoryName = category?.name || donation.cause || 'ગૌસેવા';
+                
+                let locationName = '';
+                if (donation.locationId) {
+                  const loc = await Location.findByPk(donation.locationId);
+                  locationName = loc?.nameGuj || loc?.name || 'કોબડી';
+                } else {
+                  locationName = 'કોબડી'; // Fallback if no locationId
+                }
+
+                await sendDetailedDonationSuccessWhatsAppPDF(
+                  donor.mobileNumber, 
+                  donor.name, 
+                  donation.amount, 
+                  categoryName, 
+                  locationName, 
+                  cloudinaryUrl
+                );
               }
+          })
+          .catch(err => console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err));
+          tasks.push(uploadTask);
 
-              await sendDetailedDonationSuccessWhatsAppPDF(
-                donor.mobileNumber, 
-                donor.name, 
-                donation.amount, 
-                categoryName, 
-                locationName, 
-                cloudinaryUrl
-              );
-            }
-        })
-        .catch(err => console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err));
-      tasks.push(uploadTask);
+          if (donor.email) {
+            const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
+            const emailTask = sendEmail(donor.email, 'Donation Completed - Thank You!', emailHtml, [
+              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+            ])
+            .catch(err => console.error(`[Donation ${donation.id}] ❌ Email Error for ${donor.email}:`, err));
+            tasks.push(emailTask);
+          }
 
-        if (donor.email) {
-          const emailHtml = getDonationEmailTemplate(donor.name, donation.amount, donation.cause, donation.id);
-          const emailTask = sendEmail(donor.email, 'Donation Completed - Thank You!', emailHtml, [
-            { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-          ])
-          .catch(err => console.error(`[Donation ${donation.id}] ❌ Email Error for ${donor.email}:`, err));
-          tasks.push(emailTask);
-        }
+          // Send SMS notification
+          if (donor.mobileNumber) {
+            const smsTask = (async () => {
+              try {
+                const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
+                const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId) : null;
+                const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
+                
+                let country = '', state = '', city = '';
+                const locId = donation.locationId;
+                if (locId) {
+                  const loc = await Location.findByPk(locId, {
+                    include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+                  });
 
-        // Send SMS notification
-        if (donor.mobileNumber) {
-          const smsTask = (async () => {
-            try {
-              const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
-              const gaushala = donation.gaushalaId ? await Gaushala.findByPk(donation.gaushalaId) : null;
-              const katha = donation.kathaId ? await Katha.findByPk(donation.kathaId) : null;
-              
-              let country = '', state = '', city = '';
-              const locId = donation.locationId;
-              if (locId) {
-                const loc = await Location.findByPk(locId, {
-                  include: [{ model: Location, as: 'parent', include: [{ model: Location, as: 'parent' }] }]
+                  const hierarchy = extractLocationHierarchy(loc, { useGujarati: true });
+                  country = hierarchy.country;
+                  state = hierarchy.state;
+                  city = hierarchy.city;
+                }
+
+                await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
+                  category: category?.name,
+                  gaushala: gaushala?.name,
+                  katha: katha?.name,
+                  city,
+                  state,
+                  country
                 });
-
-                const hierarchy = extractLocationHierarchy(loc, { useGujarati: true });
-                country = hierarchy.country;
-                state = hierarchy.state;
-                city = hierarchy.city;
+              } catch (err) {
+                console.error(`[Donation ${donation.id}] ❌ SMS Error:`, err);
               }
-
-              await sendDetailedDonationSMS(donor.name, donation.amount, donation.id, donor.mobileNumber, {
-                category: category?.name,
-                gaushala: gaushala?.name,
-                katha: katha?.name,
-                city,
-                state,
-                country
-              });
-            } catch (err) {
-              console.error(`[Donation ${donation.id}] ❌ SMS Error:`, err);
-            }
-          })();
-          tasks.push(smsTask);
+            })();
+            tasks.push(smsTask);
+          }
+          
+          await Promise.all(tasks);
         }
-        
-        await Promise.all(tasks);
       } catch (slipError) {
-        console.error(`[Donation ${donation.id}] ❌ Post-update tasks failed:`, slipError);
+        console.error(`[Donation ${donation.id}] ❌ Post-update background tasks failed:`, slipError);
       }
-    }
+    })();
   }
 
   return sendSuccess(res, donation, 'Donation updated successfully');

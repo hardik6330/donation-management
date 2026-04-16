@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard, Trash2, Edit, PlusCircle, Eye, ChevronDown, ChevronUp, MessageCircle, MessageSquare } from 'lucide-react';
+import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard, Trash2, Edit, PlusCircle, Eye, ChevronDown, ChevronUp, MessageCircle, MessageSquare, Loader2 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
@@ -181,13 +181,21 @@ const DonationList = ({
                   >
                     <Eye className="w-4 h-4" />
                   </button>
-                  {donation.slipUrl && (
+                  {donation.status === 'completed' && (
                     <button
                       onClick={() => onDownloadSlip(donation)}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      title="Download Slip"
+                      className={`p-1.5 rounded-lg transition-colors ${
+                        donation.slipUrl 
+                          ? 'text-red-600 hover:bg-red-50' 
+                          : 'text-gray-300 hover:bg-gray-50 cursor-wait'
+                      }`}
+                      title={donation.slipUrl ? "Download Slip" : "Slip is being generated..."}
                     >
-                      <FileDown className="w-4 h-4" />
+                      {donation.slipUrl ? (
+                        <FileDown className="w-4 h-4" />
+                      ) : (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      )}
                     </button>
                   )}
                   {donation.status === 'completed' && (

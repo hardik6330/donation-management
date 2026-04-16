@@ -128,6 +128,8 @@ const Donation = () => {
   const handleDownloadSlip = (donation) => {
     if (donation.slipUrl) {
       window.open(donation.slipUrl, '_blank');
+    } else if (donation.status === 'completed') {
+      toast.info('રસીદ તૈયાર થઈ રહી છે, કૃપા કરીને થોડીવાર પછી પ્રયત્ન કરો.');
     }
   };
 
