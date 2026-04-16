@@ -471,6 +471,7 @@ const AddDonationModal = ({
                   onKeyDown={(e) => handleKeyDown(e, stateRef, addressRef)}
                   inputRef={cityRef}
                   icon={MapPin}
+                  allowTransliteration={false}
                 />
                 <FormInput
                   label="State"
@@ -481,6 +482,7 @@ const AddDonationModal = ({
                   onKeyDown={(e) => handleKeyDown(e, countryRef, cityRef)}
                   inputRef={stateRef}
                   icon={MapPin}
+                  allowTransliteration={false}
                 />
                 <FormInput
                   label="Country"
@@ -491,6 +493,7 @@ const AddDonationModal = ({
                   onKeyDown={(e) => handleKeyDown(e, categoryRef, stateRef)}
                   inputRef={countryRef}
                   icon={MapPin}
+                  allowTransliteration={false}
                 />
               </div>
 
@@ -510,6 +513,7 @@ const AddDonationModal = ({
                   setActive={handleSetActiveAddDropdown}
                   inputRef={categoryRef}
                   icon={Tag}
+                  allowTransliteration={false}
                 />
                 <SearchableDropdown
                   label="Gaushala"
@@ -526,6 +530,7 @@ const AddDonationModal = ({
                   disabled={!!addForm.kathaId}
                   inputRef={gaushalaRef}
                   icon={Building2}
+                  allowTransliteration={false}
                 />
               </div>
 
@@ -546,6 +551,7 @@ const AddDonationModal = ({
                   disabled={!!addForm.gaushalaId}
                   inputRef={kathaRef}
                   icon={Tag}
+                  allowTransliteration={false}
                 />
               </div>
 
