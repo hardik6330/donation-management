@@ -1,39 +1,73 @@
-import { useState } from 'react';
-import { CreditCard, Loader2, Edit } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { CreditCard, Loader2, Edit, IndianRupee } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
+import FormInput from '../../../../components/common/FormInput';
 import { useUpdateDonationMutation } from '../../../../services/donationApi';
 
 const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
   const [paymentMode, setPaymentMode] = useState('cash');
   const [paymentModeName, setPaymentModeName] = useState('Cash');
+  const [paidAmount, setPaidAmount] = useState('');
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const paidAmountRef = useRef(null);
 
   const paymentModes = [
     { id: 'cash', name: 'Cash' },
     { id: 'online', name: 'Online' },
-    { id: 'cheque', name: 'Cheque' }
+    { id: 'cheque', name: 'Cheque' },
+    { id: 'partially_paid', name: 'Partially Paid' }
   ];
 
   if (!donation) return null;
 
+  const totalAmount = Number(donation.amount || 0);
+  const minimumPaidAmount = Math.ceil(totalAmount * 0.2);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    try {
-      await updateDonation({
-        id: donation.id,
-        paymentMode,
-        status: 'completed',
-        paymentDate: new Date().toISOString()
-      }).unwrap();
+    const updateData = {
+      id: donation.id,
+      paymentMode,
+      paymentDate: new Date().toISOString()
+    };
 
+    if (paymentMode === 'partially_paid') {
+      const numericPaid = Number(paidAmount.replace(/,/g, ''));
+      if (!paidAmount || numericPaid <= 0) {
+        toast.error('Please enter paid amount');
+        return;
+      }
+      if (numericPaid < minimumPaidAmount) {
+        toast.error(`Paid amount must be at least 20% (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
+        return;
+      }
+      if (numericPaid >= totalAmount) {
+        toast.error('Paid amount must be less than total donation for partial payment');
+        return;
+      }
+      updateData.paidAmount = numericPaid;
+      updateData.status = 'partially_paid';
+    } else {
+      updateData.status = 'completed';
+    }
+
+    try {
+      await updateDonation(updateData).unwrap();
       toast.success('Payment updated successfully');
       onClose();
     } catch (error) {
       toast.error(error?.data?.message || 'Failed to update payment');
+    }
+  };
+
+  const handlePaidAmountChange = (e) => {
+    const rawValue = e.target.value.replace(/,/g, '');
+    if (rawValue === '' || /^\d+$/.test(rawValue)) {
+      setPaidAmount(rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN'));
     }
   };
 
@@ -51,10 +85,10 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
           <p className="text-xs text-gray-500">Donor</p>
           <p className="text-sm font-semibold text-gray-800">{donation.donor?.name || 'Anonymous'}</p>
           <p className="text-xs text-gray-500">Donation Amount</p>
-          <p className="text-lg font-bold text-blue-700">₹{Number(donation.amount || 0).toLocaleString('en-IN')}</p>
+          <p className="text-lg font-bold text-blue-700">₹{totalAmount.toLocaleString('en-IN')}</p>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-4">
           <SearchableDropdown
             label="Actual Payment Mode"
             name="paymentModeName"
@@ -69,6 +103,9 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
               setPaymentMode(id);
               setPaymentModeName(name);
               setActiveDropdown(null);
+              if (id === 'partially_paid') {
+                setTimeout(() => paidAmountRef.current?.focus(), 100);
+              }
             }}
             isActive={activeDropdown === 'paymentModeName'}
             setActive={setActiveDropdown}
@@ -76,9 +113,43 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
             icon={CreditCard}
             allowTransliteration={false}
           />
+
+          {paymentMode === 'partially_paid' && (
+            <div className="animate-in fade-in slide-in-from-top-2 duration-200 space-y-3">
+              <FormInput
+                label="Paid Amount"
+                name="paidAmount"
+                required
+                placeholder="0"
+                value={paidAmount}
+                onChange={handlePaidAmountChange}
+                inputRef={paidAmountRef}
+                icon={IndianRupee}
+              />
+              {paidAmount && (() => {
+                const paid = Number(paidAmount.replace(/,/g, ''));
+                const remaining = totalAmount - paid;
+                if (remaining > 0) {
+                  return (
+                    <div className="flex items-center justify-between px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                      <span className="text-xs font-semibold text-orange-700">Remaining Amount</span>
+                      <span className="text-sm font-bold text-orange-600 flex items-center gap-0.5">
+                        <IndianRupee className="w-3.5 h-3.5" />
+                        {remaining.toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              <p className="text-[10px] text-gray-500 italic">
+                * Minimum 20% (₹{minimumPaidAmount.toLocaleString('en-IN')}) payment required for partial.
+              </p>
+            </div>
+          )}
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex gap-3 pt-2">
           <button
             type="button"
             onClick={onClose}
