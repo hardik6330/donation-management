@@ -62,6 +62,7 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
       title="Add Partial Payment"
       icon={<PlusCircle />}
       maxWidth="max-w-lg"
+      showLanguageToggle={false}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
