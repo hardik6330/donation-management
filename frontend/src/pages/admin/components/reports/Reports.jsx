@@ -3,8 +3,6 @@ import {
   useGetAllDonationsQuery
 } from '../../../../services/donationApi';
 import {
-  useLazyGetCitiesQuery,
-  useLazyGetSubLocationsQuery,
   useLazyGetCategoriesQuery
 } from '../../../../services/masterApi';
 import { useLazyGetGaushalasQuery } from '../../../../services/gaushalaApi';
@@ -65,9 +63,7 @@ const Reports = () => {
     minAmount: '',
     maxAmount: '',
     categoryId: '',
-    cityId: '',
-    talukaId: '',
-    villageId: '',
+    city: '',
     gaushalaId: '',
     kathaId: '',
     status: '',
@@ -83,52 +79,27 @@ const Reports = () => {
   const exportFilters = { ...filters, fetchAll: true, limit: 1000, page: 1 };
   const { data: exportData } = useGetAllDonationsQuery(exportFilters);
   
-  // City Pagination
-  const [triggerGetCities] = useLazyGetCitiesQuery();
-  const cityPagination = useDropdownPagination(triggerGetCities, { limit: 20 });
-
-  // Taluka Pagination
-  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
-  const talukaPagination = useDropdownPagination(triggerGetTalukas, { 
-    limit: 20, 
-    additionalParams: { parentId: filters.cityId },
-    skip: !filters.cityId 
-  });
-
-  // Village Pagination
-  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
-  const villagePagination = useDropdownPagination(triggerGetVillages, { 
-    limit: 20, 
-    additionalParams: { parentId: filters.talukaId },
-    skip: !filters.talukaId 
-  });
-
   // Gaushala Pagination
   const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
-  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, { 
-    limit: 20, 
-    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, {
+    limit: 20,
     rowsKey: 'rows'
   });
 
   // Katha Pagination
   const [triggerGetKathas] = useLazyGetKathasQuery();
-  const kathaPagination = useDropdownPagination(triggerGetKathas, { 
-    limit: 20, 
-    additionalParams: { locationId: filters.villageId || filters.talukaId || filters.cityId },
+  const kathaPagination = useDropdownPagination(triggerGetKathas, {
+    limit: 20,
     rowsKey: 'rows'
   });
 
   // Category Pagination
   const [triggerGetCategories] = useLazyGetCategoriesQuery();
-  const categoryPagination = useDropdownPagination(triggerGetCategories, { 
-    limit: 20, 
+  const categoryPagination = useDropdownPagination(triggerGetCategories, {
+    limit: 20,
     additionalParams: { all: true }
   });
 
-  const filterCities = cityPagination.items;
-  const filterTalukas = talukaPagination.items;
-  const filterVillages = villagePagination.items;
   const filterGaushalas = gaushalaPagination.items;
   const filterKathas = kathaPagination.items;
   const categories = categoryPagination.items;
@@ -185,22 +156,6 @@ const Reports = () => {
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
     
-    if (name === 'cityId') {
-      setFilters(prev => ({ ...prev, cityId: value, talukaId: '', villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'talukaId') {
-      setFilters(prev => ({ ...prev, talukaId: value, villageId: '', gaushalaId: '', kathaId: '', page: 1 }));
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'villageId') {
-      setFilters(prev => ({ ...prev, villageId: value, gaushalaId: '', kathaId: '', page: 1 }));
-      return;
-    }
-
     setFilters(prev => ({ 
       ...prev, 
       [name]: type === 'checkbox' ? checked : value,
@@ -216,9 +171,7 @@ const Reports = () => {
       minAmount: '', 
       maxAmount: '',
       categoryId: '',
-      cityId: '',
-      talukaId: '',
-      villageId: '',
+      city: '',
       gaushalaId: '',
       kathaId: '',
       status: '',
@@ -227,9 +180,8 @@ const Reports = () => {
       fetchAll: false,
       fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId'
     });
-    cityPagination.reset();
-    talukaPagination.reset();
-    villagePagination.reset();
+    gaushalaPagination.reset();
+    kathaPagination.reset();
     gaushalaPagination.reset();
     kathaPagination.reset();
     categoryPagination.reset();
@@ -262,6 +214,14 @@ const Reports = () => {
     toast.success(`${fileName} downloaded`);
   };
 
+  const hasNonLatin = (str) => {
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++) {
+      if (s.charCodeAt(i) > 127) return true;
+    }
+    return false;
+  };
+
   const exportToPDF = async () => {
     if (exportDonations.length === 0) {
       toast.error('No data to export');
@@ -283,10 +243,8 @@ const Reports = () => {
         doc.addFileToVFS('NotoSansGujarati-Regular.ttf', regularFontData);
         doc.addFileToVFS('NotoSansGujarati-Bold.ttf', boldFontData);
         
-        const addedRegularFont = doc.addFont('NotoSansGujarati-Regular.ttf', 'NotoSansGujarati', 'normal');
-        const addedBoldFont = doc.addFont('NotoSansGujarati-Bold.ttf', 'NotoSansGujarati', 'bold');
-        
-        console.log('Fonts added:', { addedRegularFont, addedBoldFont });
+        doc.addFont('NotoSansGujarati-Regular.ttf', 'NotoSansGujarati', 'normal');
+        doc.addFont('NotoSansGujarati-Bold.ttf', 'NotoSansGujarati', 'bold');
         
         fontName = 'NotoSansGujarati';
         boldFontName = 'NotoSansGujarati';
@@ -339,18 +297,10 @@ const Reports = () => {
       yPos += 5;
     }
 
-    const tableHeaders = [['Donor Name', 'Cause', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Date']];
-    const hasNonLatin = (str) => {
-      const s = String(str || '');
-      for (let i = 0; i < s.length; i++) {
-        if (s.charCodeAt(i) > 127) return true;
-      }
-      return false;
-    };
+    const tableHeaders = [['Donor Name', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Date']];
 
     const tableData = exportDonations.map(d => [
       d.donor?.name || '-',
-      d.cause || '-',
       (d.gaushala?.name || d.katha?.name || '-'),
       `${d.donor?.city || ''}, ${d.donor?.state || ''}`,
       d.paymentMode?.toUpperCase() || '-',
@@ -372,7 +322,9 @@ const Reports = () => {
       },
       styles: { 
         font: 'helvetica', 
-        fontSize: 8 
+        fontSize: 8,
+        cellPadding: 2,
+        overflow: 'linebreak'
       },
       didParseCell: (data) => {
         if (data.section === 'body') {
@@ -393,44 +345,7 @@ const Reports = () => {
 
   const filterFields = [
     { name: 'search', label: 'Search Donor', icon: Search, placeholder: 'Name, Email or Mobile...' },
-    { 
-      name: 'cityId', 
-      label: 'City', 
-      type: 'select', 
-      icon: MapPin, 
-      options: filterCities.map(c => ({ value: c.id, label: c.name })),
-      isServerSearch: true,
-      onSearchChange: cityPagination.handleSearch,
-      onLoadMore: cityPagination.handleLoadMore,
-      hasMore: cityPagination.hasMore,
-      loading: cityPagination.loading
-    },
-    { 
-      name: 'talukaId', 
-      label: 'Taluka', 
-      type: 'select', 
-      icon: MapPinHouse,
-      disabled: !filters.cityId,
-      options: filterTalukas.map(t => ({ value: t.id, label: t.name })),
-      isServerSearch: true,
-      onSearchChange: talukaPagination.handleSearch,
-      onLoadMore: talukaPagination.handleLoadMore,
-      hasMore: talukaPagination.hasMore,
-      loading: talukaPagination.loading
-    },
-    { 
-      name: 'villageId', 
-      label: 'Village', 
-      type: 'select', 
-      icon: Building2,
-      disabled: !filters.talukaId,
-      options: filterVillages.map(v => ({ value: v.id, label: v.name })),
-      isServerSearch: true,
-      onSearchChange: villagePagination.handleSearch,
-      onLoadMore: villagePagination.handleLoadMore,
-      hasMore: villagePagination.hasMore,
-      loading: villagePagination.loading
-    },
+    { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     { 
       name: 'gaushalaId', 
       label: 'Gaushala', 

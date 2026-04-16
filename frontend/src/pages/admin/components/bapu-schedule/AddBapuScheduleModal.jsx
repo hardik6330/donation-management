@@ -266,10 +266,10 @@ const AddBapuScheduleModal = ({
     try {
       const payload = {
         ...addForm,
+        country: addDropdownLabels.countryName,
+        state: addDropdownLabels.stateName,
         city: addDropdownLabels.cityName,
-        taluka: addDropdownLabels.talukaName,
-        village: addDropdownLabels.villageName,
-        locationId: addForm.villageId || addForm.talukaId || addForm.cityId
+        locationId: addForm.cityId || addForm.stateId || addForm.countryId
       };
 
       if (editingSchedule) {

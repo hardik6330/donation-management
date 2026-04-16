@@ -8,7 +8,7 @@ import { notFound, badRequest } from '../utils/httpError.js';
 
 export const getKathas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
-  const { status, locationId, search } = req.query;
+  const { status, search, city, state, country } = req.query;
   const where = {};
   if (status) where.status = status;
 
@@ -16,10 +16,10 @@ export const getKathas = asyncHandler(async (req, res) => {
     where.name = { [Op.like]: `%${search}%` };
   }
 
-  if (locationId) {
-    const locationFilter = await buildLocationFilter(null, null, null, locationId);
-    if (locationFilter) where.locationId = locationFilter;
-  }
+  // String-based Location Filter
+  if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
+  if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
+  if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
 
   // If only specific fields are requested (e.g. id, name), avoid complex logic
   if (requestedFields) {

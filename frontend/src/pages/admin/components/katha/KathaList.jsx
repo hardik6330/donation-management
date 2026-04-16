@@ -8,9 +8,6 @@ import { getStatusColor } from '../../../../utils/tableUtils';
 
 const KathaList = ({
   kathas,
-  cityPagination,
-  talukaPagination,
-  villagePagination,
   isLoading,
   isDeleting,
   pagination,
@@ -27,49 +24,12 @@ const KathaList = ({
 
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Search by name...' },
-    {
-      name: 'countryId',
-      label: 'Country',
-      type: 'select',
-      icon: MapPin,
-      options: cityPagination.items.map(c => ({ value: c.id, label: c.name })),
-      isServerSearch: true,
-      onSearchChange: cityPagination.handleSearch,
-      onLoadMore: cityPagination.handleLoadMore,
-      hasMore: cityPagination.hasMore,
-      loading: cityPagination.loading
-    },
-    {
-      name: 'stateId',
-      label: 'State',
-      type: 'select',
-      icon: MapPin,
-      options: talukaPagination.items.map(t => ({ value: t.id, label: t.name })),
-      disabled: !filters.countryId,
-      isServerSearch: true,
-      onSearchChange: talukaPagination.handleSearch,
-      onLoadMore: talukaPagination.handleLoadMore,
-      hasMore: talukaPagination.hasMore,
-      loading: talukaPagination.loading
-    },
-    {
-      name: 'cityId',
-      label: 'City',
-      type: 'select',
-      icon: MapPin,
-      options: villagePagination.items.map(v => ({ value: v.id, label: v.name })),
-      disabled: !filters.stateId,
-      isServerSearch: true,
-      onSearchChange: villagePagination.handleSearch,
-      onLoadMore: villagePagination.handleLoadMore,
-      hasMore: villagePagination.hasMore,
-      loading: villagePagination.loading
-    },
+    { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
+    { name: 'state', label: 'State', icon: MapPin, placeholder: 'Search by state...' },
   ];
 
   const tableHeaders = [
     { label: 'Katha Name' },
-    { label: 'Country' },
     { label: 'State' },
     { label: 'City' },
     { label: 'Dates' },
@@ -77,7 +37,6 @@ const KathaList = ({
     { label: 'Status', className: 'text-center' },
     { label: 'Actions' },
   ];
-
 
   return (
     <div className="space-y-6">
@@ -100,7 +59,6 @@ const KathaList = ({
             onClick={() => navigate(`/admin/donations?kathaId=${katha.id}`)}
           >
             <td className="p-4 px-6 font-bold text-gray-800">{katha.name}</td>
-            <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.country}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.state}</td>
             <td className="p-4 px-6 text-sm text-gray-500 uppercase">{katha.city}</td>
             <td className="p-4 px-6">
@@ -148,7 +106,7 @@ const KathaList = ({
         ))}
       </AdminTable>
 
-      <Pagination 
+      <Pagination
         pagination={pagination}
         filters={filters}
         onPageChange={onPageChange}

@@ -234,7 +234,7 @@ const Donate = () => {
   const TRANSLITERATE_FIELDS = ['name', 'referenceName', 'address', 'city', 'state', 'country', 'companyName'];
 
   const [formData, setFormData] = useState({
-    mobileNumber: '', name: '', email: '', address: '', village: '', district: '',
+    mobileNumber: '', name: '', email: '', address: '',
     cityId: '', talukaId: '', villageId: '', categoryId: '', gaushalaId: '', kathaId: '',
     companyName: '', referenceName: '', amount: '', paymentMode: 'online', status: 'completed', paidAmount: '',
     city: '', state: '', country: '',

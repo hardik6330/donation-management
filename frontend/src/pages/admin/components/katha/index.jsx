@@ -4,15 +4,10 @@ import AddKathaModal from './AddKathaModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
-import { 
-  useGetKathasQuery, 
+import {
+  useGetKathasQuery,
   useDeleteKathaMutation
 } from '../../../../services/kathaApi';
-import { 
-  useLazyGetCitiesQuery, 
-  useLazyGetSubLocationsQuery 
-} from '../../../../services/masterApi';
-import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { toast } from 'react-toastify';
 
 const Katha = () => {
@@ -24,33 +19,14 @@ const Katha = () => {
 
   const [filters, setFilters] = useState({
     search: '',
-    countryId: '',
-    stateId: '',
-    cityId: '',
+    city: '',
+    state: '',
     page: 1,
     limit: 10
   });
 
-  const locationId = filters.cityId || filters.stateId || filters.countryId;
-  const { data: kathasData, isLoading: loading } = useGetKathasQuery({ ...filters, locationId });
+  const { data: kathasData, isLoading: loading } = useGetKathasQuery(filters);
   const [deleteKatha, { isLoading: isDeleting }] = useDeleteKathaMutation();
-
-  // Dropdown Paginations
-  const [modalState, setModalState] = useState({ countryId: '', stateId: '' });
-  const [triggerGetCities] = useLazyGetCitiesQuery();
-  const cityPagination = useDropdownPagination(triggerGetCities);
-
-  const [triggerGetTalukas] = useLazyGetSubLocationsQuery();
-  const talukaPagination = useDropdownPagination(triggerGetTalukas, {
-    additionalParams: { parentId: filters.countryId || modalState.countryId },
-    skip: !(filters.countryId || modalState.countryId)
-  });
-
-  const [triggerGetVillages] = useLazyGetSubLocationsQuery();
-  const villagePagination = useDropdownPagination(triggerGetVillages, {
-    additionalParams: { parentId: filters.stateId || modalState.stateId },
-    skip: !(filters.stateId || modalState.stateId)
-  });
 
   const kathas = kathasData?.data?.rows || [];
   const pagination = {
@@ -88,25 +64,11 @@ const Katha = () => {
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'countryId') {
-      setFilters(prev => ({ ...prev, countryId: value, stateId: '', cityId: '', page: 1 }));
-      talukaPagination.reset();
-      villagePagination.reset();
-      return;
-    }
-    if (name === 'stateId') {
-      setFilters(prev => ({ ...prev, stateId: value, cityId: '', page: 1 }));
-      villagePagination.reset();
-      return;
-    }
     setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', countryId: '', stateId: '', cityId: '', page: 1, limit: 10 });
-    cityPagination.reset();
-    talukaPagination.reset();
-    villagePagination.reset();
+    setFilters({ search: '', city: '', state: '', page: 1, limit: 10 });
   };
 
   const handlePageChange = (newPage) => {
@@ -123,8 +85,8 @@ const Katha = () => {
 
   return (
     <div className="space-y-6">
-      <AdminPageHeader 
-        title="Katha Management" 
+      <AdminPageHeader
+        title="Katha Management"
         subtitle="Manage different kathas for donation tracking"
         buttonText={hasPermission('katha', 'entry') ? "Add Katha" : null}
         onButtonClick={handleAdd}
@@ -132,9 +94,6 @@ const Katha = () => {
 
       <KathaList
         kathas={kathas}
-        cityPagination={cityPagination}
-        talukaPagination={talukaPagination}
-        villagePagination={villagePagination}
         isLoading={loading}
         pagination={pagination}
         filters={filters}
