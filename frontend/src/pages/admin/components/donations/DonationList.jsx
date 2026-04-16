@@ -19,6 +19,7 @@ const DonationList = ({
   onDelete,
   onEditPartialPayment,
   onAddPartialPayment,
+  onEditPayLater,
   onDownloadSlip, 
   onFilterChange, 
   onClearFilters, 
@@ -210,6 +211,15 @@ const DonationList = ({
                     title="Download Slip"
                   >
                     <FileDown className="w-4 h-4" />
+                  </button>
+                )}
+                {donation.paymentMode === 'pay_later' && donation.status === 'pending' && hasPermission('donations', 'entry') && (
+                  <button
+                    onClick={() => onEditPayLater(donation)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="Edit Pay Later"
+                  >
+                    <Edit className="w-4 h-4" />
                   </button>
                 )}
                 {donation.status === 'partially_paid' && hasPermission('donations', 'entry') && (

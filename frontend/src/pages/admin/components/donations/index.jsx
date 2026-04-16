@@ -5,6 +5,7 @@ import DonationList from './DonationList';
 import AddDonationModal from './AddDonationModal';
 import EditPartialPaymentModal from './EditPartialPaymentModal';
 import AddPartialPaymentModal from './AddPartialPaymentModal';
+import EditPayLaterModal from './EditPayLaterModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetAllDonationsQuery } from '../../../../services/donationApi';
@@ -22,6 +23,7 @@ const Donation = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPartialDonation, setEditingPartialDonation] = useState(null);
   const [addingPartialDonation, setAddingPartialDonation] = useState(null);
+  const [editingPayLaterDonation, setEditingPayLaterDonation] = useState(null);
   const [searchParams] = useSearchParams();
 
   const [filters, setFilters] = useState({
@@ -184,6 +186,10 @@ const Donation = () => {
     setAddingPartialDonation(donation);
   };
 
+  const handleEditPayLater = (donation) => {
+    setEditingPayLaterDonation(donation);
+  };
+
   return (
     <div className="space-y-6">
       <AdminPageHeader 
@@ -211,6 +217,7 @@ const Donation = () => {
         onDownloadSlip={handleDownloadSlip}
         onEditPartialPayment={handleEditPartialPayment}
         onAddPartialPayment={handleAddPartialPayment}
+        onEditPayLater={handleEditPayLater}
         hasPermission={hasPermission} 
       />
 
@@ -241,6 +248,14 @@ const Donation = () => {
           isOpen={!!addingPartialDonation}
           donation={addingPartialDonation}
           onClose={() => setAddingPartialDonation(null)}
+        />
+      )}
+
+      {editingPayLaterDonation && (
+        <EditPayLaterModal
+          isOpen={!!editingPayLaterDonation}
+          donation={editingPayLaterDonation}
+          onClose={() => setEditingPayLaterDonation(null)}
         />
       )}
     </div>
