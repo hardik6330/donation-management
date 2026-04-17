@@ -108,6 +108,7 @@ const AddDonationModal = ({
   const kathaRef = useRef(null);
   const referenceRef = useRef(null);
   const paymentModeRef = useRef(null);
+  const statusRef = useRef(null);
   const amountRef = useRef(null);
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
@@ -506,7 +507,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('categoryId', id, name)}
                   onClear={() => handleAddDropdownSelect('categoryId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, gaushalaRef, countryRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.kathaId ? kathaRef : gaushalaRef, countryRef)}
                   isActive={activeAddDropdown === 'categoryName'}
                   setActive={handleSetActiveAddDropdown}
                   inputRef={categoryRef}
@@ -522,7 +523,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('gaushalaId', id, name)}
                   onClear={() => handleAddDropdownSelect('gaushalaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, kathaRef, categoryRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.gaushalaId ? paymentModeRef : kathaRef, categoryRef)}
                   isActive={activeAddDropdown === 'gaushalaName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!!addForm.kathaId}
@@ -543,7 +544,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('kathaId', id, name)}
                   onClear={() => handleAddDropdownSelect('kathaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, gaushalaRef)}
+                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, addForm.kathaId ? categoryRef : gaushalaRef)}
                   isActive={activeAddDropdown === 'kathaName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!!addForm.gaushalaId}
@@ -567,7 +568,7 @@ const AddDonationModal = ({
                   ]}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('paymentMode', id, name)}
-                  onKeyDown={(e) => handleKeyDown(e, amountRef, kathaRef)}
+                  onKeyDown={(e) => handleKeyDown(e, statusRef, addForm.gaushalaId ? gaushalaRef : addForm.kathaId ? kathaRef : categoryRef)}
                   isActive={activeAddDropdown === 'paymentModeName'}
                   setActive={handleSetActiveAddDropdown}
                   inputRef={paymentModeRef}
@@ -587,8 +588,10 @@ const AddDonationModal = ({
                   ]}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('status', id, name)}
+                  onKeyDown={(e) => handleKeyDown(e, amountRef, paymentModeRef)}
                   isActive={activeAddDropdown === 'statusName'}
                   setActive={handleSetActiveAddDropdown}
+                  inputRef={statusRef}
                   required
                   icon={CreditCard}
                   allowTransliteration={false}
@@ -604,7 +607,7 @@ const AddDonationModal = ({
                   placeholder="0"
                   value={addForm.amount}
                   onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : submitRef, paymentModeRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : submitRef, statusRef)}
                   inputRef={amountRef}
                   icon={IndianRupee}
                   error={errors.amount}
