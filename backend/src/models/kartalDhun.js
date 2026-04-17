@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const KartalDhun = sequelize.define('KartalDhun', {
@@ -33,4 +33,34 @@ export const KartalDhun = sequelize.define('KartalDhun', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          [Op.or]: [
+            { name: { [Op.like]: `%${query}%` } },
+            { description: { [Op.like]: `%${query}%` } }
+          ]
+        }
+      };
+    },
+    dateRange(startDate, endDate) {
+      if (startDate && endDate) {
+        return { where: { date: { [Op.between]: [startDate, endDate] } } };
+      } else if (startDate) {
+        return { where: { date: { [Op.gte]: startDate } } };
+      } else if (endDate) {
+        return { where: { date: { [Op.lte]: endDate } } };
+      }
+      return {};
+    },
+    location(city, state, country) {
+      const where = {};
+      if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
+      if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
+      if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
+      return { where };
+    }
+  }
 });

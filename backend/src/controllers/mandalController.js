@@ -24,19 +24,16 @@ export const getAllMandals = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
   const { search, isActive, month } = req.query;
 
-  const where = {};
-  if (search && search.trim() !== '') {
-    where.name = { [Op.like]: `%${search}%` };
-  }
+  const activeScopes = [];
+  if (search) activeScopes.push({ method: ['search', search] });
   if (isActive !== undefined && isActive !== '') {
-    where.isActive = isActive === 'true';
+    activeScopes.push(isActive === 'true' ? 'active' : 'inactive');
   }
 
   // Default to current month if not provided for payment generation check
   const checkMonth = month || new Date().toISOString().slice(0, 7);
 
-  const { count, rows } = await Mandal.findAndCountAll({
-    where,
+  const { count, rows } = await Mandal.scope(activeScopes).findAndCountAll({
     attributes: {
       include: [
         [sequelize.literal('(SELECT COUNT(*) FROM MandalMembers WHERE MandalMembers.mandalId = Mandal.id)'), 'memberCount'],
@@ -100,24 +97,16 @@ export const getAllMembers = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
   const { search, mandalId, isActive, city } = req.query;
 
-  const where = {};
-  if (search && search.trim() !== '') {
-    where[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { mobileNumber: { [Op.like]: `%${search}%` } },
-      { city: { [Op.like]: `%${search}%` } }
-    ];
-  }
-  if (mandalId && mandalId.trim() !== '') {
-    where.mandalId = mandalId;
-  }
+  const activeScopes = [];
+  if (search) activeScopes.push({ method: ['search', search] });
+  if (city) activeScopes.push({ method: ['city', city] });
+  if (mandalId) activeScopes.push({ method: ['mandal', mandalId] });
+  
   if (isActive !== undefined && isActive !== '') {
-    where.isActive = isActive === 'true';
+    activeScopes.push(isActive === 'true' ? 'active' : 'inactive');
   }
-  if (city) where.city = { [Op.like]: `%${city}%` };
 
-  const { count, rows } = await MandalMember.findAndCountAll({
-    where,
+  const { count, rows } = await MandalMember.scope(activeScopes).findAndCountAll({
     include: [
       { model: Mandal, as: 'mandal', attributes: ['id', 'name'] }
     ],

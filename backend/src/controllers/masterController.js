@@ -69,13 +69,9 @@ export const getCities = asyncHandler(async (req, res) => {
   const { search } = req.query;
   const { page, limit, offset, isFetchAll, requestedFields } = getPaginationParams(req.query);
 
-  const where = { type: 'country' };
-  if (search && search.trim() !== '') {
-    where.name = { [Op.like]: `%${search}%` };
-  }
+  const activeScopes = [{ method: ['type', 'city'] }, { method: ['search', search] }];
 
-  const { count, rows: cities } = await Location.findAndCountAll({
-    where,
+  const { count, rows: cities } = await Location.scope(activeScopes).findAndCountAll({
     attributes: requestedFields || undefined,
     order: [['name', 'ASC']],
     limit: isFetchAll ? undefined : limit,

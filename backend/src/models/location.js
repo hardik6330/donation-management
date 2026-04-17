@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const Location = sequelize.define('Location', {
@@ -25,6 +25,28 @@ export const Location = sequelize.define('Location', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          name: { [Op.like]: `%${query}%` }
+        }
+      };
+    },
+    type(typeName) {
+      if (!typeName) return {};
+      return {
+        where: { type: typeName }
+      };
+    },
+    parent(parentId) {
+      if (!parentId) return {};
+      return {
+        where: { parentId }
+      };
+    }
+  },
   indexes: [
     {
       unique: true,

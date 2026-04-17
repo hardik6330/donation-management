@@ -26,25 +26,12 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
   const { search, startDate, endDate, city, state, country } = req.query;
 
-  const where = {};
-  if (search && search.trim() !== '') {
-    where.name = { [Op.like]: `%${search}%` };
-  }
-  if (startDate && endDate) {
-    where.date = { [Op.between]: [startDate, endDate] };
-  } else if (startDate) {
-    where.date = { [Op.gte]: startDate };
-  } else if (endDate) {
-    where.date = { [Op.lte]: endDate };
-  }
+  const activeScopes = [];
+  if (search) activeScopes.push({ method: ['search', search] });
+  if (startDate || endDate) activeScopes.push({ method: ['dateRange', startDate, endDate] });
+  if (city || state || country) activeScopes.push({ method: ['location', city, state, country] });
 
-  // String-based Location Filter
-  if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
-  if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
-  if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
-
-  const { count, rows } = await KartalDhun.findAndCountAll({
-    where,
+  const { count, rows } = await KartalDhun.scope(activeScopes).findAndCountAll({
     include: [{
       model: Location,
       as: 'location',

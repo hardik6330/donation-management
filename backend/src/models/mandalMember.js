@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const MandalMember = sequelize.define('MandalMember', {
@@ -40,4 +40,36 @@ export const MandalMember = sequelize.define('MandalMember', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          [Op.or]: [
+            { name: { [Op.like]: `%${query}%` } },
+            { mobileNumber: { [Op.like]: `%${query}%` } },
+            { city: { [Op.like]: `%${query}%` } }
+          ]
+        }
+      };
+    },
+    city(cityName) {
+      if (!cityName) return {};
+      return {
+        where: { city: { [Op.like]: `%${cityName}%` } }
+      };
+    },
+    mandal(mandalId) {
+      if (!mandalId) return {};
+      return {
+        where: { mandalId }
+      };
+    },
+    active: {
+      where: { isActive: true }
+    },
+    inactive: {
+      where: { isActive: false }
+    }
+  }
 });

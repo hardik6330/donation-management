@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const Category = sequelize.define('Category', {
@@ -22,4 +22,23 @@ export const Category = sequelize.define('Category', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          [Op.or]: [
+            { name: { [Op.like]: `%${query}%` } },
+            { description: { [Op.like]: `%${query}%` } }
+          ]
+        }
+      };
+    },
+    active: {
+      where: { isActive: true }
+    },
+    inactive: {
+      where: { isActive: false }
+    }
+  }
 });

@@ -54,31 +54,24 @@ export const generateMonthlyPayments = asyncHandler(async (req, res) => {
 // Get payments for a specific month
 export const getMonthlyPayments = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
-  const { month, mandalId, status, search } = req.query;
+  const { month, mandalId, status, search, city } = req.query;
 
   if (!month) {
     throw badRequest('Month parameter is required');
   }
 
-  const where = { month };
-  if (status && status !== '') where.status = status;
+  const paymentScopes = [{ method: ['month', month] }];
+  if (status) paymentScopes.push({ method: ['status', status] });
 
-  const memberWhere = {};
-  if (mandalId && mandalId !== '') memberWhere.mandalId = mandalId;
-  if (search && search.trim() !== '') {
-    memberWhere[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { mobileNumber: { [Op.like]: `%${search}%` } },
-      { city: { [Op.like]: `%${search}%` } }
-    ];
-  }
+  const memberScopes = [];
+  if (search) memberScopes.push({ method: ['search', search] });
+  if (city) memberScopes.push({ method: ['city', city] });
+  if (mandalId) memberScopes.push({ method: ['mandal', mandalId] });
 
-  const { count, rows } = await MandalPayment.findAndCountAll({
-    where,
+  const { count, rows } = await MandalPayment.scope(paymentScopes).findAndCountAll({
     include: [{
-      model: MandalMember,
+      model: MandalMember.scope(memberScopes),
       as: 'member',
-      where: memberWhere,
       include: [
         { model: Mandal, as: 'mandal', attributes: ['id', 'name'] }
       ]
@@ -125,11 +118,13 @@ export const getMonthlyReport = asyncHandler(async (req, res) => {
     throw badRequest('Month parameter is required');
   }
 
-  const totalMembers = await MandalPayment.count({ where: { month } });
-  const paidCount = await MandalPayment.count({ where: { month, status: 'paid' } });
+  const monthScope = { method: ['month', month] };
+  
+  const totalMembers = await MandalPayment.scope(monthScope).count();
+  const paidCount = await MandalPayment.scope([monthScope, 'paid']).count();
   const unpaidCount = totalMembers - paidCount;
-  const totalCollected = await MandalPayment.sum('amount', { where: { month, status: 'paid' } }) || 0;
-  const totalPending = await MandalPayment.sum('amount', { where: { month, status: 'unpaid' } }) || 0;
+  const totalCollected = await MandalPayment.scope([monthScope, 'paid']).sum('amount') || 0;
+  const totalPending = await MandalPayment.scope([monthScope, 'unpaid']).sum('amount') || 0;
 
   return sendSuccess(res, {
     month,

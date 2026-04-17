@@ -40,6 +40,22 @@ export const MandalPayment = sequelize.define('MandalPayment', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    month(monthStr) {
+      if (!monthStr) return {};
+      return { where: { month: monthStr } };
+    },
+    status(statusStr) {
+      if (!statusStr) return {};
+      return { where: { status: statusStr } };
+    },
+    paid: {
+      where: { status: 'paid' }
+    },
+    unpaid: {
+      where: { status: 'unpaid' }
+    }
+  },
   indexes: [
     {
       unique: true,

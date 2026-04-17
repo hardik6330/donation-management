@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const Mandal = sequelize.define('Mandal', {
@@ -26,4 +26,20 @@ export const Mandal = sequelize.define('Mandal', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          name: { [Op.like]: `%${query}%` }
+        }
+      };
+    },
+    active: {
+      where: { isActive: true }
+    },
+    inactive: {
+      where: { isActive: false }
+    }
+  }
 });

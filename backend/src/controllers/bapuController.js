@@ -10,25 +10,14 @@ import { notFound, badRequest } from '../utils/httpError.js';
 export const getBapuSchedules = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset } = getPaginationParams(req.query);
   const { startDate, endDate, eventType, status, locationId, city, state, country } = req.query;
-  let where = {};
-
-  if (startDate && endDate) {
-    where.date = { [Op.between]: [startDate, endDate] };
-  } else if (startDate) {
-    where.date = { [Op.gte]: startDate };
-  }
-
-  if (eventType) where.eventType = eventType;
-  if (status) where.status = status;
   
-  // String-based Location Filter
-  let donorWhere = {};
-  if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
-  if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
-  if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
+  const activeScopes = [];
+  if (startDate) activeScopes.push({ method: ['dateRange', startDate, endDate] });
+  if (eventType) activeScopes.push({ method: ['eventType', eventType] });
+  if (status) activeScopes.push({ method: ['status', status] });
+  if (city || state || country) activeScopes.push({ method: ['location', city, state, country] });
 
-  const { count, rows: schedules } = await BapuSchedule.findAndCountAll({
-    where,
+  const { count, rows: schedules } = await BapuSchedule.scope(activeScopes).findAndCountAll({
     include: [
       { 
         model: Location, 

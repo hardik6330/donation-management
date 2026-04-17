@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const BapuSchedule = sequelize.define('BapuSchedule', {
@@ -50,4 +50,29 @@ export const BapuSchedule = sequelize.define('BapuSchedule', {
   }
 }, {
   timestamps: true,
+  scopes: {
+    dateRange(startDate, endDate) {
+      if (startDate && endDate) {
+        return { where: { date: { [Op.between]: [startDate, endDate] } } };
+      } else if (startDate) {
+        return { where: { date: { [Op.gte]: startDate } } };
+      }
+      return {};
+    },
+    eventType(type) {
+      if (!type) return {};
+      return { where: { eventType: type } };
+    },
+    status(status) {
+      if (!status) return {};
+      return { where: { status } };
+    },
+    location(city, state, country) {
+      const where = {};
+      if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
+      if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
+      if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
+      return { where };
+    }
+  }
 });
