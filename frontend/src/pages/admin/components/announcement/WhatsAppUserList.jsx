@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, User, Loader2, Users, UserCheck, MoreVertical, CheckSquare, Square } from 'lucide-react';
+import { Search, User, Loader2, Users, UserCheck, MoreVertical, CheckSquare, Square, Send } from 'lucide-react';
 
 const UserListSkeleton = ({ count = 7 }) => (
   <div className="animate-pulse">
@@ -19,17 +19,18 @@ const UserListSkeleton = ({ count = 7 }) => (
   </div>
 );
 
-const WhatsAppUserList = ({ 
+const WhatsAppUserList = ({
   donorPagination,
   sevakPagination,
-  selectedUser, 
+  selectedUser,
   setSelectedUser,
   userType,
   setUserType,
   isSelectionMode,
   setIsSelectionMode,
   selectedUsers,
-  setSelectedUsers
+  setSelectedUsers,
+  onOpenBulkSend
 }) => {
   const currentPagination = userType === 'donor' ? donorPagination : sevakPagination;
   const { 
@@ -254,6 +255,19 @@ const WhatsAppUserList = ({
           </div>
         )}
       </div>
+
+      {/* Mobile: floating send button in selection mode */}
+      {isSelectionMode && selectedUsers.length > 0 && onOpenBulkSend && (
+        <div className="p-3 bg-white border-t border-gray-100 md:hidden">
+          <button
+            onClick={onOpenBulkSend}
+            className="w-full py-2.5 bg-primary hover:bg-primary-hover text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-primary/20 transition active:scale-95"
+          >
+            <Send className="w-4 h-4" />
+            Send to {selectedUsers.length} Users
+          </button>
+        </div>
+      )}
     </div>
   );
 };

@@ -11,6 +11,7 @@ const AnnouncementPage = () => {
   const [userType, setUserType] = useState('donor');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState([]);
+  const [showBulkSend, setShowBulkSend] = useState(false);
   
   const [sendAnnouncement, { isLoading: isSending }] = useSendAnnouncementMutation();
   
@@ -75,13 +76,18 @@ const AnnouncementPage = () => {
     }
   };
 
-  // Mobile: show chat when user selected or in selection mode
-  const showChatOnMobile = selectedUser || isSelectionMode;
+  // Mobile: show chat when user tapped OR bulk send opened
+  const showChatOnMobile = (selectedUser && !isSelectionMode) || showBulkSend;
 
   const handleBackToList = () => {
     setSelectedUser(null);
+    setShowBulkSend(false);
     setIsSelectionMode(false);
     setSelectedUsers([]);
+  };
+
+  const handleOpenBulkSend = () => {
+    setShowBulkSend(true);
   };
 
   return (
@@ -100,6 +106,7 @@ const AnnouncementPage = () => {
             setIsSelectionMode={setIsSelectionMode}
             selectedUsers={selectedUsers}
             setSelectedUsers={setSelectedUsers}
+            onOpenBulkSend={handleOpenBulkSend}
           />
         </div>
         {/* Chat window: hidden on mobile when no user selected */}
