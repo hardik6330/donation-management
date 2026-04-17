@@ -1,16 +1,16 @@
-import React, { useState } from 'react';
 import DonorsList from './DonorsList';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { 
   useGetDonorsQuery
 } from '../../../../services/donationApi';
+import { useTable } from '../../../../hooks/useTable';
 // import {
 //   useLazyGetCitiesQuery
 // } from '../../../../services/masterApi';
 // import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 
 const Donors = () => {
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     name: '',
     mobileNumber: '',
     city: '',
@@ -19,6 +19,10 @@ const Donors = () => {
     maxAmount: '',
     page: 1,
     limit: 10,
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll',
   });
 
   const { data: donorsData, isLoading: donorsLoading } = useGetDonorsQuery(filters);
@@ -30,35 +34,6 @@ const Donors = () => {
     totalData: donorsData?.data?.totalData || 0,
     limit: donorsData?.data?.limit || 10,
   };  
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ 
-      name: '', 
-      mobileNumber: '', 
-      state: '',
-      minAmount: '', 
-      maxAmount: '', 
-      page: 1, 
-      limit: 10 
-    });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, limit: 100, page: 1, fetchAll: true }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: Number(newLimit), page: 1, fetchAll: false }));
-    }
-  };
 
   return (
     <div className="space-y-6">

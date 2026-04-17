@@ -36,7 +36,16 @@ const startCrons = () => {
 // Middlewares
 app.use(helmet());
 app.use(cors({ origin: FRONTEND_URL || '*' }));
-app.use(morgan('dev'));
+
+// HTTP Request Logging
+const morganFormat = NODE_ENV === 'production' ? 'combined' : 'dev';
+app.use(
+  morgan(morganFormat, {
+    // Log only failed requests (4xx/5xx)
+    skip: (...args) => args[1].statusCode < 400,
+  }),
+);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -85,7 +94,7 @@ if (NODE_ENV !== 'production' && cluster.isPrimary) {
   });
 
   cluster.on('exit', (worker) => {
-    console.log(`Worker ${worker.process.pid} died. Forking a new one...`);
+    console.warn(`Worker ${worker.process.pid} died. Forking a new one...`);
     cluster.fork();
   });
 } else {

@@ -8,6 +8,7 @@ import {
   useGetGaushalasQuery, 
   useDeleteGaushalaMutation
 } from '../../../../services/gaushalaApi';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const Gaushala = () => {
@@ -17,13 +18,19 @@ const Gaushala = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingGaushala, setEditingGaushala] = useState(null);
 
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     search: '',
     gaushalaName: '',
     city: '',
     state: '',
     page: 1,
     limit: 10
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll',
+    allFlagType: 'string',
+    parseLimit: (value) => value,
   });
 
   const { data: gaushalasData, isLoading: loading } = useGetGaushalasQuery(filters);
@@ -60,27 +67,6 @@ const Gaushala = () => {
       setDeletingId(null);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete gaushala');
-    }
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', gaushalaName: '', city: '', state: '', page: 1, limit: 10 });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: 'true', limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: 'false', page: 1 }));
     }
   };
 

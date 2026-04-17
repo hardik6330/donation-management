@@ -8,6 +8,7 @@ import {
   useGetBapuSchedulesQuery, 
   useDeleteBapuScheduleMutation
 } from '../../../../services/bapuApi';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const BapuSchedule = () => {
@@ -17,7 +18,7 @@ const BapuSchedule = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingSchedule, setEditingSchedule] = useState(null);
 
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     startDate: '',
     endDate: '',
     eventType: '',
@@ -27,6 +28,11 @@ const BapuSchedule = () => {
     country: '',
     page: 1,
     limit: 10
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll',
+    parseLimit: (value) => value,
   });
 
   // API calls moved to index.jsx
@@ -65,37 +71,6 @@ const BapuSchedule = () => {
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete schedule');
     }
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const handlePageChange = (page) => {
-    setFilters(prev => ({ ...prev, page }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
-    }
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      startDate: '',
-      endDate: '',
-      eventType: '',
-      status: '',
-      city: '',
-      state: '',
-      country: '',
-      page: 1,
-      limit: 10
-    });
   };
 
   return (

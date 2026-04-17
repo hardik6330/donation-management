@@ -17,6 +17,8 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 - **Master Data Management**: Dedicated modules for managing Gaushala, Katha, Bapu Schedule, Sevak, Mandal, and Kartal Dhun.
 - **Advanced Filtering & Export**: Powerful server-side filtering (Amount range, Date, Category) and data export to XLSX/PDF.
 - **Model Scopes**: Reusable Sequelize scopes across all models for search, filtering by status/location/date range, reducing controller complexity.
+- **Structured Logging**: Winston-based logging with file rotation (error + combined logs), colored console output, and Morgan HTTP request logging.
+- **Skeleton Loading States**: Dashboard cards with animated skeleton placeholders for smooth loading UX.
 - **Enhanced Security & Performance**: JWT-based authentication, Joi validation, Rate limiting, and **Clustered/Serverless-optimized DB initialization**.
 
 ## 🛠️ Tech Stack
@@ -32,7 +34,8 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 - **Runtime**: Node.js, Express 5
 - **Database**: MySQL with Sequelize ORM (model scopes for reusable query filters)
 - **Services**: Cloudinary (File Storage), BullMQ/Redis (Queueing), Nodemailer, **Meta WhatsApp Business API**, Fast2SMS
-- **Tools**: PDFKit (Receipts), QRCode, Joi (Validation), Bcryptjs, JWT, Helmet, Morgan
+- **Logging**: Winston (structured file + console logging), Morgan (HTTP request logging)
+- **Tools**: PDFKit (Receipts), QRCode, Joi (Validation), Bcryptjs, JWT, Helmet
 
 ## 📦 Installation
 

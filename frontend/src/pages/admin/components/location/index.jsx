@@ -8,6 +8,7 @@ import {
   useGetAllCitiesQuery,
   useDeleteLocationMutation,
 } from '../../../../services/masterApi';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const Location = () => {
@@ -17,10 +18,15 @@ const Location = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingLocation, setEditingLocation] = useState(null);
 
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     search: '',
     page: 1,
     limit: 10
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll',
+    parseLimit: (value) => value,
   });
 
   const { data: citiesData, isFetching: isLoading } = useGetAllCitiesQuery(filters);
@@ -32,27 +38,6 @@ const Location = () => {
     totalPages: citiesData?.data?.totalPages || 1,
     totalData: citiesData?.data?.totalData || 0,
     limit: citiesData?.data?.limit || 10
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', page: 1, limit: 10 });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
-    }
   };
 
   const handleAdd = () => {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ExpenseList from './ExpenseList';
 import AddExpenseModal from './AddExpenseModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
@@ -15,6 +15,7 @@ import {
   useLazyGetKathasQuery 
 } from '../../../../services/kathaApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const Expense = () => {
@@ -24,7 +25,7 @@ const Expense = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
 
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     startDate: '',
     endDate: '',
     category: '',
@@ -35,6 +36,10 @@ const Expense = () => {
     paymentMode: '',
     page: 1,
     limit: 10
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll',
   });
 
   // API calls
@@ -82,38 +87,10 @@ const Expense = () => {
     }
   };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      startDate: '',
-      endDate: '',
-      category: '',
-      gaushalaId: '',
-      kathaId: '',
-      minAmount: '',
-      maxAmount: '',
-      paymentMode: '',
-      page: 1,
-      limit: 10
-    });
+  const handleClearFilters = () => {
+    clearFilters();
     gaushalaPagination.reset();
     kathaPagination.reset();
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
-    }
   };
 
   return (
@@ -134,7 +111,7 @@ const Expense = () => {
         onEdit={handleEdit}
         onDelete={handleDelete}
         onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
+        onClearFilters={handleClearFilters}
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
         hasPermission={hasPermission}

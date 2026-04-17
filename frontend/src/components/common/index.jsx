@@ -1,6 +1,7 @@
 export { default as AdminModal } from './AdminModal';
 export { default as AdminPageHeader } from './AdminPageHeader';
 export { default as AdminTable } from './AdminTable';
+export { default as CardSkeleton } from './CardSkeleton';
 export { default as ConfirmationModal } from './ConfirmationModal';
 export { default as CustomDatePicker } from './CustomDatePicker';
 export { default as CustomMonthPicker } from './CustomMonthPicker';

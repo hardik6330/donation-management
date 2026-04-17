@@ -8,6 +8,7 @@ import {
 import { useLazyGetGaushalasQuery } from '../../../../services/gaushalaApi';
 import { useLazyGetKathasQuery } from '../../../../services/kathaApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
+import { useTable } from '../../../../hooks/useTable';
 import { 
   Search, Calendar, Loader2, IndianRupee, FileDown, 
   MapPin, MapPinHouse, Building2, Mic2, Tag, Filter, 
@@ -56,21 +57,30 @@ const Reports = () => {
     loadFonts();
   }, []);
 
-  const [filters, setFilters] = useState({
-    search: '',
-    startDate: '',
-    endDate: '',
-    minAmount: '',
-    maxAmount: '',
-    categoryId: '',
-    city: '',
-    gaushalaId: '',
-    kathaId: '',
-    status: '',
-    page: 1,
-    limit: 10,
-    fetchAll: false,
-    fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId'
+  const {
+    filters,
+    setFilters,
+    handlePageChange,
+    handleLimitChange,
+    clearFilters,
+  } = useTable({
+    initialFilters: {
+      search: '',
+      startDate: '',
+      endDate: '',
+      minAmount: '',
+      maxAmount: '',
+      categoryId: '',
+      city: '',
+      gaushalaId: '',
+      kathaId: '',
+      status: '',
+      page: 1,
+      limit: 10,
+      fetchAll: false,
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId'
+    },
+    allLimit: 1000,
   });
 
   const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(filters);
@@ -111,15 +121,6 @@ const Reports = () => {
     totalPages: donationsData?.data?.totalPages || 1,
     totalData: donationsData?.data?.totalData || 0,
     limit: donationsData?.data?.limit || 10
-  };
-
-  const handlePageChange = (page) => setFilters(prev => ({ ...prev, page }));
-  const handleLimitChange = (value) => {
-    if (value === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 1000, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, fetchAll: false, limit: value, page: 1 }));
-    }
   };
 
   const getDynamicFileName = (extension) => {
@@ -163,23 +164,8 @@ const Reports = () => {
     }));
   };
 
-  const clearFilters = () => {
-    setFilters({ 
-      search: '', 
-      startDate: '', 
-      endDate: '', 
-      minAmount: '', 
-      maxAmount: '',
-      categoryId: '',
-      city: '',
-      gaushalaId: '',
-      kathaId: '',
-      status: '',
-      page: 1,
-      limit: 10,
-      fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId'
-    });
+  const handleClearFilters = () => {
+    clearFilters();
     gaushalaPagination.reset();
     kathaPagination.reset();
     gaushalaPagination.reset();
@@ -435,7 +421,7 @@ const Reports = () => {
       <FilterSection
         filters={filters}
         onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
+        onClearFilters={handleClearFilters}
         fields={filterFields}
       />
 

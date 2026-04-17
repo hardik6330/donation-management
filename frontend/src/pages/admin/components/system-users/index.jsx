@@ -6,6 +6,7 @@ import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetSystemUsersQuery, useDeleteSystemUserMutation } from '../../../../services/authApi';
 import { useGetRolesQuery } from '../../../../services/roleApi';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const SystemUser = () => {
@@ -15,11 +16,15 @@ const SystemUser = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingUser, setEditingUser] = useState(null);
 
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     search: '',
     roleId: '',
     page: 1,
     limit: 10
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll', 
   });
 
   // API calls moved to index.jsx
@@ -59,27 +64,6 @@ const SystemUser = () => {
       setDeletingId(null);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete user');
-    }
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', roleId: '', page: 1, limit: 10 });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, limit: 100, page: 1, fetchAll: true }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: Number(newLimit), page: 1, fetchAll: false }));
     }
   };
 

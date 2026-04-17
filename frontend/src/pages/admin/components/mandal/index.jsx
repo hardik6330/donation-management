@@ -5,6 +5,7 @@ import DeleteConfirmationModal from '../../../../components/common/DeleteConfirm
 import ConfirmationModal from '../../../../components/common/ConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import { useTable } from '../../../../hooks/useTable';
 import { NavLink } from 'react-router-dom';
 import { UsersRound, IndianRupee } from 'lucide-react';
 import { useGetMandalsQuery, useDeleteMandalMutation, useUpdateMandalMutation, useGenerateMandalPaymentsMutation } from '../../../../services/mandalApi';
@@ -22,12 +23,20 @@ const Mandal = () => {
 
   const currentMonthValue = new Date().toISOString().slice(0, 7); // YYYY-MM format
 
-  const [filters, setFilters] = useState({
-    search: '',
-    isActive: '',
-    month: currentMonthValue,
-    page: 1,
-    limit: 10
+  const {
+    filters,
+    handleFilterChange,
+    handlePageChange,
+    handleLimitChange,
+    clearFilters,
+  } = useTable({
+    initialFilters: {
+      search: '',
+      isActive: '',
+      month: currentMonthValue,
+      page: 1,
+      limit: 10
+    }
   });
 
   // API calls moved to index.jsx
@@ -100,27 +109,6 @@ const Mandal = () => {
       toast.success(`Mandal ${mandal.isActive ? 'deactivated' : 'activated'}`);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to update');
-    }
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', isActive: '', month: currentMonthValue, page: 1, limit: 10 });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, limit: 100, page: 1, fetchAll: true }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: Number(newLimit), page: 1, fetchAll: false }));
     }
   };
 

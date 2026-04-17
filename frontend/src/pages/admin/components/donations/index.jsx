@@ -13,6 +13,7 @@ import { useLazyGetGaushalasQuery } from '../../../../services/gaushalaApi';
 import { useLazyGetKathasQuery } from '../../../../services/kathaApi';
 import { useLazyGetCategoriesQuery } from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const Donation = () => {
@@ -25,21 +26,29 @@ const Donation = () => {
 
   const [resendWhatsApp, { isLoading: isResending }] = useResendWhatsAppMutation();
 
-  const [filters, setFilters] = useState({
-    search: '',
-    startDate: '',
-    endDate: '',
-    minAmount: '',
-    maxAmount: '',
-    categoryId: '',
-    city: '',
-    gaushalaId: searchParams.get('gaushalaId') || '',
-    kathaId: searchParams.get('kathaId') || '',
-    status: '',
-    page: 1,
-    limit: 10,
-    fetchAll: false,
-    fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,'
+  const {
+    filters,
+    setFilters,
+    handlePageChange,
+    handleLimitChange,
+    clearFilters,
+  } = useTable({
+    initialFilters: {
+      search: '',
+      startDate: '',
+      endDate: '',
+      minAmount: '',
+      maxAmount: '',
+      categoryId: '',
+      city: '',
+      gaushalaId: searchParams.get('gaushalaId') || '',
+      kathaId: searchParams.get('kathaId') || '',
+      status: '',
+      page: 1,
+      limit: 10,
+      fetchAll: false,
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,'
+    }
   });
 
   const debouncedSearch = useDebounce(filters.search, 500);
@@ -91,38 +100,11 @@ const Donation = () => {
     }));
   };
 
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      startDate: '',
-      endDate: '',
-      minAmount: '',
-      maxAmount: '',
-      categoryId: '',
-      city: '',
-      gaushalaId: '',
-      kathaId: '',
-      status: '',
-      page: 1,
-      limit: 10,
-      fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount'
-    });
+  const handleClearFilters = () => {
+    clearFilters();
     gaushalaPagination.reset();
     kathaPagination.reset();
     categoryPagination.reset();
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
-    }
   };
 
   const handleDownloadSlip = (donation) => {
@@ -172,7 +154,7 @@ const Donation = () => {
         kathaPagination={kathaPagination}
         categoryPagination={categoryPagination}
         onFilterChange={handleFilterChange}
-        onClearFilters={clearFilters}
+        onClearFilters={handleClearFilters}
         onPageChange={handlePageChange}
         onLimitChange={handleLimitChange}
         onDownloadSlip={handleDownloadSlip}

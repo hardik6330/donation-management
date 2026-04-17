@@ -7,6 +7,7 @@ import {
 } from '../../../../services/mandalApi';
 import { useLazyGetCitiesQuery } from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
+import { useTable } from '../../../../hooks/useTable';
 import {
   Search, Edit, Trash2, CheckCircle, XCircle, UsersRound, IndianRupee
 } from 'lucide-react';
@@ -21,13 +22,21 @@ import AddMemberModal from './AddMemberModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 
 const MandalMemberList = () => {
-  const [filters, setFilters] = useState({
-    search: '',
-    mandalId: '',
-    isActive: '',
-    page: 1,
-    limit: 10,
-    fetchAll: false
+  const {
+    filters,
+    handleFilterChange,
+    handlePageChange,
+    handleLimitChange,
+    clearFilters,
+  } = useTable({
+    initialFilters: {
+      search: '',
+      mandalId: '',
+      isActive: '',
+      page: 1,
+      limit: 10,
+      fetchAll: false
+    }
   });
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -56,25 +65,6 @@ const MandalMemberList = () => {
 
   const mandals = mandalsData?.data?.rows || [];
   const mandalOptions = mandals.map(m => ({ value: m.id, label: m.name }));
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', mandalId: '', city: '', isActive: '', page: 1, limit: 10 });
-  };
-
-  const handlePageChange = (page) => setFilters(prev => ({ ...prev, page }));
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: Number(newLimit), fetchAll: false, page: 1 }));
-    }
-  };
 
   const handleDelete = (id) => {
     setDeletingId(id);

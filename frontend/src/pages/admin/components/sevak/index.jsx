@@ -4,6 +4,7 @@ import AddSevakModal from './AddSevakModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
+import { useTable } from '../../../../hooks/useTable';
 import { useGetSevaksQuery, useDeleteSevakMutation, useUpdateSevakMutation } from '../../../../services/sevakApi';
 import { toast } from 'react-toastify';
 
@@ -14,13 +15,21 @@ const Sevak = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingSevak, setEditingSevak] = useState(null);
 
-  const [filters, setFilters] = useState({
-    search: '',
-    city: '',
-    state: '',
-    isActive: '',
-    page: 1,
-    limit: 10
+  const {
+    filters,
+    handleFilterChange,
+    handlePageChange,
+    handleLimitChange,
+    clearFilters,
+  } = useTable({
+    initialFilters: {
+      search: '',
+      city: '',
+      state: '',
+      isActive: '',
+      page: 1,
+      limit: 10
+    }
   });
 
   // API calls moved to index.jsx
@@ -46,22 +55,6 @@ const Sevak = () => {
     setIsModalOpen(true);
   };
 
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      city: '',
-      state: '',
-      isActive: '',
-      page: 1,
-      limit: 10
-    });
-  };
-
   const handleDelete = (id) => {
     setDeletingId(id);
     setIsDeleteModalOpen(true);
@@ -84,18 +77,6 @@ const Sevak = () => {
       toast.success(`Sevak ${sevak.isActive ? 'deactivated' : 'activated'} successfully`);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to update status');
-    }
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, limit: 100, page: 1, fetchAll: true }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: Number(newLimit), page: 1, fetchAll: false }));
     }
   };
 

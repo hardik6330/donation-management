@@ -6,7 +6,7 @@ import { NODE_ENV } from '../config/env.js';
  * Catch all errors and return a consistent API response
  */
 export const errorHandler = (err, req, res, next) => {
-  console.error(`[Error Handler] ${err.stack}`);
+  console.error(err);
 
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';

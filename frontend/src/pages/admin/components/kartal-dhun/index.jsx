@@ -8,6 +8,7 @@ import {
   useGetKartalDhunQuery, 
   useDeleteKartalDhunMutation
 } from '../../../../services/kartalDhunApi';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const KartalDhun = () => {
@@ -17,13 +18,18 @@ const KartalDhun = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingRecord, setEditingRecord] = useState(null);
 
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     search: '',
     startDate: '',
     endDate: '',
     city: '',
     page: 1,
     limit: 10
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll',
+    parseLimit: (value) => value,
   });
 
   // API calls moved to index.jsx
@@ -61,34 +67,6 @@ const KartalDhun = () => {
       setDeletingId(null);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete record');
-    }
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ 
-      search: '', 
-      startDate: '', 
-      endDate: '', 
-      city: '', 
-      page: 1, 
-      limit: 10 
-    });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
     }
   };
 

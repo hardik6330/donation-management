@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import CategoryList from './CategoryList';
 import AddCategoryModal from './AddCategoryModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
@@ -11,6 +11,7 @@ import {
   useLazyGetCategoriesQuery
 } from '../../../../services/masterApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const Category = () => {
@@ -18,11 +19,15 @@ const Category = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     search: '',
     page: 1,
     limit: 10,
     all: true
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'all',
   });
   const [editingCategory, setEditingCategory] = useState(null);
 
@@ -79,32 +84,6 @@ const Category = () => {
       setDeletingId(null);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete category');
-    }
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({
-      search: '',
-      page: 1,
-      limit: 10,
-      all: true
-    });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, limit: 100, page: 1, all: true }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: Number(newLimit), page: 1, all: false }));
     }
   };
 

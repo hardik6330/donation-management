@@ -12,6 +12,7 @@ import {
 import { toast } from 'react-toastify';
 import { handleMutationError } from '../../../../utils/errorHelper';
 import { useDebounce } from '../../../../hooks/useDebounce';
+import { useTable } from '../../../../hooks/useTable';
 import { NavLink } from 'react-router-dom';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
@@ -32,14 +33,22 @@ const formatMonth = (month) => {
 };
 
 const MandalPaymentPage = () => {
-  const [filters, setFilters] = useState({
-    month: getCurrentMonth(),
-    mandalId: '',
-    status: '',
-    search: '',
-    page: 1,
-    limit: 10,
-    fetchAll: false
+  const {
+    filters,
+    clearFilters,
+    handleFilterChange,
+    handlePageChange,
+    handleLimitChange,
+  } = useTable({
+    initialFilters: {
+      month: getCurrentMonth(),
+      mandalId: '',
+      status: '',
+      search: '',
+      page: 1,
+      limit: 10,
+      fetchAll: false
+    }
   });
 
   const debouncedSearch = useDebounce(filters.search, 500);
@@ -67,25 +76,6 @@ const MandalPaymentPage = () => {
   const report = reportData?.data || {};
   const mandals = mandalsData?.data?.rows || [];
   const mandalOptions = mandals.map(m => ({ value: m.id, label: m.name }));
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ month: getCurrentMonth(), mandalId: '', status: '', search: '', page: 1, limit: 10 });
-  };
-
-  const handlePageChange = (page) => setFilters(prev => ({ ...prev, page }));
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: Number(newLimit), fetchAll: false, page: 1 }));
-    }
-  };
 
   const handleGenerate = async () => {
     try {

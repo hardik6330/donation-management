@@ -8,6 +8,7 @@ import {
   useGetKathasQuery,
   useDeleteKathaMutation
 } from '../../../../services/kathaApi';
+import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
 
 const Katha = () => {
@@ -17,12 +18,17 @@ const Katha = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [editingKatha, setEditingKatha] = useState(null);
 
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     search: '',
     city: '',
     state: '',
     page: 1,
     limit: 10
+  };
+  const { filters, handleFilterChange, clearFilters, handlePageChange, handleLimitChange } = useTable({
+    initialFilters,
+    allFlagKey: 'fetchAll',
+    parseLimit: (value) => value,
   });
 
   const { data: kathasData, isLoading: loading } = useGetKathasQuery(filters);
@@ -59,27 +65,6 @@ const Katha = () => {
       setDeletingId(null);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete katha');
-    }
-  };
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters(prev => ({ ...prev, [name]: value, page: 1 }));
-  };
-
-  const clearFilters = () => {
-    setFilters({ search: '', city: '', state: '', page: 1, limit: 10 });
-  };
-
-  const handlePageChange = (newPage) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
-  };
-
-  const handleLimitChange = (newLimit) => {
-    if (newLimit === 'all') {
-      setFilters(prev => ({ ...prev, fetchAll: true, limit: 100, page: 1 }));
-    } else {
-      setFilters(prev => ({ ...prev, limit: newLimit, fetchAll: false, page: 1 }));
     }
   };
 
