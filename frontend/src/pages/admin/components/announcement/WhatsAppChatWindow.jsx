@@ -7,7 +7,8 @@ import {
   MessageSquare,
   Phone,
   X,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 import { useGetAnnouncementHistoryQuery } from '../../../../services/donationApi';
 
@@ -28,7 +29,8 @@ const WhatsAppChatWindow = ({
   isSelectionMode,
   selectedUsersCount,
   onTemplateSend,
-  onBulkTemplateSend
+  onBulkTemplateSend,
+  onBack
 }) => {
   const [isSearching, setIsSearching] = useState(false);
   const [chatSearchQuery, setChatSearchQuery] = useState('');
@@ -117,8 +119,13 @@ const WhatsAppChatWindow = ({
   if (isSelectionMode) {
     return (
       <div className="flex-1 flex flex-col bg-[#f0f2f5] relative overflow-hidden">
-        <div className="p-4 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10">
-          <div className="flex items-center gap-3">
+        <div className="p-3 sm:p-4 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {onBack && (
+              <button onClick={onBack} className="p-1.5 hover:bg-gray-100 rounded-full transition md:hidden">
+                <ArrowLeft className="w-5 h-5 text-gray-600" />
+              </button>
+            )}
             <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-white font-bold">
               {selectedUsersCount}
             </div>
@@ -137,12 +144,12 @@ const WhatsAppChatWindow = ({
             backgroundColor: '#e5ddd5'
           }}
         >
-          <div className="bg-white/90 backdrop-blur-sm p-8 rounded-3xl shadow-xl max-w-md border border-white/50">
-            <div className="w-20 h-20 bg-primary-light rounded-full flex items-center justify-center mx-auto mb-6">
-              <MessageSquare className="w-10 h-10 text-primary" />
+          <div className="bg-white/90 backdrop-blur-sm p-5 sm:p-8 rounded-3xl shadow-xl max-w-md border border-white/50 mx-4">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 bg-primary-light rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10 text-primary" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">Send Bulk Message</h2>
-            <p className="text-gray-600 text-sm mb-6">
+            <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">Send Bulk Message</h2>
+            <p className="text-gray-600 text-xs sm:text-sm mb-4 sm:mb-6">
               You have selected {selectedUsersCount} recipients. Type your message below to send it to all of them at once.
             </p>
             {selectedUsersCount === 0 && (
@@ -209,16 +216,16 @@ const WhatsAppChatWindow = ({
   // ---- No User Selected ----
   if (!selectedUser) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-12 bg-[#f8f9fa]">
-        <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-6">
-          <MessageSquare className="w-10 h-10 text-gray-300" />
+      <div className="flex-1 flex flex-col items-center justify-center text-center p-6 sm:p-12 bg-[#f8f9fa]">
+        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 sm:mb-6">
+          <MessageSquare className="w-8 h-8 sm:w-10 sm:h-10 text-gray-300" />
         </div>
-        <h2 className="text-xl font-bold text-gray-700 mb-2">Shree Sarveshwar Gaudham Announcement</h2>
-        <p className="text-gray-500 text-sm max-w-md leading-relaxed">
+        <h2 className="text-lg sm:text-xl font-bold text-gray-700 mb-2">Shree Sarveshwar Gaudham Announcement</h2>
+        <p className="text-gray-500 text-xs sm:text-sm max-w-md leading-relaxed">
           Select a donor from the list to start sending announcements via WhatsApp.
           Keep your community informed with ease.
         </p>
-        <div className="mt-8 flex items-center gap-2 text-[10px] text-gray-400 uppercase font-bold tracking-widest">
+        <div className="mt-6 sm:mt-8 flex items-center gap-2 text-[10px] text-gray-400 uppercase font-bold tracking-widest">
           <Phone className="w-3 h-3" /> End-to-end encrypted
         </div>
       </div>
@@ -229,9 +236,14 @@ const WhatsAppChatWindow = ({
   return (
     <div className="flex-1 flex flex-col bg-[#f0f2f5] relative overflow-hidden">
       {/* Chat Header */}
-      <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10 min-h-[65px]">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-primary-light rounded-full flex items-center justify-center text-primary text-xs font-bold">
+      <div className="p-3 bg-white border-b border-gray-100 flex items-center justify-between shadow-sm z-10 min-h-[56px] sm:min-h-[65px]">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+          {onBack && (
+            <button onClick={onBack} className="p-1.5 hover:bg-gray-100 rounded-full transition md:hidden shrink-0">
+              <ArrowLeft className="w-5 h-5 text-gray-600" />
+            </button>
+          )}
+          <div className="w-9 h-9 bg-primary-light rounded-full flex items-center justify-center text-primary text-xs font-bold shrink-0">
             {selectedUser.name?.charAt(0).toUpperCase()}
           </div>
           <div>
@@ -243,7 +255,7 @@ const WhatsAppChatWindow = ({
         <div className="flex items-center gap-2">
           {isSearching ? (
             <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300">
-              <div className="relative w-48 sm:w-64">
+              <div className="relative w-36 sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                   autoFocus
@@ -277,7 +289,7 @@ const WhatsAppChatWindow = ({
 
       {/* Chat Messages Area */}
       <div
-        className="flex-1 p-6 overflow-y-auto flex flex-col gap-4 custom-scrollbar scroll-smooth"
+        className="flex-1 p-3 sm:p-6 overflow-y-auto flex flex-col gap-3 sm:gap-4 custom-scrollbar scroll-smooth"
         style={{
           backgroundImage: 'url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png")',
           backgroundSize: 'contain',
@@ -298,9 +310,9 @@ const WhatsAppChatWindow = ({
           </div>
         ) : (
           [...history].reverse().map((msg, index) => (
-            <div 
+            <div
               key={msg.id || index}
-              className={`self-end p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[85%] relative group transition-all duration-200 ${
+              className={`self-end p-2.5 sm:p-3 rounded-2xl rounded-tr-none shadow-sm max-w-[90%] sm:max-w-[85%] relative group transition-all duration-200 ${
                 msg.status === 'failed' ? 'bg-red-50 border border-red-100' : 'bg-[#dcf8c6]'
               } ${
                 chatSearchQuery && !msg.message.toLowerCase().includes(chatSearchQuery.toLowerCase()) ? 'opacity-20 scale-95' : 'opacity-100'
@@ -354,14 +366,14 @@ const WhatsAppChatWindow = ({
         <div className="px-4 py-2">
           <label className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1 flex items-center justify-between">
             <span>Message Content</span>
-            <span className="text-gray-400 font-normal">Shift+Enter for new line</span>
+            <span className="text-gray-400 font-normal hidden sm:inline">Shift+Enter for new line</span>
           </label>
           <textarea
-            rows="4"
+            rows="3"
             value={templateVars.message || ''}
             onChange={(e) => handleVarChange('message', e.target.value)}
             placeholder="સંદેશ લખો... (emojis, line breaks supported)"
-            className="w-full px-3 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y min-h-[80px] max-h-[180px] leading-relaxed"
+            className="w-full px-3 py-2.5 sm:py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition resize-y min-h-[60px] sm:min-h-[80px] max-h-[140px] sm:max-h-[180px] leading-relaxed"
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey && isReady() && !isSending) {
                 e.preventDefault();

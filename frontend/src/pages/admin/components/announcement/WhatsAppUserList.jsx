@@ -81,7 +81,7 @@ const WhatsAppUserList = ({
   };
 
   return (
-    <div className="w-80 border-r border-gray-100 flex flex-col bg-gray-50/30 shrink-0">
+    <div className="w-full h-full border-r border-gray-100 flex flex-col bg-gray-50/30 overflow-hidden">
       {/* Header with Menu */}
       <div className="p-4 bg-white border-b border-gray-100 space-y-4">
         <div className="flex items-center justify-between">
