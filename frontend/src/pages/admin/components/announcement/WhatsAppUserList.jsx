@@ -1,6 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, User, Loader2, Users, UserCheck, MoreVertical, CheckSquare, Square } from 'lucide-react';
 
+const UserListSkeleton = ({ count = 7 }) => (
+  <div className="animate-pulse">
+    {[...Array(count)].map((_, index) => (
+      <div key={index} className="flex items-center gap-3 p-3 border-b border-gray-50/50">
+        <div className="w-10 h-10 rounded-full bg-gray-200 shrink-0"></div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between">
+            <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-4 bg-gray-100 rounded-full w-12"></div>
+          </div>
+          <div className="h-2.5 bg-gray-100 rounded w-1/2 mt-2"></div>
+          <div className="h-2.5 bg-gray-100 rounded w-2/3 mt-2"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
 const WhatsAppUserList = ({ 
   donorPagination,
   sevakPagination,
@@ -158,9 +176,7 @@ const WhatsAppUserList = ({
       {/* Users List */}
       <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
         {isLoading && currentList.length === 0 ? (
-          <div className="flex items-center justify-center h-32">
-            <Loader2 className="w-6 h-6 animate-spin text-primary" />
-          </div>
+          <UserListSkeleton />
         ) : currentList.length > 0 ? (
           <>
             {currentList.map((item) => (

@@ -16,6 +16,18 @@ import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 
+const LAST_DONATION_PREFS_KEY = 'LAST_DONATION_PREFS';
+
+const getStoredDonationPrefs = () => {
+  try {
+    const raw = localStorage.getItem(LAST_DONATION_PREFS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (error) {
+    console.error('Error parsing donation prefs', error);
+    return {};
+  }
+};
+
 const AddDonationModal = ({
   isOpen,
   onClose,
@@ -23,6 +35,7 @@ const AddDonationModal = ({
   kathaPagination,
   categoryPagination,
 }) => {
+  const storedPrefs = getStoredDonationPrefs();
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
 
   const [addForm, setAddForm] = useState({
@@ -30,26 +43,26 @@ const AddDonationModal = ({
     name: '',
     email: '',
     address: '',
-    city: '',
-    state: '',
-    country: '',
-    categoryId: '',
-    gaushalaId: '',
-    kathaId: '',
+    city: storedPrefs.city || '',
+    state: storedPrefs.state || '',
+    country: storedPrefs.country || '',
+    categoryId: storedPrefs.categoryId || '',
+    gaushalaId: storedPrefs.gaushalaId || '',
+    kathaId: storedPrefs.kathaId || '',
     companyName: '',
     referenceName: '',
-    amount: '',
+    amount: storedPrefs.amount || '',
     paidAmount: '',
-    paymentMode: 'cash',
-    status: 'completed',
+    paymentMode: storedPrefs.paymentMode || 'cash',
+    status: storedPrefs.status || 'completed',
   });
 
   const [addDropdownLabels, setAddDropdownLabels] = useState({
-    categoryName: '',
-    gaushalaName: '',
-    kathaName: '',
-    paymentModeName: 'Cash',
-    statusName: 'Completed',
+    categoryName: storedPrefs.categoryName || '',
+    gaushalaName: storedPrefs.gaushalaName || '',
+    kathaName: storedPrefs.kathaName || '',
+    paymentModeName: storedPrefs.paymentModeName || 'Cash',
+    statusName: storedPrefs.statusName || 'Completed',
   });
 
   const [errors, setErrors] = useState({});
@@ -111,26 +124,6 @@ const AddDonationModal = ({
   useEffect(() => {
     if (isOpen) {
       if (mobileRef.current) mobileRef.current.focus();
-
-      // Load last donation details
-      const lastDonation = localStorage.getItem('LAST_DONATION_DETAILS');
-      if (lastDonation) {
-        try {
-          const { categoryId, categoryName } = JSON.parse(lastDonation);
-          setTimeout(() => {
-            setAddForm(prev => ({
-              ...prev,
-              categoryId: categoryId || prev.categoryId,
-            }));
-            setAddDropdownLabels(prev => ({
-              ...prev,
-              categoryName: categoryName || prev.categoryName,
-            }));
-          }, 0);
-        } catch (e) {
-          console.error('Error parsing last donation details', e);
-        }
-      }
     }
   }, [isOpen]);
 
@@ -309,10 +302,22 @@ const AddDonationModal = ({
         paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
       }).unwrap();
 
-      // Save last donation details for next time
-      localStorage.setItem('LAST_DONATION_DETAILS', JSON.stringify({
+      // Save reusable form preferences for fast entry
+      localStorage.setItem(LAST_DONATION_PREFS_KEY, JSON.stringify({
+        city: addForm.city,
+        state: addForm.state,
+        country: addForm.country,
         categoryId: addForm.categoryId,
+        gaushalaId: addForm.gaushalaId,
+        kathaId: addForm.kathaId,
         categoryName: addDropdownLabels.categoryName,
+        gaushalaName: addDropdownLabels.gaushalaName,
+        kathaName: addDropdownLabels.kathaName,
+        amount: addForm.amount,
+        paymentMode: addForm.paymentMode,
+        status: addForm.status,
+        paymentModeName: addDropdownLabels.paymentModeName,
+        statusName: addDropdownLabels.statusName,
       }));
 
       toast.success('Donation added successfully');
@@ -324,39 +329,32 @@ const AddDonationModal = ({
   };
 
   const resetAddForm = () => {
-    // Check if we have last used details
-    const lastDonation = localStorage.getItem('LAST_DONATION_DETAILS');
-    let lastDetails = {};
-    if (lastDonation) {
-      try {
-        lastDetails = JSON.parse(lastDonation);
-      } catch (e) {
-        console.error('Error parsing last donation details', e);
-      }
-    }
+    const lastPrefs = getStoredDonationPrefs();
 
     setAddForm({
       mobileNumber: '',
       name: '',
       email: '',
       address: '',
-      city: '',
-      state: '',
-      country: '',
-      categoryId: lastDetails.categoryId || '',
-      gaushalaId: '',
-      kathaId: '',
+      city: lastPrefs.city || '',
+      state: lastPrefs.state || '',
+      country: lastPrefs.country || '',
+      categoryId: lastPrefs.categoryId || '',
+      gaushalaId: lastPrefs.gaushalaId || '',
+      kathaId: lastPrefs.kathaId || '',
       companyName: '',
       referenceName: '',
-      amount: '',
+      amount: lastPrefs.amount || '',
       paidAmount: '',
-      paymentMode: 'cash',
+      paymentMode: lastPrefs.paymentMode || 'cash',
+      status: lastPrefs.status || 'completed',
     });
     setAddDropdownLabels({
-      categoryName: lastDetails.categoryName || '',
-      gaushalaName: '',
-      kathaName: '',
-      paymentModeName: 'Cash'
+      categoryName: lastPrefs.categoryName || '',
+      gaushalaName: lastPrefs.gaushalaName || '',
+      kathaName: lastPrefs.kathaName || '',
+      paymentModeName: lastPrefs.paymentModeName || 'Cash',
+      statusName: lastPrefs.statusName || 'Completed',
     });
     setErrors({});
   };
