@@ -28,26 +28,16 @@ export const getAllSevaks = asyncHandler(async (req, res) => {
   const { page, limit, requestedFields } = getPaginationParams(req.query);
   const { search, city, state, isActive } = req.query;
 
+  const activeScopes = [];
+  if (search) activeScopes.push({ method: ['search', search] });
+  if (city || state) activeScopes.push({ method: ['location', city, state] });
+
   const where = {};
-
-  if (search && search.trim() !== '') {
-    where[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { mobileNumber: { [Op.like]: `%${search}%` } }
-    ];
-  }
-
-  if (city && city.trim() !== '') {
-    where.city = { [Op.like]: `%${city}%` };
-  }
-
-  if (state && state.trim() !== '') {
-    where.state = { [Op.like]: `%${state}%` };
-  }
-
   if (isActive !== undefined && isActive !== '') {
     where.isActive = isActive === 'true';
   }
+
+  const sanitizedScopes = activeScopes.filter(s => s !== null && s !== undefined);
 
   const lastMessageLiteral = [
     sequelize.literal(`(
@@ -84,7 +74,7 @@ export const getAllSevaks = asyncHandler(async (req, res) => {
     };
   }
 
-  const { count, rows } = await Sevak.findAndCountAll({
+  const { count, rows } = await Sevak.scope(sanitizedScopes).findAndCountAll({
     where,
     attributes,
     order: [

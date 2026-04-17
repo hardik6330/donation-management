@@ -93,31 +93,21 @@ export const getSystemUsers = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
   const { search, roleId } = req.query;
 
+  const activeScopes = ['admin'];
+  if (search) activeScopes.push({ method: ['search', search] });
+
+  const sanitizedScopes = activeScopes.filter(s => s !== null && s !== undefined);
+
   const where = {
     // Super Admin ને લિસ્ટમાં ન બતાવવા માટે (admin@example.com)
     email: { [Op.ne]: 'admin@example.com' }
   };
 
-  if (search && search.trim() !== '') {
-    where[Op.and] = [
-      { email: { [Op.ne]: 'admin@example.com' } },
-      {
-        [Op.or]: [
-          { name: { [Op.like]: `%${search}%` } },
-          { email: { [Op.like]: `%${search}%` } },
-          { mobileNumber: { [Op.like]: `%${search}%` } }
-        ]
-      }
-    ];
-    // remove separate email filter if we use Op.and
-    delete where.email;
-  }
-
   if (roleId && roleId.trim() !== '') {
     where.roleId = roleId;
   }
 
-  const { count, rows } = await User.findAndCountAll({
+  const { count, rows } = await User.scope(sanitizedScopes).findAndCountAll({
     where,
     attributes: { exclude: ['password'] },
     include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],

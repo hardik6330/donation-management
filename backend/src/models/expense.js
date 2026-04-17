@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const Expense = sequelize.define('Expense', {
@@ -47,4 +47,25 @@ export const Expense = sequelize.define('Expense', {
   }
 }, {
   timestamps: true,
+  scopes: {
+    byCategory(category) {
+      return category ? { where: { category } } : {};
+    },
+    byDateRange(start, end) {
+      if (!start && !end) return {};
+      const where = {};
+      if (start && end) where.date = { [Op.between]: [start, end] };
+      else if (start) where.date = { [Op.gte]: start };
+      else if (end) where.date = { [Op.lte]: end };
+      return { where };
+    },
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          description: { [Op.like]: `%${query}%` }
+        }
+      };
+    }
+  }
 });

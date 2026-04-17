@@ -1,6 +1,22 @@
 import { Op } from 'sequelize';
 
 /**
+ * Builds a common search filter for multiple fields
+ * @param {Array} fields - Fields to search in
+ * @param {string} term - Search term
+ * @returns {Object} - Sequelize OR condition
+ */
+export const buildSearchFilter = (fields, term) => {
+  if (!term || !fields || fields.length === 0) return {};
+  
+  return {
+    [Op.or]: fields.map(field => ({
+      [field]: { [Op.like]: `%${term}%` }
+    }))
+  };
+};
+
+/**
  * Builds a Sequelize where clause for donations based on query parameters.
  * @param {Object} query - The request query object.
  * @param {string} searchPrefix - The prefix for search fields (default: '$donor.')
@@ -89,13 +105,9 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
     whereClause.amount = { [Op.lte]: Number(maxAmount) };
   }
 
-  // 4. Status Filter
+  // 5. Status Filter
   if (status) {
-    if (status === 'pay_later') {
-      whereClause.paymentMode = 'pay_later';
-    } else {
-      whereClause.status = status;
-    }
+    whereClause.status = status;
   }
 
   // 6. Category Filter

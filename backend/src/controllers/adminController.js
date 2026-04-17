@@ -196,10 +196,24 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
   const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
 
-  const { whereClause } = await buildDonationFilter(req.query, '$donor.');
+  const {
+    gaushalaId, kathaId, categoryId, status, 
+    startDate, endDate, minAmount, maxAmount, search,
+    city, state, country
+  } = req.query;
 
-  const { count, rows: donations } = await Donation.findAndCountAll({
-    where: whereClause,
+  const activeScopes = [
+    { method: ['byGaushala', gaushalaId] },
+    { method: ['byKatha', kathaId] },
+    { method: ['byCategory', categoryId] },
+    { method: ['byStatus', status] },
+    { method: ['byDateRange', startDate, endDate] },
+    { method: ['byAmountRange', minAmount, maxAmount] },
+    { method: ['searchDonor', search] },
+    { method: ['byDonorLocation', city, state, country] }
+  ].filter(s => s !== null && s !== undefined);
+
+  const { count, rows: donations } = await Donation.scope(activeScopes).findAndCountAll({
     attributes: mainAttributes,
     include: [
       {
@@ -222,7 +236,7 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
     limit: queryLimit,
     offset: offset,
     distinct: true,
-    subQuery: false, // Essential when filtering by associated model fields
+    subQuery: false,
   });
 
   const responseData = getPaginatedResponse({

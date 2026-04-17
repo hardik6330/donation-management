@@ -344,45 +344,31 @@ export const getDonors = asyncHandler(async (req, res) => {
     maxAmount
   } = req.query;
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
-  const donorWhere = { isAdmin: false };
-
-  if (search) {
-    donorWhere[Op.or] = [
-      { name: { [Op.like]: `%${search}%` } },
-      { email: { [Op.like]: `%${search}%` } },
-      { mobileNumber: { [Op.like]: `%${search}%` } }
-    ];
-  }
-
-  if (name) {
-    donorWhere.name = { [Op.like]: `%${name}%` };
-  }
-
-  if (mobileNumber) {
-    donorWhere.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
-  }
-
-  if (city) {
-    donorWhere.city = { [Op.like]: `%${city}%` };
-  }
-
-  if (state) {
-    donorWhere.state = { [Op.like]: `%${state}%` };
-  }
+  
+  // Use scopes for filtering
+  const activeScopes = ['donor'];
+  
+  if (search) activeScopes.push({ method: ['search', search] });
+  
+  // Custom filters
+  const donorWhere = {};
+  if (name) donorWhere.name = { [Op.like]: `%${name}%` };
+  if (mobileNumber) donorWhere.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
+  if (city) donorWhere.city = { [Op.like]: `%${city}%` };
+  if (state) donorWhere.state = { [Op.like]: `%${state}%` };
 
   if (cityId || stateId || countryId) {
     const targetId = cityId || stateId || countryId;
     const location = await Location.findByPk(targetId);
     if (location) {
-      if (location.type === 'city') {
-        donorWhere.city = location.name;
-      } else if (location.type === 'state') {
-        donorWhere.state = location.name;
-      } else {
-        donorWhere.country = location.name;
-      }
-    } 
+      if (location.type === 'city') donorWhere.city = location.name;
+      else if (location.type === 'state') donorWhere.state = location.name;
+      else donorWhere.country = location.name;
+    }
   }
+
+  // Filter out any invalid/null scopes to prevent errors
+  const sanitizedScopes = activeScopes.filter(scope => scope !== null && scope !== undefined);
 
   // Handle attributes and virtual fields (donationCount, totalDonated)
   let attributes = requestedFields || { include: [] };
@@ -451,7 +437,7 @@ export const getDonors = asyncHandler(async (req, res) => {
     };
   }
 
-  const { count, rows: donors } = await User.findAndCountAll({
+  const { count, rows: donors } = await User.scope(sanitizedScopes).findAndCountAll({
     where: donorWhere,
     attributes,
     order: [

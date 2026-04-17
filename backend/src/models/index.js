@@ -85,11 +85,9 @@ BapuSchedule.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
 // KartalDhun <-> Location
 KartalDhun.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
 
-// Mandal <-> MandalMember <-> MandalPayment
-Mandal.hasMany(MandalMember, { as: 'members', foreignKey: 'mandalId' });
+// MandalMember associations
 MandalMember.belongsTo(Mandal, { as: 'mandal', foreignKey: 'mandalId' });
-
-MandalMember.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
+Mandal.hasMany(MandalMember, { foreignKey: 'mandalId' });
 
 MandalMember.hasMany(MandalPayment, { as: 'payments', foreignKey: 'memberId' });
 MandalPayment.belongsTo(MandalMember, { as: 'member', foreignKey: 'memberId' });

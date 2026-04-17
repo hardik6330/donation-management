@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const Sevak = sequelize.define('Sevak', {
@@ -54,4 +54,27 @@ export const Sevak = sequelize.define('Sevak', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    active: {
+      where: { isActive: true }
+    },
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          [Op.or]: [
+            { name: { [Op.like]: `%${query}%` } },
+            { email: { [Op.like]: `%${query}%` } },
+            { mobileNumber: { [Op.like]: `%${query}%` } }
+          ]
+        }
+      };
+    },
+    location(city, state) {
+      const where = {};
+      if (city) where.city = { [Op.like]: `%${city}%` };
+      if (state) where.state = { [Op.like]: `%${state}%` };
+      return { where };
+    }
+  }
 });

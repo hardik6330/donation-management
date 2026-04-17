@@ -9,7 +9,7 @@ export const seedAdmin = async () => {
     const adminPassword = ADMIN_PASSWORD || 'Admin@123';
     const adminMobile = ADMIN_MOBILE || '9876543210';
 
-    const adminExists = await User.findOne({ where: { email: adminEmail } });
+    const adminExists = await User.unscoped().findOne({ where: { email: adminEmail } });
     if (!adminExists) {
       let adminRole = await Role.findOne({ 
         where: { 

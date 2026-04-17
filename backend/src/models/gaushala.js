@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const Gaushala = sequelize.define('Gaushala', {
@@ -26,4 +26,24 @@ export const Gaushala = sequelize.define('Gaushala', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    active: {
+      where: { isActive: true }
+    },
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          name: { [Op.like]: `%${query}%` }
+        }
+      };
+    },
+    location(city, state, country) {
+      const where = {};
+      if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
+      if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
+      if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
+      return { where };
+    }
+  }
 });

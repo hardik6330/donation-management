@@ -24,7 +24,7 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
   const cityRef = useRef(null);
   const submitRef = useRef(null);
 
-  const [form, setForm] = useState({ name: '', mobileNumber: '', mandalId: '', mandalName: '', locationId: '', cityName: '' });
+  const [form, setForm] = useState({ name: '', mobileNumber: '', mandalId: '', mandalName: '', city: '' });
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   useEffect(() => {
@@ -35,11 +35,10 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
           mobileNumber: editingMember.mobileNumber || '',
           mandalId: editingMember.mandalId || '',
           mandalName: editingMember.mandal?.name || '',
-          locationId: editingMember.locationId || '',
-          cityName: editingMember.location?.name || '',
+          city: editingMember.city || '',
         });
       } else {
-        setForm({ name: '', mobileNumber: '', mandalId: '', mandalName: '', locationId: '', cityName: '' });
+        setForm({ name: '', mobileNumber: '', mandalId: '', mandalName: '', city: '' });
       }
     }, 0);
     return () => clearTimeout(timer);
@@ -67,9 +66,9 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
       setActiveDropdown('mandalName');
       return;
     }
-    if (name === 'cityName') {
-      setForm(prev => ({ ...prev, cityName: value, locationId: '' }));
-      setActiveDropdown('cityName');
+    if (name === 'city') {
+      setForm(prev => ({ ...prev, city: value }));
+      setActiveDropdown('city');
       return;
     }
     setForm(prev => ({ ...prev, [name]: value }));
@@ -82,7 +81,12 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
       return;
     }
     try {
-      const payload = { name: form.name, mobileNumber: form.mobileNumber, mandalId: form.mandalId, locationId: form.locationId || null };
+      const payload = { 
+        name: form.name, 
+        mobileNumber: form.mobileNumber, 
+        mandalId: form.mandalId, 
+        city: form.city 
+      };
       if (editingMember) {
         await updateMember({ id: editingMember.id, ...payload }).unwrap();
         toast.success('Member updated');
@@ -122,21 +126,21 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
           />
           <SearchableDropdown
             label="Location (City)"
-            name="cityName"
+            name="city"
             placeholder="Select City"
-            value={form.cityName}
+            value={form.city}
             items={cities}
             onChange={(e) => {
-              setForm(prev => ({ ...prev, cityName: e.target.value, locationId: '' }));
-              setActiveDropdown('cityName');
+              setForm(prev => ({ ...prev, city: e.target.value }));
+              setActiveDropdown('city');
               cityPagination.handleSearch(e.target.value);
             }}
             onSelect={(id, name) => { 
-              setForm(prev => ({ ...prev, locationId: id, cityName: name })); 
+              setForm(prev => ({ ...prev, city: name })); 
               setActiveDropdown(null); 
             }}
             onKeyDown={(e) => handleKeyDown(e, submitRef)}
-            isActive={activeDropdown === 'cityName'}
+            isActive={activeDropdown === 'city'}
             setActive={setActiveDropdown}
             inputRef={cityRef}
             icon={MapPin}

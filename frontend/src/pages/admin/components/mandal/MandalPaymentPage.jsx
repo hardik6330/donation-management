@@ -132,7 +132,7 @@ const MandalPaymentPage = () => {
       <AdminPageHeader
         title="Monthly Collections"
         subtitle={`Mandal payment tracking for ${formatMonth(filters.month)}`}
-        buttonText="Generate Month"
+        // buttonText="Generate Month"
         onButtonClick={() => setIsConfirmModalOpen(true)}
       />
 
@@ -179,7 +179,7 @@ const MandalPaymentPage = () => {
             <td className="px-6 py-4 text-sm font-semibold text-gray-900">{payment.member?.name}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.mobileNumber}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.mandal?.name || '-'}</td>
-            <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.location?.name || '-'}</td>
+            <td className="px-6 py-4 text-sm text-gray-700">{payment.member?.city || '-'}</td>
             <td className="px-6 py-4 text-right">
               <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
                 <IndianRupee className="w-3.5 h-3.5" />

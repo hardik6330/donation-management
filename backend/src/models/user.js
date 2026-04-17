@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
 export const User = sequelize.define('User', {
@@ -71,6 +71,36 @@ export const User = sequelize.define('User', {
   },
 }, {
   timestamps: true,
+  scopes: {
+    donor: {
+      where: { isAdmin: false }
+    },
+    admin: {
+      where: { isAdmin: true }
+    },
+    all: {
+      where: {}
+    },
+    search(query) {
+      if (!query) return {};
+      return {
+        where: {
+          [Op.or]: [
+            { name: { [Op.like]: `%${query}%` } },
+            { email: { [Op.like]: `%${query}%` } },
+            { mobileNumber: { [Op.like]: `%${query}%` } }
+          ]
+        }
+      };
+    },
+    location(city, state, country) {
+      const where = {};
+      if (city) where.city = { [Op.like]: `%${city}%` };
+      if (state) where.state = { [Op.like]: `%${state}%` };
+      if (country) where.country = { [Op.like]: `%${country}%` };
+      return { where };
+    }
+  }
   // indexes: [
   //   { fields: ['name'] },
   //   { fields: ['mobileNumber'] },

@@ -63,7 +63,7 @@ const MandalMemberList = () => {
   };
 
   const clearFilters = () => {
-    setFilters({ search: '', mandalId: '', isActive: '', page: 1, limit: 10 });
+    setFilters({ search: '', mandalId: '', city: '', isActive: '', page: 1, limit: 10 });
   };
 
   const handlePageChange = (page) => setFilters(prev => ({ ...prev, page }));
@@ -113,6 +113,7 @@ const MandalMemberList = () => {
   const filterFields = [
     { name: 'search', label: 'Search', icon: Search, placeholder: 'Name or Mobile...' },
     { name: 'mandalId', label: 'Mandal', type: 'select', icon: UsersRound, options: mandalOptions, placeholder: 'All Mandals' },
+    { name: 'city', label: 'City', icon: Search, placeholder: 'Enter City...' },
     { name: 'isActive', label: 'Status', type: 'select', icon: CheckCircle, options: [{ value: 'true', label: 'Active' }, { value: 'false', label: 'Inactive' }] }
   ];
 
@@ -142,7 +143,7 @@ const MandalMemberList = () => {
             <td className="px-6 py-4 text-sm font-semibold text-gray-900">{member.name}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{member.mobileNumber}</td>
             <td className="px-6 py-4 text-sm text-gray-700">{member.mandal?.name || '-'}</td>
-            <td className="px-6 py-4 text-sm text-gray-700">{member.location?.name || '-'}</td>
+            <td className="px-6 py-4 text-sm text-gray-700">{member.city || '-'}</td>
             <td className="px-6 py-4">
               <button onClick={() => toggleStatus(member)} className={`flex items-center gap-1.5 text-xs font-bold transition-all ${getActiveHoverColor(member.isActive)}`}>
                 {member.isActive ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}

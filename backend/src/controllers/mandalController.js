@@ -85,21 +85,27 @@ export const deleteMandal = asyncHandler(async (req, res) => {
 // ===== MANDAL MEMBER CRUD =====
 
 export const addMember = asyncHandler(async (req, res) => {
-  const { name, mobileNumber, mandalId, locationId } = req.body;
+  const { name, mobileNumber, mandalId, city } = req.body;
 
-  const member = await MandalMember.create({ name, mobileNumber, mandalId, locationId });
+  const member = await MandalMember.create({ 
+    name, 
+    mobileNumber, 
+    mandalId, 
+    city 
+  });
   return sendSuccess(res, member, 'Member added successfully', 201);
 });
 
 export const getAllMembers = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
-  const { search, mandalId, isActive } = req.query;
+  const { search, mandalId, isActive, city } = req.query;
 
   const where = {};
   if (search && search.trim() !== '') {
     where[Op.or] = [
       { name: { [Op.like]: `%${search}%` } },
-      { mobileNumber: { [Op.like]: `%${search}%` } }
+      { mobileNumber: { [Op.like]: `%${search}%` } },
+      { city: { [Op.like]: `%${search}%` } }
     ];
   }
   if (mandalId && mandalId.trim() !== '') {
@@ -108,12 +114,12 @@ export const getAllMembers = asyncHandler(async (req, res) => {
   if (isActive !== undefined && isActive !== '') {
     where.isActive = isActive === 'true';
   }
+  if (city) where.city = { [Op.like]: `%${city}%` };
 
   const { count, rows } = await MandalMember.findAndCountAll({
     where,
     include: [
-      { model: Mandal, as: 'mandal', attributes: ['id', 'name'] },
-      { model: Location, as: 'location', attributes: ['id', 'name', 'type'] }
+      { model: Mandal, as: 'mandal', attributes: ['id', 'name'] }
     ],
     order: [['name', 'ASC']],
     limit,

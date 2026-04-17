@@ -25,21 +25,15 @@ export const addExpense = asyncHandler(async (req, res) => {
 // 2. Get All Expenses with Filters
 export const getAllExpenses = asyncHandler(async (req, res) => {
   const { page, limit } = getPaginationParams(req.query);
-  const { startDate, endDate, category, gaushalaId, kathaId, minAmount, maxAmount, paymentMode } = req.query;
+  const { startDate, endDate, category, gaushalaId, kathaId, minAmount, maxAmount, paymentMode, search } = req.query;
+
+  const activeScopes = [
+    { method: ['byCategory', category] },
+    { method: ['byDateRange', startDate, endDate] },
+    { method: ['search', search] }
+  ].filter(s => s !== null && s !== undefined);
 
   const where = {};
-
-  if (startDate && endDate) {
-    where.date = { [Op.between]: [startDate, endDate] };
-  } else if (startDate) {
-    where.date = { [Op.gte]: startDate };
-  } else if (endDate) {
-    where.date = { [Op.lte]: endDate };
-  }
-
-  if (category) {
-    where.category = category;
-  }
 
   if (gaushalaId) {
     where.gaushalaId = gaushalaId;
@@ -59,7 +53,7 @@ export const getAllExpenses = asyncHandler(async (req, res) => {
     if (maxAmount) where.amount[Op.lte] = maxAmount;
   }
 
-  const { count, rows } = await Expense.findAndCountAll({
+  const { count, rows } = await Expense.scope(activeScopes).findAndCountAll({
     where,
     include: [
       { model: Gaushala, as: 'gaushala', attributes: ['id', 'name'] },

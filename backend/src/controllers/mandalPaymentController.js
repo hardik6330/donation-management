@@ -68,7 +68,8 @@ export const getMonthlyPayments = asyncHandler(async (req, res) => {
   if (search && search.trim() !== '') {
     memberWhere[Op.or] = [
       { name: { [Op.like]: `%${search}%` } },
-      { mobileNumber: { [Op.like]: `%${search}%` } }
+      { mobileNumber: { [Op.like]: `%${search}%` } },
+      { city: { [Op.like]: `%${search}%` } }
     ];
   }
 
@@ -79,8 +80,7 @@ export const getMonthlyPayments = asyncHandler(async (req, res) => {
       as: 'member',
       where: memberWhere,
       include: [
-        { model: Mandal, as: 'mandal', attributes: ['id', 'name'] },
-        { model: Location, as: 'location', attributes: ['id', 'name'] }
+        { model: Mandal, as: 'mandal', attributes: ['id', 'name'] }
       ]
     }],
     order: [[{ model: MandalMember, as: 'member' }, 'name', 'ASC']],

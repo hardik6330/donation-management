@@ -9,21 +9,15 @@ import { notFound, badRequest } from '../utils/httpError.js';
 export const getGaushalas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
   const { search, city, state, country } = req.query;
-  let where = {};
-
-  if (search && search.trim() !== '') {
-    where.name = { [Op.like]: `%${search}%` };
-  }
-
-  // String-based Location Filter
-  if (city) where['$location.name$'] = { [Op.like]: `%${city}%` };
-  if (state) where['$location.parent.name$'] = { [Op.like]: `%${state}%` };
-  if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
+  
+  const activeScopes = [
+    { method: ['search', search] },
+    { method: ['location', city, state, country] }
+  ].filter(s => s !== null && s !== undefined);
 
   // If only specific fields are requested (e.g. id, name), avoid complex logic
   if (requestedFields) {
-    const { count, rows } = await Gaushala.findAndCountAll({
-      where,
+    const { count, rows } = await Gaushala.scope(activeScopes).findAndCountAll({
       attributes: requestedFields,
       order: [['name', 'ASC']],
       limit: queryLimit,
@@ -33,8 +27,7 @@ export const getGaushalas = asyncHandler(async (req, res) => {
     return sendSuccess(res, response, 'Gaushalas records fetched successfully');
   }
 
-  const { count, rows } = await Gaushala.findAndCountAll({
-    where,
+  const { count, rows } = await Gaushala.scope(activeScopes).findAndCountAll({
     include: [
       {
         model: Location,
