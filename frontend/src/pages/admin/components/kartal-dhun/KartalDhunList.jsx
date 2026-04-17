@@ -46,7 +46,7 @@ const KartalDhunList = ({
         onClearFilters={onClearFilters} 
       />
 
-      <AdminTable headers={tableHeaders} isLoading={isLoading} emptyMessage="No kartal dhun records found.">
+      <AdminTable headers={tableHeaders} isLoading={isLoading} emptyMessage="No dhun mandal records found.">
         {records.map((record) => (
           <tr key={record.id} className="hover:bg-gray-50 transition-colors">
             <td className="px-6 py-4 text-sm font-semibold text-gray-900">{record.name}</td>
