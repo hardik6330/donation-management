@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { IndianRupee, Loader2, PlusCircle, MessageSquare, CreditCard } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -14,6 +14,11 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
   const [paymentModeName, setPaymentModeName] = useState('Cash');
   const [activeDropdown, setActiveDropdown] = useState(null);
 
+  const paymentModeRef = useRef(null);
+  const addAmountRef = useRef(null);
+  const notesRef = useRef(null);
+  const submitRef = useRef(null);
+
   const paymentModes = [
     { id: 'cash', name: 'Cash' },
     { id: 'online', name: 'Online' },
@@ -26,8 +31,31 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
       setNotes('');
       setPaymentMode('cash');
       setPaymentModeName('Cash');
+    } else {
+      setTimeout(() => paymentModeRef.current?.focus(), 100);
     }
   }, [isOpen]);
+
+  const handleKeyDown = (e, nextRef, prevRef) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (nextRef === submitRef) {
+        handleSubmit(e);
+      } else if (nextRef?.current) {
+        nextRef.current.focus();
+      }
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && prevRef?.current) {
+      if (e.target.selectionStart === 0 || e.target.selectionStart === undefined) {
+        e.preventDefault();
+        prevRef.current.focus();
+      }
+    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && nextRef?.current) {
+      if (e.target.selectionStart === e.target.value.length || e.target.selectionStart === undefined) {
+        e.preventDefault();
+        nextRef.current.focus();
+      }
+    }
+  };
 
   if (!donation) return null;
 
@@ -116,12 +144,15 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
               setPaymentMode(id);
               setPaymentModeName(name);
               setActiveDropdown(null);
+              setTimeout(() => addAmountRef.current?.focus(), 100);
             }}
             isActive={activeDropdown === 'paymentModeName'}
             setActive={setActiveDropdown}
             required
             icon={CreditCard}
             allowTransliteration={false}
+            inputRef={paymentModeRef}
+            onKeyDown={(e) => handleKeyDown(e, addAmountRef, null)}
           />
 
           <div className="space-y-2">
@@ -134,6 +165,8 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
               onChange={handleAddAmountChange}
               required
               placeholder="0"
+              ref={addAmountRef}
+              onKeyDown={(e) => handleKeyDown(e, notesRef, paymentModeRef)}
               className="w-full px-4 py-3 text-lg font-bold border border-emerald-300 bg-emerald-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
             />
           </div>
@@ -147,6 +180,8 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             icon={MessageSquare}
+            inputRef={notesRef}
+            onKeyDown={(e) => handleKeyDown(e, submitRef, addAmountRef)}
           />
         </div>
 
@@ -169,8 +204,10 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
             Cancel
           </button>
           <button
+            ref={submitRef}
             type="submit"
             disabled={isLoading}
+            onKeyDown={(e) => handleKeyDown(e, null, notesRef)}
             className="flex-1 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

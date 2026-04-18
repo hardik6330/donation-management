@@ -287,9 +287,15 @@ const AddDonationModal = ({
       return;
     }
 
-    if (!addForm.categoryId && !addForm.gaushalaId && !addForm.kathaId) {
-      toast.error('Please select any one: Category, Gaushala, or Katha');
+    if (!addForm.categoryId) {
+      toast.error('Please select a Category');
       categoryRef.current?.focus();
+      return;
+    }
+
+    if (!addForm.gaushalaId && !addForm.kathaId) {
+      toast.error('Please select any one: Gaushala or Katha');
+      gaushalaRef.current?.focus();
       return;
     }
 
@@ -513,6 +519,7 @@ const AddDonationModal = ({
                   inputRef={categoryRef}
                   icon={Tag}
                   allowTransliteration={false}
+                  required
                 />
                 <SearchableDropdown
                   label="Gaushala"

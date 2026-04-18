@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Edit, IndianRupee, Loader2 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -8,14 +8,43 @@ const EditPartialPaymentModal = ({ isOpen, onClose, donation }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
   const [remainingAmountInput, setRemainingAmountInput] = useState('');
 
+  const remainingAmountRef = useRef(null);
+  const submitRef = useRef(null);
+
   useEffect(() => {
     if (!donation) return;
     const currentRemaining = Number(donation.remainingAmount || 0);
     setRemainingAmountInput(currentRemaining ? currentRemaining.toLocaleString('en-IN') : '');
   }, [donation]);
 
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => remainingAmountRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = (e, nextRef, prevRef) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (nextRef === submitRef) {
+        handleSubmit(e);
+      } else if (nextRef?.current) {
+        nextRef.current.focus();
+      }
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && prevRef?.current) {
+      if (e.target.selectionStart === 0 || e.target.selectionStart === undefined) {
+        e.preventDefault();
+        prevRef.current.focus();
+      }
+    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && nextRef?.current) {
+      if (e.target.selectionStart === e.target.value.length || e.target.selectionStart === undefined) {
+        e.preventDefault();
+        nextRef.current.focus();
+      }
+    }
+  };
+
   const totalAmount = Number(donation?.amount || 0);
-  const minimumPaidAmount = useMemo(() => Math.ceil(totalAmount * 0.2), [totalAmount]);
   const numericRemainingAmount = Number((remainingAmountInput || '').toString().replace(/,/g, '')) || 0;
   const paidAmount = totalAmount - numericRemainingAmount;
 
@@ -41,11 +70,6 @@ const EditPartialPaymentModal = ({ isOpen, onClose, donation }) => {
 
     if (numericRemainingAmount >= totalAmount) {
       toast.error('Remaining amount must be less than total donation amount');
-      return;
-    }
-
-    if (paidAmount < minimumPaidAmount) {
-      toast.error(`Paid amount must be at least 20% (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
       return;
     }
 
@@ -93,6 +117,8 @@ const EditPartialPaymentModal = ({ isOpen, onClose, donation }) => {
             onChange={handleRemainingAmountChange}
             placeholder="0"
             required
+            ref={remainingAmountRef}
+            onKeyDown={(e) => handleKeyDown(e, submitRef, null)}
             className="w-full px-4 py-3 text-lg font-bold border border-green-300 bg-green-50 rounded-xl focus:ring-2 focus:ring-green-500 outline-none transition"
           />
           <p className="text-xs text-gray-500">
@@ -114,8 +140,10 @@ const EditPartialPaymentModal = ({ isOpen, onClose, donation }) => {
             Cancel
           </button>
           <button
+            ref={submitRef}
             type="submit"
             disabled={isLoading}
+            onKeyDown={(e) => handleKeyDown(e, null, remainingAmountRef)}
             className="flex-1 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { CreditCard, Loader2, Edit, IndianRupee } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
@@ -14,7 +14,37 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
   const [statusName, setStatusName] = useState('Completed');
   const [paidAmount, setPaidAmount] = useState('');
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const paymentModeRef = useRef(null);
+  const statusRef = useRef(null);
   const paidAmountRef = useRef(null);
+  const submitRef = useRef(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => paymentModeRef.current?.focus(), 100);
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = (e, nextRef, prevRef) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (nextRef === submitRef) {
+        handleSubmit(e);
+      } else if (nextRef?.current) {
+        nextRef.current.focus();
+      }
+    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && prevRef?.current) {
+      if (e.target.selectionStart === 0 || e.target.selectionStart === undefined) {
+        e.preventDefault();
+        prevRef.current.focus();
+      }
+    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && nextRef?.current) {
+      if (e.target.selectionStart === e.target.value.length || e.target.selectionStart === undefined) {
+        e.preventDefault();
+        nextRef.current.focus();
+      }
+    }
+  };
 
   const paymentModes = [
     { id: 'cash', name: 'Cash' },
@@ -30,7 +60,6 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
   if (!donation) return null;
 
   const totalAmount = Number(donation.amount || 0);
-  const minimumPaidAmount = Math.ceil(totalAmount * 0.2);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -46,10 +75,6 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
       const numericPaid = Number(String(paidAmount).replace(/,/g, ''));
       if (!paidAmount || numericPaid <= 0) {
         toast.error('Please enter paid amount');
-        return;
-      }
-      if (numericPaid < minimumPaidAmount) {
-        toast.error(`Paid amount must be at least 20% (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
         return;
       }
       if (numericPaid >= totalAmount) {
@@ -108,12 +133,15 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
                 setPaymentMode(id);
                 setPaymentModeName(name);
                 setActiveDropdown(null);
+                setTimeout(() => statusRef.current?.focus(), 100);
               }}
               isActive={activeDropdown === 'paymentModeName'}
               setActive={setActiveDropdown}
               required
               icon={CreditCard}
               allowTransliteration={false}
+              inputRef={paymentModeRef}
+              onKeyDown={(e) => handleKeyDown(e, statusRef, null)}
             />
             <SearchableDropdown
               label="Status"
@@ -131,6 +159,8 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
                 setActiveDropdown(null);
                 if (id === 'partially_paid') {
                   setTimeout(() => paidAmountRef.current?.focus(), 100);
+                } else {
+                  setTimeout(() => submitRef.current?.focus(), 100);
                 }
               }}
               isActive={activeDropdown === 'statusName'}
@@ -138,6 +168,8 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
               required
               icon={CreditCard}
               allowTransliteration={false}
+              inputRef={statusRef}
+              onKeyDown={(e) => handleKeyDown(e, status === 'partially_paid' ? paidAmountRef : submitRef, paymentModeRef)}
             />
           </div>
 
@@ -151,6 +183,7 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
                 value={paidAmount}
                 onChange={handlePaidAmountChange}
                 inputRef={paidAmountRef}
+                onKeyDown={(e) => handleKeyDown(e, submitRef, statusRef)}
                 icon={IndianRupee}
               />
               {paidAmount && (() => {
@@ -169,9 +202,6 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
                 }
                 return null;
               })()}
-              <p className="text-[10px] text-gray-500 italic">
-                * Minimum 20% (₹{minimumPaidAmount.toLocaleString('en-IN')}) payment required for partial.
-              </p>
             </div>
           )}
         </div>
@@ -185,8 +215,10 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
             Cancel
           </button>
           <button
+            ref={submitRef}
             type="submit"
             disabled={isLoading}
+            onKeyDown={(e) => handleKeyDown(e, null, status === 'partially_paid' ? paidAmountRef : statusRef)}
             className="flex-1 px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

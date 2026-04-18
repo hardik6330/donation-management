@@ -141,12 +141,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   const partialPaidAmount = Number(paidAmount);
 
   if (isPartialPay) {
-    const minimumPaidAmount = Math.ceil(totalAmount * 0.2);
     if (!Number.isFinite(partialPaidAmount) || partialPaidAmount <= 0) {
       throw badRequest('Paid amount is required for partial payment');
-    }
-    if (partialPaidAmount < minimumPaidAmount) {
-      throw badRequest(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
     }
     if (partialPaidAmount >= totalAmount) {
       throw badRequest('Paid amount must be less than total donation amount');
@@ -503,7 +499,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
   };
 
   if (nextStatus === 'partially_paid') {
-    const minimumPaidAmount = Math.ceil(Number(nextAmount) * 0.2);
     const currentPaidAmount = Number(donation.paidAmount || 0);
     const finalPaidAmount = incomingRemainingAmount !== null
       ? Number(nextAmount) - incomingRemainingAmount
@@ -511,9 +506,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
 
     if (!Number.isFinite(finalPaidAmount) || finalPaidAmount <= 0) {
       throw badRequest('Paid amount is required for partially paid donations');
-    }
-    if (finalPaidAmount < minimumPaidAmount) {
-      throw badRequest(`Paid amount must be at least 20% of total donation (minimum ₹${minimumPaidAmount.toLocaleString('en-IN')})`);
     }
     if (finalPaidAmount > Number(nextAmount)) {
       throw badRequest('Paid amount cannot exceed total donation amount');
