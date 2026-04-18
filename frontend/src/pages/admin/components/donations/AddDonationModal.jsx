@@ -112,6 +112,7 @@ const AddDonationModal = ({
   const amountRef = useRef(null);
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
+  const isSubmittingRef = useRef(false);
 
   const gaushalas = gaushalaPagination.items;
   const kathas = kathaPagination.items;
@@ -265,6 +266,8 @@ const AddDonationModal = ({
   const handleAddSubmit = async (e) => {
     e.preventDefault();
 
+    if (isSubmittingRef.current) return;
+
     // Final Validation check
     const mobileErr = validateField('mobileNumber', addForm.mobileNumber);
     const nameErr = validateField('name', addForm.name);
@@ -301,6 +304,7 @@ const AddDonationModal = ({
 
     const rawAmount = addForm.amount.toString().replace(/,/g, '');
 
+    isSubmittingRef.current = true;
     try {
       const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
       await createDonation({
@@ -330,8 +334,10 @@ const AddDonationModal = ({
       toast.success('Donation added successfully');
       resetAddForm();
       onClose();
-    } catch (error) { 
+    } catch (error) {
       handleMutationError(error, 'Failed to add donation');
+    } finally {
+      isSubmittingRef.current = false;
     }
   };
 
