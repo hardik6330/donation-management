@@ -1,0 +1,161 @@
+========================================================================
+ DATABASE EXPORT / IMPORT - SIMPLE GUIDE
+========================================================================
+
+WHAT THIS DOES:
+ - Exports full Railway database into a single SQL file.
+ - Use that file to load the SAME data into any other database.
+ - Run the export anytime. File is always a fresh full copy.
+
+
+========================================================================
+ FIRST TIME SETUP (do only once)
+========================================================================
+
+Install the export tool:
+
+    sudo apt update
+    sudo apt install mariadb-client -y
+
+Check it works:
+
+    mysqldump --version
+
+
+========================================================================
+ HOW TO EXPORT (run anytime you want fresh data)
+========================================================================
+
+STEP 1 - Go to backend folder:
+
+    cd /home/nexcess/Documents/palak-test/Donation-Manage/backend
+
+
+STEP 2 - Run export command (copy-paste this whole thing):
+
+    mysqldump -h turntable.proxy.rlwy.net -P 23434 -u root \
+      -pRlxmugQfmCFxNfCvnNlLjaebYwnCtlZb \
+      --single-transaction --no-tablespaces \
+      --default-character-set=utf8mb4 \
+      railway > railway_backup.sql
+
+
+STEP 3 - Clean the file so import works everywhere:
+
+    sed -i \
+      -e 's/utf8mb4_0900_ai_ci/utf8mb4_general_ci/g' \
+      -e 's/ CHARACTER SET utf8mb4 COLLATE utf8mb4_bin//g' \
+      -e 's/ COLLATE utf8mb4_bin//g' \
+      railway_backup.sql
+
+
+DONE. File is ready: railway_backup.sql
+
+
+========================================================================
+ HOW TO IMPORT INTO ANOTHER DATABASE
+========================================================================
+
+EASY WAY (phpMyAdmin):
+  1. Open phpMyAdmin on the target server.
+  2. Create a new empty database
+       Name   : railway_backup   (or any name)
+       Charset: utf8mb4
+       Collate: utf8mb4_general_ci
+  3. Click on that database in the left sidebar.
+  4. Click "Import" tab at the top.
+  5. Click "Choose File" > select railway_backup.sql
+  6. Click "Go" button at the bottom.
+  7. Wait for "Import has been successfully finished" message.
+
+
+CLI WAY (faster for big files):
+
+    mysql -h TARGET_HOST -u TARGET_USER -p TARGET_DB < railway_backup.sql
+
+
+========================================================================
+ IMPORTANT: NO DUPLICATE DATA (very important to understand)
+========================================================================
+
+Every time you run the export command:
+  - The old railway_backup.sql file is REPLACED with fresh data.
+  - File always has the FULL current data from Railway.
+  - No need to delete the old file. It just gets overwritten.
+
+Example:
+
+  TODAY (Day 1):
+    - Export runs.
+    - File has: 100 donations, 50 users (all current data).
+
+  AFTER 7 DAYS (Day 8):
+    - Users added 30 more donations, 5 more users on Railway.
+    - Run the export command again.
+    - File is REPLACED. Now has: 130 donations, 55 users.
+    - All old data + all new data = complete snapshot.
+
+  IMPORT Day 8 file into another DB:
+    - Target DB gets all 130 donations and 55 users.
+    - No duplicates. Ever.
+    - Why? Because file has "DROP TABLE IF EXISTS" before each table,
+      so old tables are removed and recreated with fresh full data.
+
+
+========================================================================
+ AFTER IMPORT - UPDATE YOUR APP
+========================================================================
+
+Edit:  backend/.env
+
+Change these to match your new database:
+
+    DB_HOST=new_host
+    DB_PORT=3306
+    DB_NAME=railway_backup
+    DB_USER=your_user
+    DB_PASSWORD=your_password
+
+Restart backend:
+
+    npm run dev
+
+
+========================================================================
+ COMMON PROBLEMS
+========================================================================
+
+PROBLEM: "mysqldump: command not found"
+ FIX:    Run "sudo apt install mariadb-client -y"
+
+PROBLEM: "unknown variable 'set-gtid-purged=OFF'"
+ FIX:    You are using older flags. Use the command in STEP 2 above.
+
+PROBLEM: "#1005 Foreign key constraint incorrectly formed"
+ FIX:    Old tables left in target DB. In phpMyAdmin:
+          - Click the database name in the left sidebar.
+          - Click "Operations" tab.
+          - Under "Remove database" click "Drop".
+          - Recreate the database fresh.
+          - Import again.
+
+PROBLEM: "Import too slow in phpMyAdmin"
+ FIX:    Use CLI import command instead (see IMPORT section above).
+
+
+========================================================================
+ QUICK COPY-PASTE (full export in one command)
+========================================================================
+
+cd /home/nexcess/Documents/palak-test/Donation-Manage/backend && \
+mysqldump -h turntable.proxy.rlwy.net -P 23434 -u root \
+  -pRlxmugQfmCFxNfCvnNlLjaebYwnCtlZb \
+  --single-transaction --no-tablespaces \
+  --default-character-set=utf8mb4 \
+  railway > railway_backup.sql && \
+sed -i -e 's/utf8mb4_0900_ai_ci/utf8mb4_general_ci/g' \
+       -e 's/ CHARACTER SET utf8mb4 COLLATE utf8mb4_bin//g' \
+       -e 's/ COLLATE utf8mb4_bin//g' railway_backup.sql && \
+echo "DONE! File ready: $(ls -lh railway_backup.sql)"
+
+========================================================================
