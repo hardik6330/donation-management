@@ -374,8 +374,14 @@ const Donate = () => {
       toast.warning('Please enter a valid donation amount');
       return;
     }
-    if (!formData.categoryId && !formData.gaushalaId && !formData.kathaId) {
-      toast.warning('Please select at least one: Category, Gaushala, or Active Katha');
+    if (!formData.categoryId) {
+      toast.warning('Please select a Category');
+      categoryDropdownRef.current?.focus();
+      return;
+    }
+    if (!formData.gaushalaId && !formData.kathaId) {
+      toast.warning('Please select any one: Gaushala or Active Katha');
+      gaushalaDropdownRef.current?.focus();
       return;
     }
     try {
@@ -553,7 +559,7 @@ const Donate = () => {
               <div className="flex items-center gap-2 text-blue-600 font-bold text-sm uppercase tracking-wider">
                 <IndianRupee className="w-4 h-4" /> Donation Details
               </div>
-              <p className="text-xs text-gray-500 mt-1">Please select at least one: Category, Gaushala, or Katha</p>
+              <p className="text-xs text-gray-500 mt-1">Category is required, and please select any one: Gaushala or Katha</p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
