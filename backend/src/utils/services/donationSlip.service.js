@@ -106,7 +106,7 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       const receiptDate = (paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')).toUpperCase();
       const amountValue = Number(amount || 0);
       const amountText = amountValue.toLocaleString('en-IN');
-      const amountInWords = `${numberToGujaratiWords(Math.floor(amountValue))} રૂપિયા માત્ર`;
+      const amountInWords = `${numberToGujaratiWords(Math.floor(amountValue))} રૂપિયા પૂરા`;
 
       // Render template exactly to the custom page size (no whitespace)
       doc.image(slipTemplatePath, 0, 0, { width: W, height: H });
