@@ -78,7 +78,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     paymentMode,
     status,
     referenceName,
-    paidAmount
+    paidAmount,
+    slipNo
   } = req.body;
 
   // 1. Generate Cause String based on Category, Location, and Katha
@@ -198,7 +199,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         categoryId,
         gaushalaId,
         kathaId,
-        causeString
+        causeString,
+        slipNo
       });
     } else {
       // Fallback for non-Redis environments (Legacy fire-and-forget)
@@ -220,7 +222,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             donation.paymentDate,
             gaushala,
             katha,
-            locationAddress
+            locationAddress,
+            slipNo
           );
 
           const tasks = [];
@@ -572,7 +575,8 @@ export const updateDonation = asyncHandler(async (req, res) => {
             donation.paymentDate, 
             gaushala, 
             katha,
-            locationAddress
+            locationAddress,
+            '-' // Default as slipNo is not saved in DB
           );
           
           const tasks = [];

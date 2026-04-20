@@ -55,6 +55,7 @@ const AddDonationModal = ({
     paidAmount: '',
     paymentMode: storedPrefs.paymentMode || 'cash',
     status: storedPrefs.status || 'completed',
+    slipNo: '',
   });
 
   const [addDropdownLabels, setAddDropdownLabels] = useState({
@@ -82,6 +83,8 @@ const AddDonationModal = ({
       const paid = Number(value.toString().replace(/,/g, ''));
       if (!value || paid <= 0) error = 'Enter paid amount';
       else if (paid >= total) error = 'Paid amount must be less than total';
+    } else if (name === 'slipNo') {
+      if (!value) error = 'Slip number is required';
     }
     
     setErrors(prev => ({ ...prev, [name]: error }));
@@ -109,6 +112,7 @@ const AddDonationModal = ({
   const referenceRef = useRef(null);
   const paymentModeRef = useRef(null);
   const statusRef = useRef(null);
+  const slipNoRef = useRef(null);
   const amountRef = useRef(null);
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
@@ -271,10 +275,11 @@ const AddDonationModal = ({
     // Final Validation check
     const mobileErr = validateField('mobileNumber', addForm.mobileNumber);
     const nameErr = validateField('name', addForm.name);
+    const slipNoErr = validateField('slipNo', addForm.slipNo);
     const amountErr = validateField('amount', addForm.amount);
     const paidAmountErr = addForm.status === 'partially_paid' ? validateField('paidAmount', addForm.paidAmount) : '';
 
-    if (mobileErr || nameErr || amountErr || paidAmountErr) {
+    if (mobileErr || nameErr || slipNoErr || amountErr || paidAmountErr) {
       toast.error('Please fix the errors in the form');
       return;
     }
@@ -361,6 +366,7 @@ const AddDonationModal = ({
       paidAmount: '',
       paymentMode: lastPrefs.paymentMode || 'cash',
       status: lastPrefs.status || 'completed',
+      slipNo: '',
     });
     setAddDropdownLabels({
       categoryName: lastPrefs.categoryName || '',
@@ -620,7 +626,7 @@ const AddDonationModal = ({
                   placeholder="0"
                   value={addForm.amount}
                   onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : submitRef, statusRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : slipNoRef, statusRef)}
                   inputRef={amountRef}
                   icon={IndianRupee}
                   error={errors.amount}
@@ -633,13 +639,26 @@ const AddDonationModal = ({
                     placeholder="0"
                     value={addForm.paidAmount}
                     onChange={handleAddInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, submitRef, amountRef)}
+                    onKeyDown={(e) => handleKeyDown(e, slipNoRef, amountRef)}
                     inputRef={paidAmountRef}
                     icon={IndianRupee}
                     error={errors.paidAmount}
                   />
                 )}
               </div>
+
+              <FormInput
+                label="Slip Number"
+                name="slipNo"
+                placeholder="Enter slip number"
+                required
+                value={addForm.slipNo}
+                onChange={handleAddInputChange}
+                onKeyDown={(e) => handleKeyDown(e, submitRef, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
+                inputRef={slipNoRef}
+                icon={Tag}
+                error={errors.slipNo}
+              />
 
               {addForm.status === 'partially_paid' && addForm.amount && addForm.paidAmount && (() => {
                 const total = Number(addForm.amount.toString().replace(/,/g, ''));
@@ -675,7 +694,6 @@ const AddDonationModal = ({
             ref={submitRef}
             type="submit"
             disabled={isAdding}
-            onKeyDown={(e) => handleKeyDown(e, null, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
             className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-50 shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
           >
             {isAdding ? <Loader2 className="animate-spin" /> : <Plus className="w-5 h-5" />}

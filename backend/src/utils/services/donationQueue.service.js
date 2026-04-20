@@ -26,7 +26,7 @@ if (redis) {
   const worker = new Worker(
     QUEUE_NAME,
     async (job) => {
-      const { donationId, userId, amount, categoryId, gaushalaId, kathaId, causeString } = job.data;
+      const { donationId, userId, amount, categoryId, gaushalaId, kathaId, causeString, slipNo } = job.data;
       console.log(`[Queue] Processing donation ${donationId} for user ${userId}`);
 
       try {
@@ -50,7 +50,8 @@ if (redis) {
           donation.paymentDate,
           gaushala,
           katha,
-          locationAddress
+          locationAddress,
+          slipNo
         );
 
         // 2. Upload to Cloudinary

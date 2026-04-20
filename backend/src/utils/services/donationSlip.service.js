@@ -63,7 +63,7 @@ const numberToGujaratiWords = (num) => {
 /**
  * Generate a donation slip PDF buffer
  */
-export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null, locationAddress = null) => {
+export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null, locationAddress = null, slipNo = '-') => {
   return new Promise((resolve, reject) => {
     const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
     let docOptions = { size: 'A4', margin: 0 };
@@ -128,6 +128,10 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       // Date
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
         .text(receiptDate, px(0.1011), py(0.420), { width: W * 0.18, align: 'left', lineBreak: false });
+
+      // Slip Number (નં.)
+      doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
+        .text(slipNo, px(0.85), py(0.425), { width: W * 0.18, align: 'left', lineBreak: false });
 
       // Handle donor name with fallback font for English characters
       const donorNameFont = (hasGujaratiFont && hasNonLatin(donorName)) ? 'Gujarati-Bold' : 'Helvetica-Bold';
@@ -206,11 +210,17 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     doc.fontSize(9).fillColor('#ffffff').font('Helvetica-Bold')
       .text(donationId.substring(0, 18) + '...', W - 230, 44, { width: 180, align: 'right' });
 
+    // Header: Slip No. on right
+    doc.fontSize(8).fillColor('#94b8db').font('Helvetica')
+      .text('SLIP NO.', W - 230, 68, { width: 180, align: 'right' });
+    doc.fontSize(10).fillColor('#ffffff').font('Helvetica-Bold')
+      .text(slipNo, W - 230, 82, { width: 180, align: 'right' });
+
     // Header: Date on right
     doc.fontSize(8).fillColor('#94b8db').font('Helvetica')
-      .text('DATE', W - 230, 68, { width: 180, align: 'right' });
+      .text('DATE', W - 230, 106, { width: 180, align: 'right' });
     doc.fontSize(10).fillColor('#ffffff').font('Helvetica-Bold')
-      .text(paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '-', W - 230, 82, { width: 180, align: 'right' });
+      .text(paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : '-', W - 230, 120, { width: 180, align: 'right' });
 
     // ─── Amount banner ───
     const bannerY = 115;
