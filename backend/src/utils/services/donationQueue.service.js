@@ -66,38 +66,48 @@ if (redis) {
         // 2. Upload to Cloudinary
         logger.info(`[Queue] ☁️ Uploading PDF to Cloudinary for Donation: ${donationId}...`);
         const url = await uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id);
+
+        // 3. Update DB with URL
         await donation.update({ slipUrl: url });
         logger.info(`[Queue] ✅ Uploaded to Cloudinary: ${url}`);
 
-        // 3. WhatsApp Notification
+        // 4. Send Notifications in Parallel (WhatsApp & Email)
+        const notificationTasks = [];
+
+        // WhatsApp Notification
         if (user.mobileNumber) {
           logger.info(`[Queue] 📱 Sending WhatsApp notification to: ${user.mobileNumber}...`);
           const categoryName = category?.name || causeString || 'ગૌસેવા';
           const locationName = user.city || user.state || user.country || 'કોબડી';
 
-          await sendDetailedDonationSuccessWhatsAppPDF(
+          const whatsappTask = sendDetailedDonationSuccessWhatsAppPDF(
             user.mobileNumber,
             user.name,
             amount,
             categoryName,
             locationName,
             url
-          );
-          logger.info(`[Queue] ✅ WhatsApp sent successfully to: ${user.mobileNumber}`);
-        } else {
-          logger.warn(`[Queue] ⚠️ Skip WhatsApp: Mobile number missing for User: ${userId}`);
+          ).then(() => logger.info(`[Queue] ✅ WhatsApp sent successfully to: ${user.mobileNumber}`))
+           .catch(err => logger.error(`[Queue] ❌ WhatsApp failed:`, err));
+          
+          notificationTasks.push(whatsappTask);
         }
 
-        // 4. Email Notification
+        // Email Notification
         if (user.email) {
           logger.info(`[Queue] 📧 Sending Email notification to: ${user.email}...`);
           const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
-          await sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
+          const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
             { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-          ]);
-          logger.info(`[Queue] ✅ Email sent successfully to: ${user.email}`);
-        } else {
-          logger.warn(`[Queue] ⚠️ Skip Email: Email address missing for User: ${userId}`);
+          ]).then(() => logger.info(`[Queue] ✅ Email sent successfully to: ${user.email}`))
+            .catch(err => logger.error(`[Queue] ❌ Email failed:`, err));
+          
+          notificationTasks.push(emailTask);
+        }
+
+        // Wait for all notifications to finish
+        if (notificationTasks.length > 0) {
+          await Promise.all(notificationTasks);
         }
 
         logger.info(`[Queue] ✨ ALL processes completed for Donation: ${donationId}`);

@@ -66,18 +66,12 @@ const numberToGujaratiWords = (num) => {
 export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null, locationAddress = null, slipNo = '-') => {
   return new Promise((resolve, reject) => {
     const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
-    let docOptions = { size: 'A4', margin: 0 };
+    
+    // Optimization: Fixed dimensions for the templates to avoid opening image twice
+     // Primary template (rasid-template.png) is 1855 x 1166
+     let docOptions = { size: [1855, 1166], margin: 0 }; 
 
-    if (slipTemplatePath) {
-      // Get image dimensions to set custom page size and avoid whitespace
-      const templateImage = new PDFDocument().openImage(slipTemplatePath);
-      docOptions = {
-        size: [templateImage.width, templateImage.height],
-        margin: 0
-      };
-    }
-
-    const doc = new PDFDocument(docOptions);
+     const doc = new PDFDocument(docOptions);
 
     // Register Gujarati Unicode fonts
     if (existsSync(FONTS.REGULAR)) doc.registerFont('Gujarati-Regular', FONTS.REGULAR);
@@ -367,7 +361,11 @@ export const uploadSlipToCloudinary = async (pdfBuffer, donorName, mobileNumber,
       resource_type: 'image',
       format: 'pdf',
       overwrite: true,
-      timeout: 60000, // 60 seconds timeout
+      timeout: 60000,
+      // Performance optimization: tell Cloudinary this is a simple upload
+      // without heavy transformations during the upload process
+      type: 'upload',
+      flags: 'attachment:false'
     };
 
     const uploadStream = cloudinary.uploader.upload_stream(
