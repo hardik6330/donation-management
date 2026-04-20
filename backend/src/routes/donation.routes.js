@@ -1,12 +1,13 @@
 import express from 'express';
-import { 
-  createDonationOrder, 
-  verifyPayment, 
-  getDonations, 
-  generateQRCode, 
+import {
+  createDonationOrder,
+  verifyPayment,
+  getDonations,
+  generateQRCode,
   updateDonation,
   getDonationInstallments,
-  resendSlipWhatsApp 
+  getDonationStatus,
+  resendSlipWhatsApp
 } from '../controllers/donationController.js';
 import { validate } from '../utils/validators/validate.js';
 import { donationSchema, donationUpdateSchema } from '../utils/validators/donation.validator.js';
@@ -19,6 +20,7 @@ router.post('/order', validate(donationSchema), createDonationOrder);
 router.post('/verify', verifyPayment);
 router.get('/', getDonations);
 router.get('/:id/installments', getDonationInstallments);
+router.get('/:id/status', getDonationStatus);
 router.put('/:id', validate(donationUpdateSchema), updateDonation);
 router.post('/:id/resend-whatsapp', protect, adminOnly, resendSlipWhatsApp);
 

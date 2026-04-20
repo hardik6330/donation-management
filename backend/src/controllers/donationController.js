@@ -10,7 +10,7 @@ import { sequelize } from '../config/db.js';
 import { FRONTEND_URL } from '../config/env.js';
 // import { RAZORPAY_KEY_SECRET, RAZORPAY_KEY_ID } from '../config/env.js';
 import { Op } from 'sequelize';
-import { sendEmail, getDonationEmailTemplate } from '../utils/services/email.service.js';
+import { sendEmail, getDonationEmailTemplate, isValidEmail } from '../utils/services/email.service.js';
 import { sendDetailedDonationSMS } from '../utils/services/sms.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from '../utils/services/whatsapp.service.js';
 import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/services/donationSlip.service.js';
@@ -250,7 +250,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             .catch(err => logger.error(`[Donation ${donation.id}] Fallback Cloudinary Error:`, err));
           tasks.push(uploadTask);
 
-          if (user.email) {
+          if (isValidEmail(user.email)) {
             logger.info(`[Donation Fallback] 📧 Sending Email...`);
             const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
             const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
@@ -258,6 +258,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             ]).then(() => logger.info(`[Donation Fallback] ✅ Email sent.`))
               .catch(err => logger.error(`[Donation ${donation.id}] Fallback Email Error:`, err));
             tasks.push(emailTask);
+          } else {
+            logger.info(`[Donation Fallback] ⏭️ Email skipped (no valid email).`);
           }
 
           await Promise.all(tasks);
@@ -318,6 +320,15 @@ export const getDonationInstallments = asyncHandler(async (req, res) => {
   });
 
   return sendSuccess(res, installments, 'Donation installments fetched successfully');
+});
+
+// Lightweight endpoint: returns whether the donation slip (PDF) is ready.
+// Frontend polls this after creating a donation so the list can refetch once the worker finishes.
+export const getDonationStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const donation = await Donation.findByPk(id, { attributes: ['id', 'slipUrl'] });
+  if (!donation) throw notFound('Donation');
+  return sendSuccess(res, { ready: !!donation.slipUrl, slipUrl: donation.slipUrl || null });
 });
 
 export const getDonors = asyncHandler(async (req, res) => {

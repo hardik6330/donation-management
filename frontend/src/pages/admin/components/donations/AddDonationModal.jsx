@@ -34,6 +34,7 @@ const AddDonationModal = ({
   gaushalaPagination,
   kathaPagination,
   categoryPagination,
+  onCreated,
 }) => {
   const storedPrefs = getStoredDonationPrefs();
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
@@ -312,11 +313,15 @@ const AddDonationModal = ({
     isSubmittingRef.current = true;
     try {
       const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
-      await createDonation({
+      const result = await createDonation({
         ...addForm,
         amount: Number(rawAmount),
         paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
       }).unwrap();
+
+      // Trigger focused polling in parent so the PDF icon appears as soon as the worker finishes.
+      const newId = result?.data?.id;
+      if (newId && typeof onCreated === 'function') onCreated(newId);
 
       // Save reusable form preferences for fast entry
       localStorage.setItem(LAST_DONATION_PREFS_KEY, JSON.stringify({

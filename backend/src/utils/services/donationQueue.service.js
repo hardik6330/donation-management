@@ -2,7 +2,7 @@ import { Queue, Worker } from 'bullmq';
 import redis from '../../config/redis.js';
 import { Donation, User, Category, Gaushala, Katha, Location } from '../../models/index.js';
 import { generateDonationSlipBuffer, uploadSlipToCloudinary } from './donationSlip.service.js';
-import { sendEmail, getDonationEmailTemplate } from './email.service.js';
+import { sendEmail, getDonationEmailTemplate, isValidEmail } from './email.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from './whatsapp.service.js';
 import { sendDetailedDonationSMS } from './sms.service.js';
 import logger from '../logger.js';
@@ -98,8 +98,8 @@ if (redis) {
           );
         }
 
-        // Email Notification
-        if (user.email) {
+        // Email Notification — skip entirely if no valid email (avoids SMTP connection overhead)
+        if (isValidEmail(user.email)) {
           logger.info(`[Queue] 📧 Sending Email notification to: ${user.email}...`);
           const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
           finalTasks.push(
@@ -108,6 +108,8 @@ if (redis) {
             ]).then(() => logger.info(`[Queue] ✅ Email sent successfully to: ${user.email}`))
               .catch(err => logger.error(`[Queue] ❌ Email failed:`, err))
           );
+        } else {
+          logger.info(`[Queue] ⏭️ Email skipped (no valid email) for Donation: ${donationId}`);
         }
 
         // Execute everything together

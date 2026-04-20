@@ -17,7 +17,7 @@ const transporter = nodemailer.createTransport({
 });
 
 // 2. Validate email format
-const isValidEmail = (email) => {
+export const isValidEmail = (email) => {
   if (!email || typeof email !== 'string') return false;
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 };
