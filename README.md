@@ -17,6 +17,10 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 - **Master Data Management**: Dedicated modules for managing Gaushala, Katha, Bapu Schedule, Sevak, Mandal, and Kartal Dhun.
 - **Advanced Filtering & Export**: Powerful server-side filtering (Amount range, Date, Category) and data export to XLSX/PDF.
 - **Model Scopes**: Reusable Sequelize scopes across all models for search, filtering by status/location/date range, reducing controller complexity.
+- **Standardized Pagination**: All paginated APIs return a uniform `{ items, totalData, totalPages, currentPage, limit, fetchAll }` shape — no per-controller key overrides.
+- **CRUD Endpoint Factory**: Frontend `createCRUDEndpoints()` factory generates list/add/update/delete RTK Query endpoints for pure-CRUD modules (gaushala, katha, bapu, sevak, kartalDhun, role, expense), eliminating ~140 LOC of boilerplate.
+- **Strict Donation Validation**: Joi `donationSchema` (create) and `donationUpdateSchema` (update) enforce numeric/positivity rules on `amount`, `paidAmount`, `remainingAmount`, plus cross-field checks for partial payments.
+- **Indexed Queries**: Composite `(status, createdAt)` index on Donations plus supporting indexes on status, paymentDate, razorpay_order_id; User indexed on name, isAdmin, createdAt.
 - **Structured Logging**: Winston-based logging with file rotation (error + combined logs), colored console output, and Morgan HTTP request logging.
 - **Skeleton Loading States**: Dashboard cards with animated skeleton placeholders for smooth loading UX.
 - **Enhanced Security & Performance**: JWT-based authentication, Joi validation, Rate limiting, and **Clustered/Serverless-optimized DB initialization**.

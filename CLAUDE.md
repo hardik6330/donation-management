@@ -61,7 +61,8 @@ frontend/src/
 │   ├── AuthContext.jsx          # Auth state, JWT, logout on 401/403
 │   └── LanguageContext.jsx      # Language toggle (English/Gujarati)
 ├── services/                    # RTK Query API slices (12 files)
-│   └── apiSlice.js              # Base API slice, feature endpoints injected
+│   ├── apiSlice.js              # Base API slice, feature endpoints injected
+│   └── createCRUDEndpoints.js   # Factory for list/add/update/delete endpoints (used by 7 slices)
 ├── hooks/
 │   ├── usePermissions.js        # hasPermission(module, level) from localStorage
 │   ├── useDropdownPagination.js # Paginated server-search dropdown hook
@@ -162,16 +163,17 @@ frontend/src/
   - `GuestRoute`: Wraps login/signup, redirects authenticated users to dashboard/home.
 - **RBAC:** 3 default roles (Admin/Manager/Entry Operator). Permissions are per-module with levels: none < view < entry < full. Checked via `requirePermission(module, level)` middleware (backend) and `usePermissions()` hook (frontend).
 - **Container/Presentation:** Each admin page: `index.jsx` (state via `useTable()`, API calls, handlers) + `*List.jsx` (pure render) + `Add*Modal.jsx`.
-- **API Layer:** Single `apiSlice.js` with RTK Query. Tag-based cache invalidation on mutations.
+- **API Layer:** Single `apiSlice.js` with RTK Query. Tag-based cache invalidation on mutations. Pure-CRUD slices (gaushala, katha, bapu, sevak, kartalDhun, role, expense) use `createCRUDEndpoints({ entity, entityPlural, tag, basePath, listPath?, createPath? })` factory — non-CRUD slices (auth, donation, mandal, master, announcement) stay hand-written.
 - **Table State:** `useTable()` hook centralizes filter/pagination/limit state across all admin list pages. Supports `fetchAll` flag, custom limit parsing, and filter reset.
-- **Pagination:** `getPaginationParams()` extracts page/limit from query. Frontend `Pagination` component used in admin lists (including Location management).
+- **Pagination:** `getPaginationParams()` extracts page/limit from query. `getPaginatedResponse()` always returns `{ items, totalData, totalPages, currentPage, limit, fetchAll }` — the collection key is always `items` (standardized; no per-controller overrides). Frontend consumes via `response?.data?.items`. `Pagination` component used in admin lists.
 - **Navigation:** Global Arrow Down/Up and Enter key navigation across all form fields via `formNavigation.js`. Skips disabled fields.
 - **Donation Flow:** Multi-mode (online/cash/pay_later/cheque/partially_paid). PDF slip generation with amount in Indian words and hierarchical address (Village, Taluka, City). Email + SMS notifications. DonationInstallment model tracks partial payment history with AddPartialPaymentModal, EditPartialPaymentModal, EditPayLaterModal, and InstallmentTable components.
 - **Reports:** PDF export (with Gujarati font support via jsPDF) and Excel export (via XLSX). Advanced filtering by date range, amount, location, category.
 - **Dynamic Locations:** `findOrCreateLocationStructure` in backend allows on-the-fly creation of City > Taluka > Village hierarchy during entry in Donations, Gaushala, Katha, and Kartal Dhun modules. Frontend `useLocationDropdowns` hook manages hierarchical dropdown state.
 - **Model Scopes:** All models define Sequelize scopes (search, active, location, etc.) for reusable filtering. Controllers use `Model.scope([...scopes]).findAndCountAll()` instead of building inline where clauses. Scopes accept parameters via `{ method: ['scopeName', arg] }` syntax.
+- **DB Indexes:** Donation model indexes `status`, `createdAt`, `paymentDate`, `razorpay_order_id`, and composite `(status, createdAt)`. User model indexes `name`, `isAdmin`, `createdAt`. FK columns and unique fields (mobileNumber, email) rely on auto-indexes.
 - **Filtering:** `FilterSection` component with inline typing search (direct search in dropdown trigger). Server-side search for paginated dropdowns. `buildSearchFilter()` for generic multi-field search. `buildDonationFilter()` builds complex Sequelize where clauses.
-- **Validation:** 10-digit mobile number enforcement on input. Required Category/Gaushala/Katha validation in donation modal.
+- **Validation:** 10-digit mobile number enforcement on input. Required Category/Gaushala/Katha validation in donation modal. Donation routes use `donationSchema` (create — `paidAmount` required+positive+less than `amount` when `status='partially_paid'`) and `donationUpdateSchema` (PUT — numeric checks on amount/paidAmount/remainingAmount + cross-field `paidAmount <= amount`).
 - **Responses:** All backend responses via `sendSuccess()`/`sendError()` wrappers.
 - **WhatsApp Announcements:** Send templated WhatsApp messages to donors/sevaks with template variables and document attachments. Announcement history tracked in DB.
 - **Notification Scheduling:** Cron job (1-minute interval) processes pending partial payment reminders via Email + WhatsApp. Retry logic with attempt tracking.
