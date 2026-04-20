@@ -20,6 +20,28 @@ const SLIP_TEMPLATE_CANDIDATES = [
   path.resolve(__dirname, '../../assets/slip.jpg'),
 ];
 
+// ─── Asset Caching for Speed ───
+let cachedTemplate = null;
+let cachedFonts = { regular: null, bold: null };
+
+const loadAssets = () => {
+  if (!cachedTemplate) {
+    const templatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
+    if (templatePath) {
+      cachedTemplate = fs.readFileSync(templatePath);
+    }
+  }
+  if (!cachedFonts.regular && existsSync(FONTS.REGULAR)) {
+    cachedFonts.regular = fs.readFileSync(FONTS.REGULAR);
+  }
+  if (!cachedFonts.bold && existsSync(FONTS.BOLD)) {
+    cachedFonts.bold = fs.readFileSync(FONTS.BOLD);
+  }
+};
+
+// Initial load
+try { loadAssets(); } catch (e) { console.error('Asset cache failed:', e); }
+
 const numberToGujaratiWords = (num) => {
   if (!Number.isFinite(num) || num <= 0) return 'શૂન્ય';
 
@@ -65,17 +87,18 @@ const numberToGujaratiWords = (num) => {
  */
 export const generateDonationSlipBuffer = (user, amount, cause, donationId, paymentMode, paymentDate, gaushala = null, katha = null, locationAddress = null, slipNo = '-') => {
   return new Promise((resolve, reject) => {
-    const slipTemplatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
-    
     // Optimization: Fixed dimensions for the templates to avoid opening image twice
      // Primary template (rasid-template.png) is 1855 x 1166
      let docOptions = { size: [1855, 1166], margin: 0 }; 
 
      const doc = new PDFDocument({ ...docOptions, compress: false }); // Disable compression for speed as we use images
 
-    // Register Gujarati Unicode fonts
-    if (existsSync(FONTS.REGULAR)) doc.registerFont('Gujarati-Regular', FONTS.REGULAR);
-    if (existsSync(FONTS.BOLD)) doc.registerFont('Gujarati-Bold', FONTS.BOLD);
+    // Register Gujarati Unicode fonts from cache for maximum speed
+    if (cachedFonts.regular) doc.registerFont('Gujarati-Regular', cachedFonts.regular);
+    else if (existsSync(FONTS.REGULAR)) doc.registerFont('Gujarati-Regular', FONTS.REGULAR);
+
+    if (cachedFonts.bold) doc.registerFont('Gujarati-Bold', cachedFonts.bold);
+    else if (existsSync(FONTS.BOLD)) doc.registerFont('Gujarati-Bold', FONTS.BOLD);
 
     const chunks = [];
 
@@ -86,25 +109,35 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
     const W = doc.page.width;
     const H = doc.page.height;
 
-    if (slipTemplatePath) {
-      const donorName = user?.name || '-';
-      
-      // Filter out empty or null city/state/country to avoid extra commas in slip
-      const addressParts = [];
-      if (user?.city && user.city.trim() !== '') addressParts.push(user.city.trim());
-      if (user?.state && user.state.trim() !== '') addressParts.push(user.state.trim());
-      if (user?.country && user.country.trim() !== '') addressParts.push(user.country.trim());
-      
-      const donorAddress = addressParts.length > 0 ? addressParts.join(', ') : (locationAddress || '-');
-      
-      const receiptDate = (paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')).toUpperCase();
-      const amountValue = Number(amount || 0);
-      const amountText = amountValue.toLocaleString('en-IN');
-      const amountInWords = `${numberToGujaratiWords(Math.floor(amountValue))} રૂપિયા પૂરા`;
+    const donorName = user?.name || '-';
+    
+    // Filter out empty or null city/state/country to avoid extra commas in slip
+    const addressParts = [];
+    if (user?.city && user.city.trim() !== '') addressParts.push(user.city.trim());
+    if (user?.state && user.state.trim() !== '') addressParts.push(user.state.trim());
+    if (user?.country && user.country.trim() !== '') addressParts.push(user.country.trim());
+    
+    const donorAddress = addressParts.length > 0 ? addressParts.join(', ') : (locationAddress || '-');
+    
+    const receiptDate = (paymentDate ? new Date(paymentDate).toLocaleDateString('en-IN') : new Date().toLocaleDateString('en-IN')).toUpperCase();
+    const amountValue = Number(amount || 0);
+    const amountText = amountValue.toLocaleString('en-IN');
+    const amountInWords = `${numberToGujaratiWords(Math.floor(amountValue))} રૂપિયા પૂરા`;
 
-      // Render template exactly to the custom page size (no whitespace)
-      doc.image(slipTemplatePath, 0, 0, { width: W, height: H });
+    // ─── OPTION 1: Use Image Template (Primary) ───
+    let usedTemplate = false;
+    if (cachedTemplate) {
+      doc.image(cachedTemplate, 0, 0, { width: W, height: H });
+      usedTemplate = true;
+    } else {
+      const templatePath = SLIP_TEMPLATE_CANDIDATES.find((candidate) => existsSync(candidate));
+      if (templatePath) {
+        doc.image(templatePath, 0, 0, { width: W, height: H });
+        usedTemplate = true;
+      }
+    }
 
+    if (usedTemplate) {
       const px = (n) => W * n;
       const py = (n) => H * n;
       const fs = (n) => W * n;
@@ -113,7 +146,7 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       const isCheque = normalizedMode === 'cheque' || normalizedMode === 'check';
       const isOnline = normalizedMode === 'online' || normalizedMode === 'upi';
 
-      const hasGujaratiFont = existsSync(FONTS.REGULAR);
+      const hasGujaratiFont = !!cachedFonts.regular || existsSync(FONTS.REGULAR);
       
       // Helper to detect if string contains non-latin characters (likely Gujarati/Hindi)
       const hasNonLatin = (str) => /[^\u0000-\u007f]/.test(str);
@@ -174,10 +207,12 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       return;
     }
 
+    // ─── OPTION 2: Modern Vector Receipt (Fallback if no image template) ───
     const M = 50;               // margin
     const CW = W - M * 2;       // content width
     const col2X = M + CW / 2 + 10;
     const colW = (CW - 20) / 2;
+    const hasGujaratiFont = !!cachedFonts.regular || existsSync(FONTS.REGULAR);
 
     // ─── Full page background ───
     doc.rect(0, 0, W, H).fill('#f8fafc');

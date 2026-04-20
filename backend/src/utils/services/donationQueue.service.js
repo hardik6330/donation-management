@@ -1,6 +1,6 @@
 import { Queue, Worker } from 'bullmq';
 import redis from '../../config/redis.js';
-import { Donation, User, Category, Gaushala, Katha } from '../../models/index.js';
+import { Donation, User, Category, Gaushala, Katha, Location } from '../../models/index.js';
 import { generateDonationSlipBuffer, uploadSlipToCloudinary } from './donationSlip.service.js';
 import { sendEmail, getDonationEmailTemplate } from './email.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from './whatsapp.service.js';
@@ -31,11 +31,13 @@ if (redis) {
       logger.info(`[Queue] 🚀 Starting process for Donation ID: ${donationId} | User ID: ${userId} | Slip No: ${slipNo}`);
 
       try {
-        const donation = await Donation.findByPk(donationId);
-        const user = await User.findByPk(userId);
-        const category = categoryId ? await Category.findByPk(categoryId) : null;
-        const gaushala = gaushalaId ? await Gaushala.findByPk(gaushalaId) : null;
-        const katha = kathaId ? await Katha.findByPk(kathaId) : null;
+        const [donation, user, category, gaushala, katha] = await Promise.all([
+          Donation.findByPk(donationId),
+          User.findByPk(userId),
+          categoryId ? Category.findByPk(categoryId) : Promise.resolve(null),
+          gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
+          kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
+        ]);
 
         if (!donation) {
           logger.error(`[Queue] ❌ Donation not found: ${donationId}`);
