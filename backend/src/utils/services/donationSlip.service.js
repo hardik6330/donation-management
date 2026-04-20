@@ -71,7 +71,7 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
      // Primary template (rasid-template.png) is 1855 x 1166
      let docOptions = { size: [1855, 1166], margin: 0 }; 
 
-     const doc = new PDFDocument(docOptions);
+     const doc = new PDFDocument({ ...docOptions, compress: false }); // Disable compression for speed as we use images
 
     // Register Gujarati Unicode fonts
     if (existsSync(FONTS.REGULAR)) doc.registerFont('Gujarati-Regular', FONTS.REGULAR);

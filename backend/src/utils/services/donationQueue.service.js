@@ -65,14 +65,17 @@ if (redis) {
 
         // 2. Upload to Cloudinary
         logger.info(`[Queue] ☁️ Uploading PDF to Cloudinary for Donation: ${donationId}...`);
-        const url = await uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id);
+        const url = await uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donationId);
 
-        // 3. Update DB with URL
-        await donation.update({ slipUrl: url });
-        logger.info(`[Queue] ✅ Uploaded to Cloudinary: ${url}`);
+        // 3. Parallel Tasks: Update DB & Send Notifications (Maximum Concurrency)
+        const finalTasks = [];
 
-        // 4. Send Notifications in Parallel (WhatsApp & Email)
-        const notificationTasks = [];
+        // DB Update
+        finalTasks.push(
+          donation.update({ slipUrl: url })
+            .then(() => logger.info(`[Queue] ✅ DB updated with slipUrl: ${donationId}`))
+            .catch(err => logger.error(`[Queue] ❌ DB update failed:`, err))
+        );
 
         // WhatsApp Notification
         if (user.mobileNumber) {
@@ -80,35 +83,33 @@ if (redis) {
           const categoryName = category?.name || causeString || 'ગૌસેવા';
           const locationName = user.city || user.state || user.country || 'કોબડી';
 
-          const whatsappTask = sendDetailedDonationSuccessWhatsAppPDF(
-            user.mobileNumber,
-            user.name,
-            amount,
-            categoryName,
-            locationName,
-            url
-          ).then(() => logger.info(`[Queue] ✅ WhatsApp sent successfully to: ${user.mobileNumber}`))
-           .catch(err => logger.error(`[Queue] ❌ WhatsApp failed:`, err));
-          
-          notificationTasks.push(whatsappTask);
+          finalTasks.push(
+            sendDetailedDonationSuccessWhatsAppPDF(
+              user.mobileNumber,
+              user.name,
+              amount,
+              categoryName,
+              locationName,
+              url
+            ).then(() => logger.info(`[Queue] ✅ WhatsApp sent successfully to: ${user.mobileNumber}`))
+             .catch(err => logger.error(`[Queue] ❌ WhatsApp failed:`, err))
+          );
         }
 
         // Email Notification
         if (user.email) {
           logger.info(`[Queue] 📧 Sending Email notification to: ${user.email}...`);
           const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
-          const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
-            { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-          ]).then(() => logger.info(`[Queue] ✅ Email sent successfully to: ${user.email}`))
-            .catch(err => logger.error(`[Queue] ❌ Email failed:`, err));
-          
-          notificationTasks.push(emailTask);
+          finalTasks.push(
+            sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
+              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+            ]).then(() => logger.info(`[Queue] ✅ Email sent successfully to: ${user.email}`))
+              .catch(err => logger.error(`[Queue] ❌ Email failed:`, err))
+          );
         }
 
-        // Wait for all notifications to finish
-        if (notificationTasks.length > 0) {
-          await Promise.all(notificationTasks);
-        }
+        // Execute everything together
+        await Promise.all(finalTasks);
 
         logger.info(`[Queue] ✨ ALL processes completed for Donation: ${donationId}`);
       } catch (error) {
