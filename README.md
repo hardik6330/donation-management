@@ -9,7 +9,9 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 - **Dynamic Location Hierarchy**: Intelligent location management allowing on-the-fly creation of City > Taluka > Village hierarchy.
 - **Multi-mode Payment Support**: Flexible donation entry for Online (Razorpay), Cash, Cheque, Pay Later, and Partial Payments.
 - **Digital Receipt Generation**: Automated PDF slip generation with Indian currency word conversion, stored securely on Cloudinary.
-- **Instant Notifications**: Automated donation confirmations sent via Email (Nodemailer), SMS (Fast2SMS), and **WhatsApp (Meta API integration)**.
+- **Instant Notifications**: Automated donation confirmations sent via Email (Nodemailer), SMS (Fast2SMS), and **WhatsApp (Meta API integration)**. Email is short-circuited when donor has no valid email (no SMTP connection wasted).
+- **Async Donation Processing**: Heavy work (PDF generation, Cloudinary upload, WhatsApp, Email) runs through a BullMQ/Redis queue so the API response returns immediately, with fire-and-forget fallback when Redis is unavailable.
+- **Smart Slip-Ready Polling**: Frontend no longer constant-polls the donations list. After create, a lightweight `GET /donations/:id/status` endpoint is polled every ~2s (≈100-byte response); the list refetches only once the PDF is ready, then polling stops. 30s safety timeout.
 - **WhatsApp Announcement System**: Dedicated module to send bulk or individual WhatsApp messages with template support and history tracking.
 - **Partial Payment Reminders**: Intelligent scheduling of follow-up notifications (5-day reminders) for pending or partial payments.
 - **Multi-language Support**: Seamless switching between **Gujarati and English** across the Admin dashboard.

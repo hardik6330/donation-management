@@ -118,7 +118,7 @@ frontend/src/
 
 | Route            | Key Endpoints                                      | Auth        |
 | ---------------- | -------------------------------------------------- | ----------- |
-| /donations       | GET /, POST /order, POST /verify, PUT /:id, GET /:id/installments | Mixed |
+| /donations       | GET /, POST /order, POST /verify, PUT /:id, GET /:id/installments, GET /:id/status | Mixed |
 | /users           | POST /register, /login, /logout; GET /mobile/:num; /system CRUD | Mixed/Admin |
 | /admin           | GET /stats, /donations, /donors                    | Admin       |
 | /master          | GET /categories, /cities, /sub-locations/:id        | Public GET  |
@@ -168,6 +168,8 @@ frontend/src/
 - **Pagination:** `getPaginationParams()` extracts page/limit from query. `getPaginatedResponse()` always returns `{ items, totalData, totalPages, currentPage, limit, fetchAll }` — the collection key is always `items` (standardized; no per-controller overrides). Frontend consumes via `response?.data?.items`. `Pagination` component used in admin lists.
 - **Navigation:** Global Arrow Down/Up and Enter key navigation across all form fields via `formNavigation.js`. Skips disabled fields.
 - **Donation Flow:** Multi-mode (online/cash/pay_later/cheque/partially_paid). PDF slip generation with amount in Indian words and hierarchical address (Village, Taluka, City). Email + SMS notifications. DonationInstallment model tracks partial payment history with AddPartialPaymentModal, EditPartialPaymentModal, EditPayLaterModal, and InstallmentTable components.
+- **Async Donation Processing:** After create, heavy side-effects (PDF gen, Cloudinary upload, WhatsApp, Email) run through the BullMQ queue in `donationQueue.service.js` when Redis is configured, or via fire-and-forget fallback otherwise. Email is skipped entirely (no SMTP connection) when `isValidEmail(user.email)` fails.
+- **Slip-Ready Polling:** Donations list no longer constant-polls. After a create, the container sets `pendingDonationId` and polls lightweight `GET /donations/:id/status` every ~2s (response is `{ ready, slipUrl }`). When `ready=true` the full list is refetched and polling stops. 30s safety timeout prevents runaway polling.
 - **Reports:** PDF export (with Gujarati font support via jsPDF) and Excel export (via XLSX). Advanced filtering by date range, amount, location, category.
 - **Dynamic Locations:** `findOrCreateLocationStructure` in backend allows on-the-fly creation of City > Taluka > Village hierarchy during entry in Donations, Gaushala, Katha, and Kartal Dhun modules. Frontend `useLocationDropdowns` hook manages hierarchical dropdown state.
 - **Model Scopes:** All models define Sequelize scopes (search, active, location, etc.) for reusable filtering. Controllers use `Model.scope([...scopes]).findAndCountAll()` instead of building inline where clauses. Scopes accept parameters via `{ method: ['scopeName', arg] }` syntax.
