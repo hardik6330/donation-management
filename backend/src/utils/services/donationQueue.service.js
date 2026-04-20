@@ -5,6 +5,7 @@ import { generateDonationSlipBuffer, uploadSlipToCloudinary } from './donationSl
 import { sendEmail, getDonationEmailTemplate } from './email.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from './whatsapp.service.js';
 import { sendDetailedDonationSMS } from './sms.service.js';
+import logger from '../logger.js';
 
 const QUEUE_NAME = 'donation-processing';
 
@@ -27,7 +28,7 @@ if (redis) {
     QUEUE_NAME,
     async (job) => {
       const { donationId, userId, amount, categoryId, gaushalaId, kathaId, causeString, slipNo } = job.data;
-      console.log(`[Queue] Processing donation ${donationId} for user ${userId}`);
+      logger.info(`[Queue] 🚀 Starting process for Donation ID: ${donationId} | User ID: ${userId} | Slip No: ${slipNo}`);
 
       try {
         const donation = await Donation.findByPk(donationId);
@@ -36,10 +37,17 @@ if (redis) {
         const gaushala = gaushalaId ? await Gaushala.findByPk(gaushalaId) : null;
         const katha = kathaId ? await Katha.findByPk(kathaId) : null;
 
-        if (!donation) throw new Error(`Donation not found: ${donationId}`);
-        if (!user) throw new Error(`User not found: ${userId}`);
+        if (!donation) {
+          logger.error(`[Queue] ❌ Donation not found: ${donationId}`);
+          throw new Error(`Donation not found: ${donationId}`);
+        }
+        if (!user) {
+          logger.error(`[Queue] ❌ User not found: ${userId}`);
+          throw new Error(`User not found: ${userId}`);
+        }
 
         // 1. Generate PDF
+        logger.info(`[Queue] 📄 Generating PDF for Donation: ${donationId}...`);
         const locationAddress = user.city || user.state || user.country || '';
         const pdfBuffer = await generateDonationSlipBuffer(
           user,
@@ -53,13 +61,17 @@ if (redis) {
           locationAddress,
           slipNo
         );
+        logger.info(`[Queue] ✅ PDF generated successfully for Donation: ${donationId}`);
 
         // 2. Upload to Cloudinary
+        logger.info(`[Queue] ☁️ Uploading PDF to Cloudinary for Donation: ${donationId}...`);
         const url = await uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id);
         await donation.update({ slipUrl: url });
+        logger.info(`[Queue] ✅ Uploaded to Cloudinary: ${url}`);
 
         // 3. WhatsApp Notification
         if (user.mobileNumber) {
+          logger.info(`[Queue] 📱 Sending WhatsApp notification to: ${user.mobileNumber}...`);
           const categoryName = category?.name || causeString || 'ગૌસેવા';
           const locationName = user.city || user.state || user.country || 'કોબડી';
 
@@ -71,33 +83,26 @@ if (redis) {
             locationName,
             url
           );
+          logger.info(`[Queue] ✅ WhatsApp sent successfully to: ${user.mobileNumber}`);
+        } else {
+          logger.warn(`[Queue] ⚠️ Skip WhatsApp: Mobile number missing for User: ${userId}`);
         }
 
         // 4. Email Notification
         if (user.email) {
+          logger.info(`[Queue] 📧 Sending Email notification to: ${user.email}...`);
           const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
           await sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
             { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
           ]);
+          logger.info(`[Queue] ✅ Email sent successfully to: ${user.email}`);
+        } else {
+          logger.warn(`[Queue] ⚠️ Skip Email: Email address missing for User: ${userId}`);
         }
 
-        // 5. SMS Notification (Commented out as per previous request)
-        /*
-        if (user.mobileNumber) {
-          await sendDetailedDonationSMS(user.name, amount, donation.id, user.mobileNumber, {
-            category: category?.name,
-            gaushala: gaushala?.name,
-            katha: katha?.name,
-            city: user.city,
-            state: user.state,
-            country: user.country
-          });
-        }
-        */
-
-        console.log(`[Queue] Successfully processed donation ${donationId}`);
+        logger.info(`[Queue] ✨ ALL processes completed for Donation: ${donationId}`);
       } catch (error) {
-        console.error(`[Queue] Error processing donation ${donationId}:`, error);
+        logger.error(`[Queue] 💥 Error processing Donation ${donationId}:`, error);
         throw error; // Let BullMQ handle the retry
       }
     },
@@ -105,6 +110,6 @@ if (redis) {
   );
 
   worker.on('failed', (job, err) => {
-    console.error(`[Queue] Job ${job.id} failed:`, err);
+    logger.error(`[Queue] 🛑 Job ${job.id} failed after attempts:`, err);
   });
 }

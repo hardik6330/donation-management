@@ -17,6 +17,7 @@ import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/ser
 import { donationQueue } from '../utils/services/donationQueue.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
+import logger from '../utils/logger.js';
 
 // Constants for reminder scheduling
 const REMINDER_DAYS_AFTER = 5;
@@ -206,6 +207,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       // Fallback for non-Redis environments (Legacy fire-and-forget)
       (async () => {
         try {
+          logger.info(`[Donation Fallback] 🚀 Starting process for Donation ID: ${donation.id} | User: ${user.name}`);
+          
           const [gaushala, katha] = await Promise.all([
             gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
             kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
@@ -213,6 +216,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
           let locationAddress = user.city || user.state || user.country || '';
 
+          logger.info(`[Donation Fallback] 📄 Generating PDF...`);
           const pdfBuffer = await generateDonationSlipBuffer(
             user,
             amount,
@@ -225,33 +229,41 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             locationAddress,
             slipNo
           );
+          logger.info(`[Donation Fallback] ✅ PDF generated.`);
 
           const tasks = [];
 
+          logger.info(`[Donation Fallback] ☁️ Uploading to Cloudinary...`);
           const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
             .then(async url => {
+              logger.info(`[Donation Fallback] ✅ Uploaded to Cloudinary: ${url}`);
               await donation.update({ slipUrl: url });
               if (user.mobileNumber) {
+                logger.info(`[Donation Fallback] 📱 Sending WhatsApp...`);
                 const category = categoryId ? await Category.findByPk(categoryId) : null;
                 const categoryName = category?.name || causeString || 'ગૌસેવા';
                 const locationName = user.city || user.state || user.country || 'કોબડી';
                 await sendDetailedDonationSuccessWhatsAppPDF(user.mobileNumber, user.name, amount, categoryName, locationName, url);
+                logger.info(`[Donation Fallback] ✅ WhatsApp sent.`);
               }
             })
-            .catch(err => console.error(`[Donation ${donation.id}] Fallback Cloudinary Error:`, err));
+            .catch(err => logger.error(`[Donation ${donation.id}] Fallback Cloudinary Error:`, err));
           tasks.push(uploadTask);
 
           if (user.email) {
+            logger.info(`[Donation Fallback] 📧 Sending Email...`);
             const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
             const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
               { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-            ]).catch(err => console.error(`[Donation ${donation.id}] Fallback Email Error:`, err));
+            ]).then(() => logger.info(`[Donation Fallback] ✅ Email sent.`))
+              .catch(err => logger.error(`[Donation ${donation.id}] Fallback Email Error:`, err));
             tasks.push(emailTask);
           }
 
           await Promise.all(tasks);
+          logger.info(`[Donation Fallback] ✨ ALL processes completed.`);
         } catch (error) {
-          console.error(`[Donation ${donation.id}] Fallback background processing error:`, error);
+          logger.error(`[Donation ${donation.id}] Fallback background processing error:`, error);
         }
       })();
     }
