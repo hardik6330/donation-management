@@ -64,7 +64,7 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
     };
   });
 
-  const response = getPaginatedResponse({ rows: formattedRows, count, limit, page, dataKey: 'rows' });
+  const response = getPaginatedResponse({ rows: formattedRows, count, limit, page });
   return sendSuccess(res, response, 'All kartal dhun records fetched successfully');
 });
 

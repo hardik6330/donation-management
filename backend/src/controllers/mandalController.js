@@ -53,7 +53,7 @@ export const getAllMandals = asyncHandler(async (req, res) => {
     offset
   });
 
-  const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'rows' });
+  const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll });
   return sendSuccess(res, response, 'All mandals records fetched successfully');
 });
 
@@ -115,7 +115,7 @@ export const getAllMembers = asyncHandler(async (req, res) => {
     offset: (page - 1) * limit
   });
 
-  const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
+  const response = getPaginatedResponse({ rows, count, limit, page });
   return sendSuccess(res, response, 'All members records fetched successfully');
 });
 

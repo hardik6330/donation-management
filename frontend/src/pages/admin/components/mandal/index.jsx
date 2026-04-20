@@ -45,7 +45,7 @@ const Mandal = () => {
   const [updateMandal] = useUpdateMandalMutation();
   const [generatePayments, { isLoading: isGenerating }] = useGenerateMandalPaymentsMutation();
 
-  const mandals = mandalsData?.data?.rows || [];
+  const mandals = mandalsData?.data?.items || [];
   const pagination = {
     currentPage: mandalsData?.data?.currentPage || 1,
     totalPages: mandalsData?.data?.totalPages || 1,

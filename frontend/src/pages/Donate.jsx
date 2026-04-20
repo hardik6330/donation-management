@@ -277,9 +277,9 @@ const Donate = () => {
   const { data: gaushalasData, isFetching: isFetchingGaushalas } = useGetGaushalasQuery({ fetchAll: 'true' });
   const { data: kathasData, isFetching: isFetchingKathas } = useGetKathasQuery({ fetchAll: 'true' });
 
-  const categories = categoriesData?.data?.data || [];
-  const gaushalas = gaushalasData?.data?.rows || [];
-  const kathas = kathasData?.data?.rows || [];
+  const categories = categoriesData?.data?.items || [];
+  const gaushalas = gaushalasData?.data?.items || [];
+  const kathas = kathasData?.data?.items || [];
 
   const { data: existingUser, isFetching: isCheckingUser } = useGetUserByMobileQuery(formData.mobileNumber, {
     skip: formData.mobileNumber.length !== 10,

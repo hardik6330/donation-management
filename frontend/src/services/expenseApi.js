@@ -1,37 +1,14 @@
 import { apiSlice } from './apiSlice';
+import { createCRUDEndpoints } from './createCRUDEndpoints';
 
 const expenseApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getExpenses: builder.query({
-      query: (params) => ({
-        url: '/expenses',
-        params,
-      }),
-      providesTags: ['Expenses'],
-    }),
-    addExpense: builder.mutation({
-      query: (data) => ({
-        url: '/expenses',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['Expenses'],
-    }),
-    updateExpense: builder.mutation({
-      query: ({ id, ...data }) => ({
-        url: `/expenses/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: ['Expenses'],
-    }),
-    deleteExpense: builder.mutation({
-      query: (id) => ({
-        url: `/expenses/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Expenses'],
-    }),
+    ...createCRUDEndpoints({
+      entity: 'Expense',
+      entityPlural: 'Expenses',
+      tag: 'Expenses',
+      basePath: '/expenses',
+    })(builder),
     getExpenseStats: builder.query({
       query: () => '/expenses/stats',
       providesTags: ['Expenses'],

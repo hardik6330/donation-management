@@ -76,7 +76,6 @@ const EditPartialPaymentModal = ({ isOpen, onClose, donation }) => {
     try {
       await updateDonation({
         id: donation.id,
-        paymentMode: 'partially_paid',
         status: 'partially_paid',
         remainingAmount: numericRemainingAmount
       }).unwrap();

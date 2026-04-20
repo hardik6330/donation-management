@@ -1,37 +1,16 @@
 import { apiSlice } from './apiSlice';
+import { createCRUDEndpoints } from './createCRUDEndpoints';
 
 const gaushalaApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    getGaushalas: builder.query({
-      query: (params) => ({
-        url: '/gaushala/all',
-        params,
-      }),
-      providesTags: ['Gaushalas'],
-    }),
-    addGaushala: builder.mutation({
-      query: (data) => ({
-        url: '/gaushala/add',
-        method: 'POST',
-        body: data,
-      }),
-      invalidatesTags: ['Gaushalas'],
-    }),
-    updateGaushala: builder.mutation({
-      query: ({ id, ...data }) => ({
-        url: `/gaushala/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: ['Gaushalas'],
-    }),
-    deleteGaushala: builder.mutation({
-      query: (id) => ({
-        url: `/gaushala/${id}`,
-        method: 'DELETE',
-      }),
-      invalidatesTags: ['Gaushalas'],
-    }),
+    ...createCRUDEndpoints({
+      entity: 'Gaushala',
+      entityPlural: 'Gaushalas',
+      tag: 'Gaushalas',
+      basePath: '/gaushala',
+      listPath: '/gaushala/all',
+      createPath: '/gaushala/add',
+    })(builder),
   }),
 });
 

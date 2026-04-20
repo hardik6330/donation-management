@@ -14,8 +14,13 @@ import { sendEmail, getDonationEmailTemplate } from '../utils/services/email.ser
 import { sendDetailedDonationSMS } from '../utils/services/sms.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from '../utils/services/whatsapp.service.js';
 import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/services/donationSlip.service.js';
+import { donationQueue } from '../utils/services/donationQueue.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
+
+// Constants for reminder scheduling
+const REMINDER_DAYS_AFTER = 5;
+const REMINDER_HOUR_OF_DAY = 10;
 
 // Helper function to manage partial payment reminders
 const managePartialPaymentReminder = async (donationId, userId, status) => {
@@ -23,8 +28,8 @@ const managePartialPaymentReminder = async (donationId, userId, status) => {
     if (status === 'partially_paid') {
       // Schedule reminder for 5 days later at 10:00 AM
       const scheduledAt = new Date();
-      scheduledAt.setDate(scheduledAt.getDate() + 5);
-      scheduledAt.setHours(10, 0, 0, 0); // Set time to exactly 10:00:00.000 AM
+      scheduledAt.setDate(scheduledAt.getDate() + REMINDER_DAYS_AFTER);
+      scheduledAt.setHours(REMINDER_HOUR_OF_DAY, 0, 0, 0); // Set time to exactly 10:00:00.000 AM
 
       // Upsert notification (one per donation)
       const [notification, created] = await Notification.findOrCreate({
@@ -183,95 +188,70 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     await managePartialPaymentReminder(donation.id, user.id, 'partially_paid');
   }
 
-  // Generate slip, upload to Cloudinary, save URL, and send email/SMS in background
-  // Only for fully paid donations at creation time.
+  // --- Background Tasks (Queue-based) ---
   if (isDirectPay) {
-    // Run background tasks without awaiting them to speed up response
-    (async () => {
-      try {
-        const [gaushala, katha] = await Promise.all([
-          gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
-          kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
-        ]);
+    if (donationQueue) {
+      await donationQueue.add('process-donation', {
+        donationId: donation.id,
+        userId: user.id,
+        amount,
+        categoryId,
+        gaushalaId,
+        kathaId,
+        causeString
+      });
+    } else {
+      // Fallback for non-Redis environments (Legacy fire-and-forget)
+      (async () => {
+        try {
+          const [gaushala, katha] = await Promise.all([
+            gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
+            kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
+          ]);
 
-        let locationAddress = user.city || user.state || user.country || '';
+          let locationAddress = user.city || user.state || user.country || '';
 
-        const pdfBuffer = await generateDonationSlipBuffer(
-          user,
-          amount,
-          causeString,
-          donation.id,
-          paymentMode,
-          donation.paymentDate,
-          gaushala,
-          katha,
-          locationAddress
-        );
+          const pdfBuffer = await generateDonationSlipBuffer(
+            user,
+            amount,
+            causeString,
+            donation.id,
+            paymentMode,
+            donation.paymentDate,
+            gaushala,
+            katha,
+            locationAddress
+          );
 
-        const tasks = [];
+          const tasks = [];
 
-        const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
+          const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
             .then(async url => {
               await donation.update({ slipUrl: url });
-              
-              // Send WhatsApp notification with PDF slip
               if (user.mobileNumber) {
                 const category = categoryId ? await Category.findByPk(categoryId) : null;
                 const categoryName = category?.name || causeString || 'ગૌસેવા';
-                
-                let locationName = user.city || user.state || user.country || 'કોબડી';
-
-                await sendDetailedDonationSuccessWhatsAppPDF(
-                  user.mobileNumber, 
-                  user.name, 
-                  amount, 
-                  categoryName, 
-                  locationName, 
-                  url
-                );
+                const locationName = user.city || user.state || user.country || 'કોબડી';
+                await sendDetailedDonationSuccessWhatsAppPDF(user.mobileNumber, user.name, amount, categoryName, locationName, url);
               }
             })
-          .catch(err => {
-            console.error(`[Donation ${donation.id}] ❌ Cloudinary Upload Error:`, err);
-          });
-        tasks.push(uploadTask);
+            .catch(err => console.error(`[Donation ${donation.id}] Fallback Cloudinary Error:`, err));
+          tasks.push(uploadTask);
 
-        if (user.email) {
-          const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
-          const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
-            { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-          ])
-          .catch(err => {
-            console.error(`[Donation ${donation.id}] ❌ Email Error for ${user.email}:`, err);
-          });
-          tasks.push(emailTask);
+          if (user.email) {
+            const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
+            const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
+              { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
+            ]).catch(err => console.error(`[Donation ${donation.id}] Fallback Email Error:`, err));
+            tasks.push(emailTask);
+          }
+
+          await Promise.all(tasks);
+        } catch (error) {
+          console.error(`[Donation ${donation.id}] Fallback background processing error:`, error);
         }
-
-        if (user.mobileNumber) {
-          const smsTask = (async () => {
-            try {
-              const category = categoryId ? await Category.findByPk(categoryId) : null;
-
-              await sendDetailedDonationSMS(user.name, amount, donation.id, user.mobileNumber, {
-                category: category?.name,
-                gaushala: gaushala?.name,
-                katha: katha?.name,
-                city: user.city,
-                state: user.state,
-                country: user.country
-              });
-            } catch (err) {
-              console.error('SMS Task Error:', err);
-            }
-          })();
-          tasks.push(smsTask);
-        }
-
-        await Promise.all(tasks);
-      } catch (error) {
-        console.error(`[Donation ${donation.id}] Background processing error:`, error);
-      }
-    })();
+      })();
+    }
   }
 
   return sendSuccess(res, donation, 'Donation order created successfully');
@@ -310,7 +290,6 @@ export const getDonations = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'donations'
   });
 
   return sendSuccess(res, responseData, 'All donations records fetched successfully');
@@ -466,7 +445,6 @@ export const getDonors = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'donors'
   });
 
   return sendSuccess(res, responseData, 'All donors records fetched successfully');
@@ -697,8 +675,8 @@ export const resendSlipWhatsApp = asyncHandler(async (req, res) => {
 
   if (!donation) throw notFound('Donation');
   if (donation.status !== 'completed') throw badRequest('WhatsApp slip can only be sent for completed donations');
-  if (!donation.slipUrl) throw badRequest('Donation slip not found. Please regenerate or contact support.');
-  if (!donation.donor?.mobileNumber) throw badRequest('Donor mobile number not found');
+  if (!donation.slipUrl) throw notFound('Donation slip. Please regenerate or contact support.');
+  if (!donation.donor?.mobileNumber) throw notFound('Donor mobile number');
 
   const donor = donation.donor;
   const categoryName = donation.category?.name || donation.cause || 'ગૌસેવા';

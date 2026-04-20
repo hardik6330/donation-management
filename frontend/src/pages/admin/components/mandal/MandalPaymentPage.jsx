@@ -65,7 +65,7 @@ const MandalPaymentPage = () => {
   const [updatePayment] = useUpdateMandalPaymentMutation();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const payments = paymentsData?.data?.rows || [];
+  const payments = paymentsData?.data?.items || [];
   const pagination = {
     currentPage: paymentsData?.data?.currentPage || 1,
     totalPages: paymentsData?.data?.totalPages || 1,
@@ -74,7 +74,7 @@ const MandalPaymentPage = () => {
   };
 
   const report = reportData?.data || {};
-  const mandals = mandalsData?.data?.rows || [];
+  const mandals = mandalsData?.data?.items || [];
   const mandalOptions = mandals.map(m => ({ value: m.id, label: m.name }));
 
   const handleGenerate = async () => {

@@ -50,12 +50,10 @@ const MandalMemberList = () => {
 
   const [triggerGetCities] = useLazyGetCitiesQuery();
   const cityPagination = useDropdownPagination(triggerGetCities, {
-    dataKey: 'data',
-    rowsKey: 'data',
     limit: 20
   });
 
-  const members = membersData?.data?.rows || [];
+  const members = membersData?.data?.items || [];
   const pagination = {
     currentPage: membersData?.data?.currentPage || 1,
     totalPages: membersData?.data?.totalPages || 1,
@@ -63,7 +61,7 @@ const MandalMemberList = () => {
     limit: membersData?.data?.limit || 10
   };
 
-  const mandals = mandalsData?.data?.rows || [];
+  const mandals = mandalsData?.data?.items || [];
   const mandalOptions = mandals.map(m => ({ value: m.id, label: m.name }));
 
   const handleDelete = (id) => {

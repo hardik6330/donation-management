@@ -93,14 +93,12 @@ const Reports = () => {
   const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
   const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, {
     limit: 20,
-    rowsKey: 'rows'
   });
 
   // Katha Pagination
   const [triggerGetKathas] = useLazyGetKathasQuery();
   const kathaPagination = useDropdownPagination(triggerGetKathas, {
     limit: 20,
-    rowsKey: 'rows'
   });
 
   // Category Pagination
@@ -114,8 +112,8 @@ const Reports = () => {
   const filterKathas = kathaPagination.items;
   const categories = categoryPagination.items;
 
-  const donations = donationsData?.data?.donations || [];
-  const exportDonations = exportData?.data?.donations || [];
+  const donations = donationsData?.data?.items || [];
+  const exportDonations = exportData?.data?.items || [];
   const pagination = {
     currentPage: donationsData?.data?.currentPage || 1,
     totalPages: donationsData?.data?.totalPages || 1,

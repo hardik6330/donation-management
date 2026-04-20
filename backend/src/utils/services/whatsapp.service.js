@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID } from '../../config/env.js';
+import { retryWithBackoff } from '../retryHelper.js';
 
 /**
  * Sends a WhatsApp message using Meta's WhatsApp Business API.
@@ -61,16 +62,22 @@ export const sendWhatsAppMessage = async (to, templateName, languageCode = 'en_U
 
   console.log('[WhatsApp Debug] Request Payload:', JSON.stringify(payload, null, 2));
 
-  try {
+  const sendRequest = async () => {
     const response = await axios.post(url, payload, {
       headers: {
         'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
         'Content-Type': 'application/json'
-      }
+      },
+      timeout: 15000 // 15s timeout
     });
+    return response.data;
+  };
 
-    console.log('[WhatsApp Debug] FULL SUCCESS RESPONSE:', JSON.stringify(response.data, null, 2));
-    return { success: true, data: response.data };
+  try {
+    const data = await retryWithBackoff(sendRequest, 3, 1000);
+
+    console.log('[WhatsApp Debug] FULL SUCCESS RESPONSE:', JSON.stringify(data, null, 2));
+    return { success: true, data };
   } catch (error) {
     console.error('[WhatsApp Debug] FULL ERROR DETAILS:');
     if (error.response) {

@@ -48,7 +48,7 @@ const WhatsAppChatWindow = ({
     }
   }, [selectedUser?.mobileNumber, refetch]);
 
-  const history = useMemo(() => historyData?.data?.history || [], [historyData]);
+  const history = useMemo(() => historyData?.data?.items || [], [historyData]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

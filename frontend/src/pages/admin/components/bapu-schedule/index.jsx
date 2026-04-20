@@ -39,7 +39,7 @@ const BapuSchedule = () => {
   const { data: schedulesData, isLoading: loading } = useGetBapuSchedulesQuery(filters);
   const [deleteSchedule, { isLoading: isDeleting }] = useDeleteBapuScheduleMutation();
 
-  const schedules = schedulesData?.data?.data || [];
+  const schedules = schedulesData?.data?.items || [];
   const pagination = {
     totalData: schedulesData?.data?.totalData || 0,
     totalPages: schedulesData?.data?.totalPages || 0,

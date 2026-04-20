@@ -1,16 +1,22 @@
-// import Redis from 'ioredis';
-// import { REDIS_URL } from './db.js';
+import Redis from 'ioredis';
+import { REDIS_URL } from './env.js';
 
-// const redis = new Redis(REDIS_URL);
+let redis = null;
 
-// redis.on('connect', () => {
-//   console.log('Redis connected');
-// });
+if (REDIS_URL) {
+  redis = new Redis(REDIS_URL, {
+    maxRetriesPerRequest: null, // Required for BullMQ
+  });
 
-// redis.on('error', (err) => {
-//   console.error('Redis connection error:', err);
-// });
+  redis.on('connect', () => {
+    console.log('Redis connected');
+  });
 
-// export default redis;
+  redis.on('error', (err) => {
+    console.error('Redis connection error:', err);
+  });
+} else {
+  console.warn('REDIS_URL not found, BullMQ features will be disabled.');
+}
 
-export default null;
+export default redis;

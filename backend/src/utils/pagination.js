@@ -45,18 +45,11 @@ export const processFields = (requestedFields, includeKey = 'donor') => {
 };
 
 /**
- * Formats the paginated response data.
- * @param {Array} rows - The data rows for the current page.
- * @param {number} count - Total number of records.
- * @param {number} limit - Number of records per page.
- * @param {number} page - Current page number.
- * @param {boolean} isFetchAll - Whether all records were fetched.
- * @param {string} dataKey - The key to use for the data in the response (default: 'items').
- * @returns {Object} - Formatted response object with pagination details.
+ * Formats the paginated response data. The collection is always returned under `items`.
  */
-export const getPaginatedResponse = ({ rows, count, limit, page, isFetchAll, dataKey = 'items' }) => {
+export const getPaginatedResponse = ({ rows, count, limit, page, isFetchAll }) => {
   return {
-    [dataKey]: rows,
+    items: rows,
     totalData: count,
     totalPages: isFetchAll ? 1 : Math.ceil(count / limit),
     currentPage: isFetchAll ? 1 : page,

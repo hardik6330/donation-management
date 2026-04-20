@@ -48,12 +48,12 @@ const Expense = () => {
 
   // Dropdown Paginations
   const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
-  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, { rowsKey: 'rows' });
+  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas);
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
-  const kathaPagination = useDropdownPagination(triggerGetKathas, { rowsKey: 'rows' });
+  const kathaPagination = useDropdownPagination(triggerGetKathas);
 
-  const expenses = expensesData?.data?.rows || [];
+  const expenses = expensesData?.data?.items || [];
   const pagination = {
     currentPage: expensesData?.data?.currentPage || 1,
     totalPages: expensesData?.data?.totalPages || 1,

@@ -36,7 +36,7 @@ const KartalDhun = () => {
   const { data: listData, isLoading: loading } = useGetKartalDhunQuery(filters);
   const [deleteRecord, { isLoading: isDeleting }] = useDeleteKartalDhunMutation();
 
-  const records = listData?.data?.rows || [];
+  const records = listData?.data?.items || [];
   const pagination = {
     currentPage: listData?.data?.currentPage || 1,
     totalPages: listData?.data?.totalPages || 1,

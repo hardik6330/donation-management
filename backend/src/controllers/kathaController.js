@@ -24,7 +24,7 @@ export const getKathas = asyncHandler(async (req, res) => {
       limit: queryLimit,
       offset
     });
-    const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'rows' });
+    const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll });
     return sendSuccess(res, response, 'Kathas records fetched successfully');
   }
 
@@ -80,7 +80,7 @@ export const getKathas = asyncHandler(async (req, res) => {
 
   // With GROUP BY, count is an array - use its length for total count
   const totalCount = Array.isArray(count) ? count.length : count;
-  const response = getPaginatedResponse({ rows: formattedKathas, count: totalCount, limit, page, isFetchAll, dataKey: 'rows' });
+  const response = getPaginatedResponse({ rows: formattedKathas, count: totalCount, limit, page, isFetchAll });
   return sendSuccess(res, response, 'All kathas records fetched successfully');
 });
 

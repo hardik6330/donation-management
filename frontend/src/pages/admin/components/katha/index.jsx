@@ -34,7 +34,7 @@ const Katha = () => {
   const { data: kathasData, isLoading: loading } = useGetKathasQuery(filters);
   const [deleteKatha, { isLoading: isDeleting }] = useDeleteKathaMutation();
 
-  const kathas = kathasData?.data?.rows || [];
+  const kathas = kathasData?.data?.items || [];
   const pagination = {
     currentPage: kathasData?.data?.currentPage || 1,
     totalPages: kathasData?.data?.totalPages || 1,

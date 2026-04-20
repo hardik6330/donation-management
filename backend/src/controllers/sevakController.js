@@ -89,7 +89,7 @@ export const getAllSevaks = asyncHandler(async (req, res) => {
     offset: (page - 1) * limit
   });
 
-  const response = getPaginatedResponse({ rows, count, limit, page, dataKey: 'rows' });
+  const response = getPaginatedResponse({ rows, count, limit, page });
   return sendSuccess(res, response, 'All sevaks records fetched successfully');
 });
 

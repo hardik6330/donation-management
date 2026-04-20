@@ -15,7 +15,7 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
   const [updateMember, { isLoading: isUpdating }] = useUpdateMandalMemberMutation();
   const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true' });
   
-  const mandals = mandalsData?.data?.rows || [];
+  const mandals = mandalsData?.data?.items || [];
   const cities = cityPagination.items;
 
   const nameRef = useRef(null);

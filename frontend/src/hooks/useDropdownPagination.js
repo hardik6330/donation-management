@@ -1,12 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 export const useDropdownPagination = (triggerQuery, options = {}) => {
-  const { 
-    limit = 20, 
-    fields = 'id,name', 
-    additionalParams = {}, 
-    dataKey = 'data', 
-    rowsKey = 'data',
+  const {
+    limit = 20,
+    fields = 'id,name',
+    additionalParams = {},
     skip = false,
     searchKey = 'search'
   } = options;
@@ -46,8 +44,8 @@ export const useDropdownPagination = (triggerQuery, options = {}) => {
         return;
       }
 
-      const responseData = result?.[dataKey] || {};
-      const newItems = responseData?.[rowsKey] || [];
+      const responseData = result?.data || {};
+      const newItems = responseData?.items || [];
       const totalPages = responseData?.totalPages || 1;
 
       if (append) {
@@ -62,7 +60,7 @@ export const useDropdownPagination = (triggerQuery, options = {}) => {
     } finally {
       setLoading(false);
     }
-  }, [triggerQuery, limit, fields, dataKey, rowsKey, skip, searchKey]);
+  }, [triggerQuery, limit, fields, skip, searchKey]);
 
   // Handle search and parameter changes
   useEffect(() => {

@@ -23,7 +23,7 @@ export const getGaushalas = asyncHandler(async (req, res) => {
       limit: queryLimit,
       offset
     });
-    const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'rows' });
+    const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll });
     return sendSuccess(res, response, 'Gaushalas records fetched successfully');
   }
 
@@ -80,7 +80,7 @@ export const getGaushalas = asyncHandler(async (req, res) => {
 
   // With GROUP BY, count is an array - use its length for total count
   const totalCount = Array.isArray(count) ? count.length : count;
-  const response = getPaginatedResponse({ rows: formattedGaushalas, count: totalCount, limit, page, isFetchAll, dataKey: 'rows' });
+  const response = getPaginatedResponse({ rows: formattedGaushalas, count: totalCount, limit, page, isFetchAll });
   return sendSuccess(res, response, 'All gaushalas records fetched successfully');
 });
 

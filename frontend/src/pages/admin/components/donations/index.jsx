@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import DonationList from './DonationList';
@@ -59,16 +59,18 @@ const Donation = () => {
   }), [filters, debouncedSearch]);
 
   // API calls
-  const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(queryFilters);
+  const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(queryFilters, {
+    pollingInterval: 8000,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
   
   const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
   const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, {
-    rowsKey: 'rows'
   });
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
   const kathaPagination = useDropdownPagination(triggerGetKathas, {
-    rowsKey: 'rows'
   });
 
   const [triggerGetCategories] = useLazyGetCategoriesQuery();
@@ -78,7 +80,7 @@ const Donation = () => {
   });
   const activeCategoryPagination = useDropdownPagination(triggerGetActiveCategories);
 
-  const donations = donationsData?.data?.donations || [];
+  const donations = donationsData?.data?.items || [];
   const pagination = {
     currentPage: donationsData?.data?.currentPage || 1,
     totalPages: donationsData?.data?.totalPages || 1,

@@ -27,7 +27,7 @@ const Donors = () => {
 
   const { data: donorsData, isLoading: donorsLoading } = useGetDonorsQuery(filters);
   
-  const donors = donorsData?.data?.donors || [];
+  const donors = donorsData?.data?.items || [];
   const pagination = {
     currentPage: donorsData?.data?.currentPage || 1,
     totalPages: donorsData?.data?.totalPages || 1,

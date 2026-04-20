@@ -21,7 +21,7 @@ export const DonationInstallment = sequelize.define('DonationInstallment', {
     allowNull: false,
   },
   paymentMode: {
-    type: DataTypes.ENUM('online', 'cash', 'cheque', 'partially_paid'),
+    type: DataTypes.ENUM('online', 'cash', 'cheque'),
     allowNull: false,
   },
   paymentDate: {

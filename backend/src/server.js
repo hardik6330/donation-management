@@ -7,6 +7,7 @@ import morgan from 'morgan';
 import { initDB, isDBInitialized } from './config/db.js';
 import { startCronJob } from './config/cron.js';
 import './models/index.js'; // Register all models & associations before sync
+import './utils/services/donationQueue.service.js'; // Start BullMQ workers
 import routes from './routes/index.js';
 import { ipAuth } from './middlewares/ipAuth.js';
 import { apiLimiter } from './middlewares/rateLimiter.js';

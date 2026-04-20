@@ -53,7 +53,6 @@ export const getBapuSchedules = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'data'
   });
 
   return sendSuccess(res, responseData, 'All schedules records fetched successfully');

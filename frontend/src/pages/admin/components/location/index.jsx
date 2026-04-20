@@ -32,7 +32,7 @@ const Location = () => {
   const { data: citiesData, isFetching: isLoading } = useGetAllCitiesQuery(filters);
   const [deleteLocation, { isLoading: isDeleting }] = useDeleteLocationMutation();
 
-  const locations = citiesData?.data?.data || [];
+  const locations = citiesData?.data?.items || [];
   const pagination = {
     currentPage: citiesData?.data?.currentPage || 1,
     totalPages: citiesData?.data?.totalPages || 1,

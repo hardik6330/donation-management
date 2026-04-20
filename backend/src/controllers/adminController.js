@@ -125,7 +125,6 @@ export const getAnnouncementHistory = asyncHandler(async (req, res) => {
     count,
     limit,
     page,
-    dataKey: 'history'
   });
 
   return sendSuccess(res, responseData, 'Announcement history fetched successfully');
@@ -245,7 +244,6 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'donations'
   });
 
   return sendSuccess(res, responseData, 'All donations records fetched successfully');

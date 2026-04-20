@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM } from '../../config/env.js';
+import { retryWithBackoff } from '../retryHelper.js';
 
 // 1. Create Nodemailer Transporter
 const transporter = nodemailer.createTransport({
@@ -10,6 +11,9 @@ const transporter = nodemailer.createTransport({
     user: SMTP_USER,
     pass: SMTP_PASS,
   },
+  connectionTimeout: 10000, // 10s
+  greetingTimeout: 10000, // 10s
+  socketTimeout: 15000, // 15s
 });
 
 // 2. Validate email format
@@ -24,14 +28,18 @@ export const sendEmail = async (to, subject, html, attachments = []) => {
     return { success: false, skipped: true };
   }
 
-  try {
-    await transporter.sendMail({
+  const sendMailRequest = async () => {
+    return await transporter.sendMail({
       from: SMTP_FROM || SMTP_USER,
       to: to.trim(),
       subject,
       html,
       attachments,
     });
+  };
+
+  try {
+    await retryWithBackoff(sendMailRequest, 3, 2000);
     return { success: true };
   } catch (error) {
     console.error(`Error sending email to ${to}:`, error.message);

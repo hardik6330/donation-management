@@ -19,7 +19,6 @@ const AnnouncementPage = () => {
   const donorPagination = useDropdownPagination(triggerGetDonors, {
     limit: 20,
     fields: 'id,name,mobileNumber,donationCount,lastMessage,lastMessageTime,city',
-    rowsKey: 'donors',
     skip: userType !== 'donor'
   });
 
@@ -27,7 +26,6 @@ const AnnouncementPage = () => {
   const sevakPagination = useDropdownPagination(triggerGetSevaks, {
     limit: 20,
     fields: 'id,name,mobileNumber,city,lastMessage,lastMessageTime',
-    rowsKey: 'rows',
     skip: userType !== 'sevak'
   });
 

@@ -44,7 +44,7 @@ const Category = () => {
     additionalParams: { all: true } 
   });
   
-  const categories = categoriesData?.data?.data || [];
+  const categories = categoriesData?.data?.items || [];
   const pagination = {
     currentPage: categoriesData?.data?.currentPage || 1,
     totalPages: categoriesData?.data?.totalPages || 1,

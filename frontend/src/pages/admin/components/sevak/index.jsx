@@ -37,7 +37,7 @@ const Sevak = () => {
   const [deleteSevak, { isLoading: isDeleting }] = useDeleteSevakMutation();
   const [updateSevak] = useUpdateSevakMutation();
 
-  const sevaks = sevaksData?.data?.rows || [];
+  const sevaks = sevaksData?.data?.items || [];
   const pagination = {
     currentPage: sevaksData?.data?.currentPage || 1,
     totalPages: sevaksData?.data?.totalPages || 1,

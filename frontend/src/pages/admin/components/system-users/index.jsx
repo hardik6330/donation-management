@@ -32,7 +32,7 @@ const SystemUser = () => {
   const { data: rolesData } = useGetRolesQuery();
   const [deleteUser, { isLoading: isDeleting }] = useDeleteSystemUserMutation();
 
-  const users = usersData?.data?.rows || [];
+  const users = usersData?.data?.items || [];
   const roles = rolesData?.data || [];
   const pagination = {
     currentPage: usersData?.data?.currentPage || 1,

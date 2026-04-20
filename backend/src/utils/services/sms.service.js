@@ -1,4 +1,6 @@
+import axios from 'axios';
 import { VITE_FAST2SMS_API_KEY } from '../../config/env.js';
+import { retryWithBackoff } from '../retryHelper.js';
 
 /**
  * Send SMS using Fast2SMS API (India)
@@ -14,22 +16,24 @@ export const sendSMS = async (mobileNumber, message) => {
     return { success: false, skipped: true };
   }
 
-  try {
-    const response = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-      method: 'POST',
+  const sendRequest = async () => {
+    const response = await axios.post('https://www.fast2sms.com/dev/bulkV2', {
+      "route": "q",
+      "message": message,
+      "language": "english",
+      "numbers": mobileNumber,
+    }, {
       headers: {
         'authorization': VITE_FAST2SMS_API_KEY,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({
-        "route" : "q",
-        "message" : message,
-        "language" : "english",
-        "numbers" : mobileNumber,
-      })
+      timeout: 10000 // 10s timeout
     });
+    return response.data;
+  };
 
-    const result = await response.json();
+  try {
+    const result = await retryWithBackoff(sendRequest, 3, 1000);
     
     if (result.return) {
       return { success: true, result };
@@ -38,8 +42,8 @@ export const sendSMS = async (mobileNumber, message) => {
       return { success: false, error: result.message };
     }
   } catch (error) {
-    console.error(`Error sending SMS to ${mobileNumber}:`, error.message);
-    return { success: false, error: error.message };
+    console.error(`Error sending SMS to ${mobileNumber}:`, error.response?.data || error.message);
+    return { success: false, error: error.response?.data?.message || error.message };
   }
 };
 

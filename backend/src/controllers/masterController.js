@@ -84,7 +84,6 @@ export const getCities = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'data'
   });
 
   return sendSuccess(res, response, 'All cities records fetched successfully');
@@ -123,7 +122,7 @@ export const getAllStates = asyncHandler(async (req, res) => {
     };
   });
 
-  const response = getPaginatedResponse({ rows: formatted, count, limit, page, isFetchAll, dataKey: 'data' });
+  const response = getPaginatedResponse({ rows: formatted, count, limit, page, isFetchAll });
   return sendSuccess(res, response, 'All states fetched successfully');
 });
 
@@ -144,7 +143,7 @@ export const getAllCountries = asyncHandler(async (req, res) => {
     offset: isFetchAll ? undefined : offset
   });
 
-  const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll, dataKey: 'data' });
+  const response = getPaginatedResponse({ rows, count, limit, page, isFetchAll });
   return sendSuccess(res, response, 'All countries fetched successfully');
 });
 
@@ -194,7 +193,6 @@ export const getAllCities = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'data'
   });
 
   return sendSuccess(res, response, 'All cities fetched successfully');
@@ -225,7 +223,6 @@ export const getSubLocations = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'data'
   });
 
   return sendSuccess(res, response, 'All sub-locations records fetched successfully');
@@ -270,7 +267,6 @@ export const getCategories = asyncHandler(async (req, res) => {
     limit,
     page,
     isFetchAll,
-    dataKey: 'data'
   });
 
   return sendSuccess(res, response, 'All categories records fetched successfully');

@@ -36,7 +36,7 @@ const Gaushala = () => {
   const { data: gaushalasData, isLoading: loading } = useGetGaushalasQuery(filters);
   const [deleteGaushala, { isLoading: isDeleting }] = useDeleteGaushalaMutation();
 
-  const gaushalas = gaushalasData?.data?.rows || [];
+  const gaushalas = gaushalasData?.data?.items || [];
   const pagination = {
     currentPage: gaushalasData?.data?.currentPage || 1,
     totalPages: gaushalasData?.data?.totalPages || 1,
