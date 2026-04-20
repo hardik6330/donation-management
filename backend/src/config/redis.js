@@ -6,6 +6,17 @@ let redis = null;
 if (REDIS_URL) {
   redis = new Redis(REDIS_URL, {
     maxRetriesPerRequest: null, // Required for BullMQ
+    retryStrategy: (times) => {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+    reconnectOnError: (err) => {
+      const targetError = 'READONLY';
+      if (err.message.includes(targetError)) {
+        return true;
+      }
+      return false;
+    }
   });
 
   redis.on('connect', () => {
