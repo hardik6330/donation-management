@@ -6,7 +6,7 @@ import SearchableDropdown from '../../../../components/common/SearchableDropdown
 import FormInput from '../../../../components/common/FormInput';
 import { useUpdateDonationMutation } from '../../../../services/donationApi';
 
-const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
+const EditPayLaterModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
   const [paymentMode, setPaymentMode] = useState('cash');
   const [paymentModeName, setPaymentModeName] = useState('Cash');
@@ -85,7 +85,8 @@ const EditPayLaterModal = ({ isOpen, onClose, donation }) => {
     }
 
     try {
-      await updateDonation(updateData).unwrap();
+      const result = await updateDonation(updateData).unwrap();
+      if (typeof onUpdated === 'function') onUpdated(result);
       toast.success('Payment updated successfully');
       onClose();
     } catch (error) {

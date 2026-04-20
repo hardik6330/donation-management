@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import { useUpdateDonationMutation } from '../../../../services/donationApi';
 
-const EditPartialPaymentModal = ({ isOpen, onClose, donation }) => {
+const EditPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
   const [remainingAmountInput, setRemainingAmountInput] = useState('');
 
@@ -74,12 +74,13 @@ const EditPartialPaymentModal = ({ isOpen, onClose, donation }) => {
     }
 
     try {
-      await updateDonation({
+      const result = await updateDonation({
         id: donation.id,
         status: 'partially_paid',
         remainingAmount: numericRemainingAmount
       }).unwrap();
 
+      if (typeof onUpdated === 'function') onUpdated(result);
       toast.success('Partial payment updated successfully');
       onClose();
     } catch (error) {

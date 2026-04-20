@@ -6,7 +6,7 @@ import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import { useUpdateDonationMutation } from '../../../../services/donationApi';
 
-const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
+const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
   const [addAmount, setAddAmount] = useState('');
   const [notes, setNotes] = useState('');
@@ -87,13 +87,14 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation }) => {
     }
 
     try {
-      await updateDonation({
+      const result = await updateDonation({
         id: donation.id,
         paymentMode: paymentMode,
         remainingAmount: updatedRemainingAmount,
         notes: notes
       }).unwrap();
 
+      if (typeof onUpdated === 'function') onUpdated(result);
       toast.success('Partial payment added successfully');
       onClose();
     } catch (error) {

@@ -89,10 +89,23 @@ const Donation = () => {
   }
 
   // Safety: auto-stop focused polling after 30s regardless of outcome.
-  const handleDonationCreated = (id) => {
+  const startSlipPolling = (id) => {
+    if (!id) return;
+    handledIdRef.current = null;
     setPendingDonationId(id);
     if (pendingTimeoutRef.current) clearTimeout(pendingTimeoutRef.current);
     pendingTimeoutRef.current = setTimeout(() => setPendingDonationId(null), 30000);
+  };
+
+  const handleDonationCreated = (id) => startSlipPolling(id);
+
+  // Called by edit/add-partial modals after update. Only start polling if the
+  // donation just became completed and the slip isn't generated yet.
+  const handleDonationUpdated = (result) => {
+    const d = result?.data;
+    if (d?.id && d?.status === 'completed' && !d?.slipUrl) {
+      startSlipPolling(d.id);
+    }
   };
 
   useEffect(() => () => {
@@ -218,6 +231,7 @@ const Donation = () => {
           isOpen={!!editingPartialDonation}
           donation={editingPartialDonation}
           onClose={() => setEditingPartialDonation(null)}
+          onUpdated={handleDonationUpdated}
         />
       )}
 
@@ -226,6 +240,7 @@ const Donation = () => {
           isOpen={!!addingPartialDonation}
           donation={addingPartialDonation}
           onClose={() => setAddingPartialDonation(null)}
+          onUpdated={handleDonationUpdated}
         />
       )}
 
@@ -234,6 +249,7 @@ const Donation = () => {
           isOpen={!!editingPayLaterDonation}
           donation={editingPayLaterDonation}
           onClose={() => setEditingPayLaterDonation(null)}
+          onUpdated={handleDonationUpdated}
         />
       )}
     </div>
