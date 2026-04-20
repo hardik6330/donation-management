@@ -154,7 +154,7 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       // Coordinates and font sizes adjusted for full-bleed template
       // Date
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
-        .text(receiptDate, px(0.1011), py(0.420), { width: W * 0.18, align: 'left', lineBreak: false });
+        .text(receiptDate, px(0.1011), py(0.425), { width: W * 0.18, align: 'left', lineBreak: false });
 
       // Slip Number (નં.)
       doc.fillColor('#1f2937').font('Helvetica-Bold').fontSize(fs(0.014))
@@ -163,16 +163,16 @@ export const generateDonationSlipBuffer = (user, amount, cause, donationId, paym
       // Handle donor name with fallback font for English characters
       const donorNameFont = (hasGujaratiFont && hasNonLatin(donorName)) ? 'Gujarati-Bold' : 'Helvetica-Bold';
       doc.fillColor('#1f2937').font(donorNameFont).fontSize(fs(0.017))
-        .text(donorName, px(0.1011), py(0.465), { width: W * 0.24, lineBreak: false });
+        .text(donorName, px(0.1011), py(0.469), { width: W * 0.24, lineBreak: false });
 
       // Handle address with fallback font for English characters
       const donorAddressFont = (hasGujaratiFont && hasNonLatin(donorAddress)) ? 'Gujarati-Regular' : 'Helvetica';
       doc.fillColor('#1f2937').font(donorAddressFont).fontSize(fs(0.014))
-        .text(donorAddress, px(0.110), py(0.525), { width: W * 0.50, lineBreak: false });
+        .text(donorAddress, px(0.110), py(0.539), { width: W * 0.50, lineBreak: false });
 
       // Amount in words
       doc.fillColor('#1f2937').font(hasGujaratiFont ? 'Gujarati-Bold' : 'Helvetica-Bold').fontSize(fs(0.013))
-        .text(amountInWords, px(0.305), py(0.595), {
+        .text(amountInWords, px(0.305), py(0.599), {
           width: W * 0.46,
           height: W * 0.06,
           lineBreak: true,  
