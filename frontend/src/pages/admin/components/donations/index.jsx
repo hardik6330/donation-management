@@ -60,7 +60,7 @@ const Donation = () => {
 
   // API calls
   const { data: donationsData, isLoading: loading } = useGetAllDonationsQuery(queryFilters, {
-    pollingInterval: 8000,
+    pollingInterval: 30000,
     refetchOnFocus: true,
     refetchOnReconnect: true,
   });
