@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  useCreateOrderMutation
+  useCreateOrderMutation,
+  useGetLatestSlipNoQuery
 } from '../../../../services/donationApi';
 import {
   useGetUserByMobileQuery
@@ -38,6 +39,9 @@ const AddDonationModal = ({
 }) => {
   const storedPrefs = getStoredDonationPrefs();
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
+  const { data: latestSlipData } = useGetLatestSlipNoQuery(undefined, {
+    skip: !isOpen
+  });
 
   const [addForm, setAddForm] = useState({
     mobileNumber: '',
@@ -184,6 +188,16 @@ const AddDonationModal = ({
       return () => clearTimeout(timer);
     }
   }, [existingUser]);
+
+  // Auto-fill latest slip number
+  useEffect(() => {
+    if (isOpen && latestSlipData?.success && latestSlipData.data?.nextSlipNo) {
+      setAddForm(prev => ({
+        ...prev,
+        slipNo: latestSlipData.data.nextSlipNo
+      }));
+    }
+  }, [isOpen, latestSlipData]);
 
   const handleAddInputChange = (e) => {
     const { name, value } = e.target;

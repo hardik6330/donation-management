@@ -7,7 +7,8 @@ import {
   updateDonation,
   getDonationInstallments,
   getDonationStatus,
-  resendSlipWhatsApp
+  resendSlipWhatsApp,
+  getLatestSlipNo
 } from '../controllers/donationController.js';
 import { validate } from '../utils/validators/validate.js';
 import { donationSchema, donationUpdateSchema } from '../utils/validators/donation.validator.js';
@@ -16,6 +17,7 @@ import { protect, adminOnly } from '../middlewares/auth.js';
 const router = express.Router();
 
 router.get('/qr', generateQRCode);
+router.get('/latest-slip-no', protect, getLatestSlipNo);
 router.post('/order', validate(donationSchema), createDonationOrder);
 router.post('/verify', verifyPayment);
 router.get('/', getDonations);

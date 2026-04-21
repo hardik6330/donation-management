@@ -84,6 +84,22 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     slipNo
   } = req.body;
 
+  // 1. Handle Slip Number (Auto-increment if not provided)
+  let finalSlipNo = slipNo;
+  if (!finalSlipNo) {
+    const lastDonation = await Donation.findOne({
+      where: { slipNo: { [Op.ne]: null } },
+      order: [['createdAt', 'DESC']],
+      attributes: ['slipNo']
+    });
+
+    if (lastDonation && !isNaN(lastDonation.slipNo)) {
+      finalSlipNo = (parseInt(lastDonation.slipNo) + 1).toString();
+    } else {
+      finalSlipNo = "1"; // Fallback for first donation
+    }
+  }
+
   // 1. Generate Cause String based on Category, Location, and Katha
   let causeString = '';
   let categoryName = 'General Donation';
@@ -171,6 +187,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     paymentDate: (isDirectPay || isPartialPay) ? new Date() : null,
     paidAmount: isPartialPay ? partialPaidAmount : isDirectPay ? amount : null,
     remainingAmount: isPartialPay ? (amount - partialPaidAmount) : null,
+    slipNo: finalSlipNo,
   };
 
   const donation = await Donation.create(donationData);
@@ -203,7 +220,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         gaushalaId,
         kathaId,
         causeString,
-        slipNo
+        slipNo: finalSlipNo
       });
     } else {
       // Fallback for non-Redis environments (Legacy fire-and-forget)
@@ -229,7 +246,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             gaushala,
             katha,
             locationAddress,
-            slipNo
+            finalSlipNo
           );
           logger.info(`[Donation Fallback] ✅ PDF generated.`);
 
@@ -331,6 +348,22 @@ export const getDonationStatus = asyncHandler(async (req, res) => {
   const donation = await Donation.findByPk(id, { attributes: ['id', 'slipUrl'] });
   if (!donation) throw notFound('Donation');
   return sendSuccess(res, { ready: !!donation.slipUrl, slipUrl: donation.slipUrl || null });
+});
+
+// New endpoint: Fetch the latest slip number to pre-fill in frontend
+export const getLatestSlipNo = asyncHandler(async (req, res) => {
+  const lastDonation = await Donation.findOne({
+    where: { slipNo: { [Op.ne]: null } },
+    order: [['createdAt', 'DESC']],
+    attributes: ['slipNo']
+  });
+
+  let nextSlipNo = "1";
+  if (lastDonation && !isNaN(lastDonation.slipNo)) {
+    nextSlipNo = (parseInt(lastDonation.slipNo) + 1).toString();
+  }
+
+  return sendSuccess(res, { nextSlipNo }, 'Latest slip number fetched successfully');
 });
 
 export const getDonors = asyncHandler(async (req, res) => {
@@ -481,7 +514,7 @@ export const getDonors = asyncHandler(async (req, res) => {
 // 4. Update Donation
 export const updateDonation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { amount, cause, status, paymentMode, paymentDate, categoryId, locationId, paidAmount, remainingAmount, notes } = req.body;
+  const { amount, cause, status, paymentMode, paymentDate, categoryId, locationId, paidAmount, remainingAmount, notes, slipNo } = req.body;
 
   const donation = await Donation.findByPk(id);
   if (!donation) {
@@ -502,6 +535,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
     paymentDate: paymentDate || donation.paymentDate,
     categoryId: categoryId || donation.categoryId,
     locationId: locationId || donation.locationId,
+    slipNo: slipNo || donation.slipNo,
   };
 
   if (nextStatus === 'partially_paid') {
@@ -601,7 +635,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
             gaushala, 
             katha,
             locationAddress,
-            '-' // Default as slipNo is not saved in DB
+            donation.slipNo || '-'
           );
           
           const tasks = [];

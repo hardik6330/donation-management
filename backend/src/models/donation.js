@@ -87,6 +87,10 @@ export const Donation = sequelize.define('Donation', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  slipNo: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
   scopes: {
