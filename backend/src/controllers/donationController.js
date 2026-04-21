@@ -64,6 +64,7 @@ export const generateQRCode = asyncHandler(async (req, res) => {
 
 // 2. Razorpay Order Create Karo
 export const createDonationOrder = asyncHandler(async (req, res) => {
+  logger.info(`[Donation Create] 📥 Incoming Request Body: ${JSON.stringify(req.body)}`);
   const { 
     amount, 
     name, 
@@ -86,6 +87,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
   // 1. Handle Slip Number (Auto-increment if not provided)
   let finalSlipNo = slipNo;
+  logger.info(`[Donation Create] 🔢 Initial slipNo from body: ${slipNo}`);
   if (!finalSlipNo) {
     const lastDonation = await Donation.findOne({
       where: { slipNo: { [Op.ne]: null } },
@@ -98,7 +100,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     } else {
       finalSlipNo = "1"; // Fallback for first donation
     }
-    logger.info(`[Donation Create] 🔢 Auto-generated Slip No: ${finalSlipNo}`);
+    logger.info(`[Donation Create] 🔢 Auto-generated Slip No: ${finalSlipNo} (Last was: ${lastDonation?.slipNo || 'none'})`);
   } else {
     logger.info(`[Donation Create] 🔢 Using provided Slip No: ${finalSlipNo}`);
   }
@@ -147,6 +149,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       mobileNumber,
       password: tempPassword
     });
+    logger.info(`[Donation Create] 👤 New user created: ${user.id}`);
   } else {
     // Update existing user details if provided
     await user.update({
@@ -158,6 +161,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       country: country?.toUpperCase() || user.country,
       companyName: companyName || user.companyName
     });
+    logger.info(`[Donation Create] 👤 Existing user updated: ${user.id}`);
   }
 
   // 3. Handle Donation creation
@@ -193,8 +197,9 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     slipNo: finalSlipNo,
   };
 
+  logger.info(`[Donation Create] 💾 Attempting to create donation with data: ${JSON.stringify(donationData)}`);
   const donation = await Donation.create(donationData);
-  logger.info(`[Donation Create] ✅ Donation created in DB with ID: ${donation.id} | slipNo in DB: ${donation.slipNo}`);
+  logger.info(`[Donation Create] ✅ Donation created successfully. DB Record: ${JSON.stringify(donation.toJSON())}`);
 
   // 4. Create Initial Installment Record
   if (isDirectPay || isPartialPay) {
