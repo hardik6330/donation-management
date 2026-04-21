@@ -64,7 +64,6 @@ export const generateQRCode = asyncHandler(async (req, res) => {
 
 // 2. Razorpay Order Create Karo
 export const createDonationOrder = asyncHandler(async (req, res) => {
-  logger.info(`[Donation Create] 📥 Incoming Request Body: ${JSON.stringify(req.body)}`);
   const { 
     amount, 
     name, 
@@ -87,7 +86,6 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
   // 1. Handle Slip Number (Auto-increment if not provided)
   let finalSlipNo = slipNo;
-  logger.info(`[Donation Create] 🔢 Initial slipNo from body: ${slipNo}`);
   if (!finalSlipNo) {
     const lastDonation = await Donation.findOne({
       where: { slipNo: { [Op.ne]: null } },
@@ -100,9 +98,6 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     } else {
       finalSlipNo = "1"; // Fallback for first donation
     }
-    logger.info(`[Donation Create] 🔢 Auto-generated Slip No: ${finalSlipNo} (Last was: ${lastDonation?.slipNo || 'none'})`);
-  } else {
-    logger.info(`[Donation Create] 🔢 Using provided Slip No: ${finalSlipNo}`);
   }
 
   // 1. Generate Cause String based on Category, Location, and Katha
@@ -149,7 +144,6 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       mobileNumber,
       password: tempPassword
     });
-    logger.info(`[Donation Create] 👤 New user created: ${user.id}`);
   } else {
     // Update existing user details if provided
     await user.update({
@@ -161,7 +155,6 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       country: country?.toUpperCase() || user.country,
       companyName: companyName || user.companyName
     });
-    logger.info(`[Donation Create] 👤 Existing user updated: ${user.id}`);
   }
 
   // 3. Handle Donation creation
@@ -197,9 +190,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     slipNo: finalSlipNo,
   };
 
-  logger.info(`[Donation Create] 💾 Attempting to create donation with data: ${JSON.stringify(donationData)}`);
   const donation = await Donation.create(donationData);
-  logger.info(`[Donation Create] ✅ Donation created successfully. DB Record: ${JSON.stringify(donation.toJSON())}`);
 
   // 4. Create Initial Installment Record
   if (isDirectPay || isPartialPay) {
@@ -235,8 +226,6 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       // Fallback for non-Redis environments (Legacy fire-and-forget)
       (async () => {
         try {
-          logger.info(`[Donation Fallback] 🚀 Starting process for Donation ID: ${donation.id} | User: ${user.name}`);
-          
           const [gaushala, katha] = await Promise.all([
             gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
             kathaId ? Katha.findByPk(kathaId) : Promise.resolve(null),
@@ -244,7 +233,6 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
           let locationAddress = user.city || user.state || user.country || '';
 
-          logger.info(`[Donation Fallback] 📄 Generating PDF...`);
           const pdfBuffer = await generateDonationSlipBuffer(
             user,
             amount,
@@ -257,41 +245,32 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             locationAddress,
             finalSlipNo
           );
-          logger.info(`[Donation Fallback] ✅ PDF generated.`);
 
           const tasks = [];
 
-          logger.info(`[Donation Fallback] ☁️ Uploading to Cloudinary...`);
           const uploadTask = uploadSlipToCloudinary(pdfBuffer, user.name, user.mobileNumber, donation.id)
             .then(async url => {
-              logger.info(`[Donation Fallback] ✅ Uploaded to Cloudinary: ${url}`);
               await donation.update({ slipUrl: url });
               if (user.mobileNumber) {
-                logger.info(`[Donation Fallback] 📱 Sending WhatsApp...`);
                 const category = categoryId ? await Category.findByPk(categoryId) : null;
                 const categoryName = category?.name || causeString || 'ગૌસેવા';
                 const locationName = user.city || user.state || user.country || 'કોબડી';
                 await sendDetailedDonationSuccessWhatsAppPDF(user.mobileNumber, user.name, amount, categoryName, locationName, url);
-                logger.info(`[Donation Fallback] ✅ WhatsApp sent.`);
               }
             })
             .catch(err => logger.error(`[Donation ${donation.id}] Fallback Cloudinary Error:`, err));
           tasks.push(uploadTask);
 
           if (isValidEmail(user.email)) {
-            logger.info(`[Donation Fallback] 📧 Sending Email...`);
             const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
             const emailTask = sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
               { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
-            ]).then(() => logger.info(`[Donation Fallback] ✅ Email sent.`))
+            ])
               .catch(err => logger.error(`[Donation ${donation.id}] Fallback Email Error:`, err));
             tasks.push(emailTask);
-          } else {
-            logger.info(`[Donation Fallback] ⏭️ Email skipped (no valid email).`);
           }
 
           await Promise.all(tasks);
-          logger.info(`[Donation Fallback] ✨ ALL processes completed.`);
         } catch (error) {
           logger.error(`[Donation ${donation.id}] Fallback background processing error:`, error);
         }
@@ -361,7 +340,6 @@ export const getDonationStatus = asyncHandler(async (req, res) => {
 
 // New endpoint: Fetch the latest slip number to pre-fill in frontend
 export const getLatestSlipNo = asyncHandler(async (req, res) => {
-  logger.info('[Donation] Fetching latest slip number...');
   try {
     const lastDonation = await Donation.findOne({
       where: { slipNo: { [Op.ne]: null } },
@@ -372,9 +350,6 @@ export const getLatestSlipNo = asyncHandler(async (req, res) => {
     let nextSlipNo = "1";
     if (lastDonation && !isNaN(lastDonation.slipNo)) {
       nextSlipNo = (parseInt(lastDonation.slipNo) + 1).toString();
-      logger.info(`[Donation] Found last slipNo: ${lastDonation.slipNo}, next will be: ${nextSlipNo}`);
-    } else {
-      logger.info('[Donation] No previous slipNo found, starting with 1');
     }
 
     return sendSuccess(res, { nextSlipNo }, 'Latest slip number fetched successfully');
@@ -626,7 +601,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
 
   // Generate slip/email/SMS in background when donation becomes fully completed
   if (updateData.status === 'completed' && wasNotCompleted) {
-    logger.info(`[Donation Update] 🎯 Donation completed! Starting background tasks for Donation ID: ${donation.id} | slipNo: ${donation.slipNo}`);
     // Run background tasks without awaiting them to speed up response
     (async () => {
       try {

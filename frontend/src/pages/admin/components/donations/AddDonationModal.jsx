@@ -191,9 +191,7 @@ const AddDonationModal = ({
 
   // Auto-fill latest slip number
   useEffect(() => {
-    console.log('[AddDonationModal] latestSlipData:', latestSlipData);
     if (isOpen && latestSlipData?.success && latestSlipData.data?.nextSlipNo) {
-      console.log('[AddDonationModal] Setting slipNo to:', latestSlipData.data.nextSlipNo);
       setAddForm(prev => ({
         ...prev,
         slipNo: latestSlipData.data.nextSlipNo
