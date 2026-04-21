@@ -5,6 +5,7 @@ import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.j
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
+import { locationParentInclude } from '../utils/queryBuilder.js';
 
 export const getKathas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -34,16 +35,7 @@ export const getKathas = asyncHandler(async (req, res) => {
         model: Location,
         as: 'location',
         attributes: ['id', 'name', 'type'],
-        include: [{
-          model: Location,
-          as: 'parent',
-          attributes: ['id', 'name', 'type'],
-          include: [{
-            model: Location,
-            as: 'parent',
-            attributes: ['id', 'name', 'type']
-          }]
-        }]
+        include: [locationParentInclude(2)]
       },
       {
         model: Donation,

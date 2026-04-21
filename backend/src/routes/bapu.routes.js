@@ -1,8 +1,8 @@
 import express from 'express';
 import { getBapuSchedules, addBapuSchedule, updateBapuSchedule, deleteBapuSchedule } from '../controllers/bapuController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
-import { validate } from '../utils/validators/validate.js';
-import { bapuScheduleSchema } from '../utils/validators/bapu.validator.js';
+import { validate } from '../validators/validate.js';
+import { bapuScheduleSchema } from '../validators/bapu.validator.js';
 
 const router = express.Router();
 

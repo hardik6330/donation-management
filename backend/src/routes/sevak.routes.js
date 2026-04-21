@@ -7,8 +7,8 @@ import {
   deleteSevak 
 } from '../controllers/sevakController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
-import { validate } from '../utils/validators/validate.js';
-import { sevakSchema } from '../utils/validators/sevak.validator.js';
+import { validate } from '../validators/validate.js';
+import { sevakSchema } from '../validators/sevak.validator.js';
 
 const router = express.Router();
 

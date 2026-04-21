@@ -1,11 +1,6 @@
 import express from 'express';
 import {
   addLocationMaster,
-  addCategoryMaster,
-  getCategories,
-  addCombinedMasterData,
-  updateCategoryMaster,
-  deleteCategoryMaster,
   updateLocationMaster,
   deleteLocationMaster,
   getCities,
@@ -13,10 +8,17 @@ import {
   getAllStates,
   getAllCountries,
   getSubLocations
-} from '../controllers/masterController.js';
+} from '../controllers/locationController.js';
+import {
+  addCategoryMaster,
+  getCategories,
+  addCombinedMasterData,
+  updateCategoryMaster,
+  deleteCategoryMaster
+} from '../controllers/categoryController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
-import { validate } from '../utils/validators/validate.js';
-import { locationSchema, categorySchema, combinedMasterSchema } from '../utils/validators/master.validator.js';
+import { validate } from '../validators/validate.js';
+import { locationSchema, categorySchema, combinedMasterSchema } from '../validators/master.validator.js';
 
 const router = express.Router();
 

@@ -4,6 +4,7 @@ import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.j
 import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationFilter, formatLocationAddress } from '../utils/locationHelper.js';
 import { notFound, badRequest } from '../utils/httpError.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { locationParentInclude } from '../utils/queryBuilder.js';
 import { Op } from 'sequelize';
 
 export const addKartalDhun = asyncHandler(async (req, res) => {
@@ -36,16 +37,7 @@ export const getAllKartalDhun = asyncHandler(async (req, res) => {
       model: Location,
       as: 'location',
       attributes: ['id', 'name', 'type'],
-      include: [{
-        model: Location,
-        as: 'parent',
-        attributes: ['id', 'name', 'type'],
-        include: [{
-          model: Location,
-          as: 'parent',
-          attributes: ['id', 'name', 'type']
-        }]
-      }]
+      include: [locationParentInclude(2)]
     }],
     order: [['date', 'DESC']],
     limit,

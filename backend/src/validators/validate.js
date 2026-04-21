@@ -1,4 +1,4 @@
-import { sendError } from '../apiResponse.js';
+import { sendError } from '../utils/apiResponse.js';
 
 /**
  * Middleware to validate request body/query/params using Joi schema

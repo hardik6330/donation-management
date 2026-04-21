@@ -1,17 +1,19 @@
 import express from 'express';
 import {
-  createDonationOrder,
-  verifyPayment,
   getDonations,
-  generateQRCode,
   updateDonation,
   getDonationInstallments,
   getDonationStatus,
-  resendSlipWhatsApp,
   getLatestSlipNo
 } from '../controllers/donationController.js';
-import { validate } from '../utils/validators/validate.js';
-import { donationSchema, donationUpdateSchema } from '../utils/validators/donation.validator.js';
+import {
+  createDonationOrder,
+  verifyPayment,
+  generateQRCode
+} from '../controllers/donationPaymentController.js';
+import { resendSlipWhatsApp } from '../controllers/donationSlipController.js';
+import { validate } from '../validators/validate.js';
+import { donationSchema, donationUpdateSchema } from '../validators/donation.validator.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
 
 const router = express.Router();

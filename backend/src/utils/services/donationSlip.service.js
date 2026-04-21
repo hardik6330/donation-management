@@ -4,6 +4,7 @@ import fs from 'fs';
 import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import logger from '../logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,7 +41,7 @@ const loadAssets = () => {
 };
 
 // Initial load
-try { loadAssets(); } catch (e) { console.error('Asset cache failed:', e); }
+try { loadAssets(); } catch (e) { logger.error('Asset cache failed:', e); }
 
 const numberToGujaratiWords = (num) => {
   if (!Number.isFinite(num) || num <= 0) return 'શૂન્ય';
@@ -407,7 +408,7 @@ export const uploadSlipToCloudinary = async (pdfBuffer, donorName, mobileNumber,
       uploadOptions,
       (error, result) => {
         if (error) {
-          console.error(`[Cloudinary] ❌ Stream Upload Error for Donation ${donationId}:`, error);
+          logger.error(`[Cloudinary] Stream Upload Error for Donation ${donationId}:`, error);
           return reject(error);
         }
         // Store as .png URL so browser opens it as image directly (no PDF viewer needed)
@@ -418,7 +419,7 @@ export const uploadSlipToCloudinary = async (pdfBuffer, donorName, mobileNumber,
 
     // Add error listener to the stream itself
     uploadStream.on('error', (err) => {
-      console.error(`[Cloudinary] ❌ Stream Pipe Error for Donation ${donationId}:`, err);
+      logger.error(`[Cloudinary] Stream Pipe Error for Donation ${donationId}:`, err);
       reject(err);
     });
 
