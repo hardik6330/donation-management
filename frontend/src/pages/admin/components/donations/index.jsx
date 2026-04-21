@@ -72,7 +72,7 @@ const Donation = () => {
   // Focused polling for the just-created donation's slip status.
   const { data: statusData } = useGetDonationStatusQuery(pendingDonationId, {
     skip: !pendingDonationId,
-    pollingInterval: 1500,
+    pollingInterval: 2000,
   });
 
   // When the worker reports the slip is ready, stop polling and refresh the list.
