@@ -679,6 +679,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
             tasks.push(emailTask);
           }
 
+          /* 
           // Send SMS notification
           if (donor.mobileNumber) {
             const smsTask = (async () => {
@@ -714,6 +715,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
             })();
             tasks.push(smsTask);
           }
+          */
           
           await Promise.all(tasks);
         }
