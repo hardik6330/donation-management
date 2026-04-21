@@ -73,14 +73,13 @@ if (redis && !VERCEL) {
         // 3. Parallel Tasks: Update DB & Send Notifications (Maximum Concurrency)
         const finalTasks = [];
 
-        // DB Update
+        // DB Update - Essential, throw if fails
         finalTasks.push(
           donation.update({ slipUrl: url })
             .then(() => logger.info(`[Queue] ✅ DB updated with slipUrl: ${donationId}`))
-            .catch(err => logger.error(`[Queue] ❌ DB update failed:`, err))
         );
 
-        // WhatsApp Notification
+        // WhatsApp Notification - Throw if fails to trigger retry
         if (user.mobileNumber) {
           logger.info(`[Queue] 📱 Sending WhatsApp notification to: ${user.mobileNumber}...`);
           const categoryName = category?.name || causeString || 'ગૌસેવા';
@@ -95,11 +94,10 @@ if (redis && !VERCEL) {
               locationName,
               url
             ).then(() => logger.info(`[Queue] ✅ WhatsApp sent successfully to: ${user.mobileNumber}`))
-             .catch(err => logger.error(`[Queue] ❌ WhatsApp failed:`, err))
           );
         }
 
-        // Email Notification — skip entirely if no valid email (avoids SMTP connection overhead)
+        // Email Notification - Throw if fails to trigger retry
         if (isValidEmail(user.email)) {
           logger.info(`[Queue] 📧 Sending Email notification to: ${user.email}...`);
           const emailHtml = getDonationEmailTemplate(user.name, amount, causeString, donation.id);
@@ -107,13 +105,12 @@ if (redis && !VERCEL) {
             sendEmail(user.email, 'Donation Received - Thank You!', emailHtml, [
               { filename: `Donation_Receipt_${donation.id}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }
             ]).then(() => logger.info(`[Queue] ✅ Email sent successfully to: ${user.email}`))
-              .catch(err => logger.error(`[Queue] ❌ Email failed:`, err))
           );
         } else {
           logger.info(`[Queue] ⏭️ Email skipped (no valid email) for Donation: ${donationId}`);
         }
 
-        // Execute everything together
+        // Execute everything together - if any fails, BullMQ will retry based on defaultJobOptions
         await Promise.all(finalTasks);
 
         logger.info(`[Queue] ✨ ALL processes completed for Donation: ${donationId}`);
@@ -122,7 +119,11 @@ if (redis && !VERCEL) {
         throw error; // Let BullMQ handle the retry
       }
     },
-    { connection: redis }
+    { 
+      connection: redis,
+      stalledInterval: 30000, // 30s before considering job stalled
+      maxStalledCount: 2,     // retry stalled jobs twice
+    }
   );
 
   worker.on('failed', (job, err) => {
