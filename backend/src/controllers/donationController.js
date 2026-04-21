@@ -18,6 +18,7 @@ import { donationQueue } from '../utils/services/donationQueue.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
 import logger from '../utils/logger.js';
+import { VERCEL } from '../config/env.js';
 
 // Constants for reminder scheduling
 const REMINDER_DAYS_AFTER = 5;
@@ -190,9 +191,10 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     await managePartialPaymentReminder(donation.id, user.id, 'partially_paid');
   }
 
-  // --- Background Tasks (Queue-based) ---
+  // --- Background Tasks (Queue-based or Fallback) ---
   if (isDirectPay) {
-    if (donationQueue) {
+    // Skip queue on Vercel as worker won't run reliably in serverless
+    if (donationQueue && !VERCEL) {
       await donationQueue.add('process-donation', {
         donationId: donation.id,
         userId: user.id,

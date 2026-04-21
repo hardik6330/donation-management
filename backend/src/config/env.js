@@ -51,3 +51,4 @@ export const VITE_FAST2SMS_API_KEY = process.env.VITE_FAST2SMS_API_KEY;
 export const WHATSAPP_ACCESS_TOKEN = process.env.WHATSAPP_ACCESS_TOKEN;
 export const WHATSAPP_PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID;
 export const WHATSAPP_BUSINESS_ACCOUNT_ID = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID;
+export const VERCEL = process.env.VERCEL === '1';

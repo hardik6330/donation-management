@@ -5,6 +5,7 @@ import { generateDonationSlipBuffer, uploadSlipToCloudinary } from './donationSl
 import { sendEmail, getDonationEmailTemplate, isValidEmail } from './email.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from './whatsapp.service.js';
 import { sendDetailedDonationSMS } from './sms.service.js';
+import { VERCEL } from '../../config/env.js';
 import logger from '../logger.js';
 
 const QUEUE_NAME = 'donation-processing';
@@ -22,8 +23,8 @@ export const donationQueue = redis ? new Queue(QUEUE_NAME, {
   },
 }) : null;
 
-// 2. Worker logic
-if (redis) {
+// 2. Worker logic - Disable on Vercel as serverless functions terminate before completion
+if (redis && !VERCEL) {
   const worker = new Worker(
     QUEUE_NAME,
     async (job) => {
