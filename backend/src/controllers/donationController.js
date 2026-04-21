@@ -98,6 +98,9 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     } else {
       finalSlipNo = "1"; // Fallback for first donation
     }
+    logger.info(`[Donation Create] 🔢 Auto-generated Slip No: ${finalSlipNo}`);
+  } else {
+    logger.info(`[Donation Create] 🔢 Using provided Slip No: ${finalSlipNo}`);
   }
 
   // 1. Generate Cause String based on Category, Location, and Katha
@@ -191,6 +194,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   };
 
   const donation = await Donation.create(donationData);
+  logger.info(`[Donation Create] ✅ Donation created in DB with ID: ${donation.id} | slipNo in DB: ${donation.slipNo}`);
 
   // 4. Create Initial Installment Record
   if (isDirectPay || isPartialPay) {
@@ -607,6 +611,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
 
   // Generate slip/email/SMS in background when donation becomes fully completed
   if (updateData.status === 'completed' && wasNotCompleted) {
+    logger.info(`[Donation Update] 🎯 Donation completed! Starting background tasks for Donation ID: ${donation.id} | slipNo: ${donation.slipNo}`);
     // Run background tasks without awaiting them to speed up response
     (async () => {
       try {
