@@ -1,7 +1,7 @@
 import { Role } from '../../models/index.js';
 import logger from '../logger.js';
 
-const MODULES = ['dashboard', 'donations', 'donors', 'expenses', 'sevaks', 'gaushala', 'katha', 'mandal', 'kartalDhun', 'bapuSchedule', 'category', 'location', 'users'];
+const MODULES = ['dashboard', 'donations', 'donors', 'announcement', 'expenses', 'income', 'sevaks', 'gaushala', 'katha', 'mandal', 'kartalDhun', 'bapuSchedule', 'category', 'location', 'users'];
 
 export const seedRoles = async () => {
   try {

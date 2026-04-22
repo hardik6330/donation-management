@@ -35,6 +35,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { id: 'donors', label: 'Donors', icon: Users, path: '/admin/donors', show: hasPermission('donors') },
     { id: 'announcement', label: 'Announcement', icon: MessageSquare, path: '/admin/announcement', show: hasPermission('announcement') },
     { id: 'expenses', label: 'Expenses', icon: IndianRupee, path: '/admin/expenses', show: hasPermission('expenses') },
+    { id: 'income', label: 'Income', icon: FileText, path: '/admin/income', show: hasPermission('income') },
     { id: 'sevaks', label: 'Sevaks', icon: UserCheck, path: '/admin/sevaks', show: hasPermission('sevaks') },
     { id: 'gaushala', label: 'Gaushala', icon: Building2, path: '/admin/gaushala', show: hasPermission('gaushala') },
     { id: 'katha', label: 'Katha', icon: Mic2, path: '/admin/katha', show: hasPermission('katha') },
