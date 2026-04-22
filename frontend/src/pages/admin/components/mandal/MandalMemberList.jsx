@@ -157,9 +157,8 @@ const MandalMemberList = () => {
 
       <AddMemberModal
         isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        editingData={editingMember}
-        mandals={mandals}
+        onClose={() => { setIsAddModalOpen(false); setEditingMember(null); }}
+        editingMember={editingMember}
         cityPagination={cityPagination}
       />
 

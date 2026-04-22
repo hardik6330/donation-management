@@ -13,7 +13,7 @@ import SearchableDropdown from '../../../../components/common/SearchableDropdown
 const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination }) => {
   const [addMember, { isLoading: isAdding }] = useAddMandalMemberMutation();
   const [updateMember, { isLoading: isUpdating }] = useUpdateMandalMemberMutation();
-  const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true' });
+  const { data: mandalsData } = useGetMandalsQuery({ fetchAll: 'true', isActive: 'true' });
   
   const mandals = mandalsData?.data?.items || [];
   const cities = cityPagination.items;
@@ -24,7 +24,7 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
   const cityRef = useRef(null);
   const submitRef = useRef(null);
 
-  const [form, setForm] = useState({ name: '', mobileNumber: '', mandalId: '', mandalName: '', city: '' });
+  const [form, setForm] = useState({ name: '', mobileNumber: '', mandalId: '', mandalName: '', city: '', isActive: true });
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   useEffect(() => {
@@ -36,9 +36,10 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
           mandalId: editingMember.mandalId || '',
           mandalName: editingMember.mandal?.name || '',
           city: editingMember.city || '',
+          isActive: editingMember.isActive ?? true,
         });
       } else {
-        setForm({ name: '', mobileNumber: '', mandalId: '', mandalName: '', city: '' });
+        setForm({ name: '', mobileNumber: '', mandalId: '', mandalName: '', city: '', isActive: true });
       }
     }, 0);
     return () => clearTimeout(timer);
@@ -56,7 +57,11 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    if (type === 'checkbox') {
+      setForm(prev => ({ ...prev, [name]: checked }));
+      return;
+    }
     if (name === 'mobileNumber') {
       setForm(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
       return;
@@ -84,8 +89,9 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
       const payload = { 
         name: form.name, 
         mobileNumber: form.mobileNumber, 
-        mandalId: form.mandalId, 
-        city: form.city 
+        mandalId: form.mandalId,
+        city: form.city,
+        isActive: form.isActive
       };
       if (editingMember) {
         await updateMember({ id: editingMember.id, ...payload }).unwrap();
@@ -150,6 +156,24 @@ const AddMemberModal = ({ isOpen, onClose, editingMember = null, cityPagination 
             loading={cityPagination.loading}
             allowTransliteration={false}
           />
+        </div>
+        <div className="space-y-2">
+          <label className="text-xs font-bold text-gray-500 uppercase">Status</label>
+          <div className="flex items-center h-[42px]">
+            <label className="relative inline-flex items-center cursor-pointer group">
+              <input
+                type="checkbox"
+                name="isActive"
+                className="sr-only peer"
+                checked={form.isActive}
+                onChange={handleChange}
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-100 rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className={`ms-3 text-sm font-bold transition ${form.isActive ? 'text-blue-600' : 'text-gray-400'}`}>
+                {form.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </label>
+          </div>
         </div>
         <div className="pt-4 flex items-center gap-3">
           <button type="button" onClick={onClose} className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition">Cancel</button>

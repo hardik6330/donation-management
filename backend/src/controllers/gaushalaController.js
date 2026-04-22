@@ -12,12 +12,14 @@ const crud = createCRUDController({ Model: Gaushala, name: 'Gaushala' });
 
 export const getGaushalas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
-  const { search, city, state, country } = req.query;
-  
+  const { search, city, state, country, active } = req.query;
+
   const activeScopes = [
     { method: ['search', search] },
     { method: ['location', city, state, country] }
   ].filter(s => s !== null && s !== undefined);
+
+  if (active === 'true' || active === true) activeScopes.push('active');
 
   // If only specific fields are requested (e.g. id, name), avoid complex logic
   if (requestedFields) {
