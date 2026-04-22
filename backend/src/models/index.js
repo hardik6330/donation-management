@@ -18,6 +18,7 @@ import { BapuSchedule } from './bapuSchedule.js';
 import { KartalDhun } from './kartalDhun.js';
 import { Notification } from './notification.js';
 import { Announcement } from './announcement.js';
+import { Income } from './income.js';
 
 // ──────────────────────────────────────
 // Associations
@@ -78,6 +79,9 @@ Expense.belongsTo(Gaushala, { as: 'gaushala', foreignKey: 'gaushalaId' });
 Katha.hasMany(Expense, { foreignKey: 'kathaId' });
 Expense.belongsTo(Katha, { as: 'katha', foreignKey: 'kathaId' });
 
+// Income associations
+// No associations for Income as gaushalaId and kathaId were removed
+
 // BapuSchedule <-> Location
 Location.hasMany(BapuSchedule, { foreignKey: 'locationId' });
 BapuSchedule.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
@@ -111,4 +115,5 @@ export {
   KartalDhun,
   Notification,
   Announcement,
+  Income,
 };

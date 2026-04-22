@@ -19,6 +19,7 @@ import LocationList from './pages/admin/components/location';
 import Profile from './pages/admin/components/profile/Profile';
 import BapuScheduleList from './pages/admin/components/bapu-schedule';
 import ExpenseList from './pages/admin/components/expense';
+import IncomeList from './pages/admin/components/income';
 import SevakList from './pages/admin/components/sevak';
 import KartalDhunList from './pages/admin/components/kartal-dhun';
 import MandalList from './pages/admin/components/mandal';
@@ -74,6 +75,7 @@ function App() {
                 <Route path="katha" element={<KathaList />} />
                 <Route path="bapu-schedule" element={<BapuScheduleList />} />
                 <Route path="expenses" element={<ExpenseList />} />
+                <Route path="income" element={<IncomeList />} />
                 <Route path="sevaks" element={<SevakList />} />
                 <Route path="mandal" element={<MandalList />} />
                 <Route path="mandal-members" element={<MandalMemberList />} />

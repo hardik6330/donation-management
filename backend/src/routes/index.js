@@ -11,6 +11,7 @@ import sevakRoutes from './sevak.routes.js';
 import mandalRoutes from './mandal.routes.js';
 import kartalDhunRoutes from './kartalDhun.routes.js';
 import roleRoutes from './role.routes.js';
+import incomeRoutes from './income.routes.js';
 
 const router = express.Router();
 
@@ -26,5 +27,6 @@ router.use('/sevak', sevakRoutes);
 router.use('/mandal', mandalRoutes);
 router.use('/kartal-dhun', kartalDhunRoutes);
 router.use('/roles', roleRoutes);
+router.use('/income', incomeRoutes);
 
 export default router;
