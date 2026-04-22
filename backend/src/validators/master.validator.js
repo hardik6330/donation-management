@@ -16,6 +16,12 @@ export const categorySchema = Joi.object({
   isActive: Joi.boolean().optional()
 });
 
+export const categoryPatchSchema = Joi.object({
+  name: Joi.string().optional(),
+  description: Joi.string().optional().allow(''),
+  isActive: Joi.boolean().optional()
+}).min(1);
+
 export const combinedMasterSchema = Joi.object({
   city: Joi.string().optional().allow(''),
   taluka: Joi.string().optional().allow(''),

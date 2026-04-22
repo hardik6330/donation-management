@@ -6,6 +6,9 @@ import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
 import { locationParentInclude } from '../utils/queryBuilder.js';
+import { createCRUDController } from '../utils/createCRUDController.js';
+
+const crud = createCRUDController({ Model: Katha, name: 'Katha' });
 
 export const getKathas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -128,10 +131,4 @@ export const updateKatha = asyncHandler(async (req, res) => {
   return sendSuccess(res, katha, 'Katha updated successfully');
 });
 
-export const deleteKatha = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const katha = await Katha.findByPk(id);
-  if (!katha) throw notFound('Katha');
-  await katha.destroy();
-  return sendSuccess(res, null, 'Katha deleted successfully');
-});
+export const deleteKatha = crud.remove;

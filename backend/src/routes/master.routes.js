@@ -18,7 +18,7 @@ import {
 } from '../controllers/categoryController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
-import { locationSchema, categorySchema, combinedMasterSchema } from '../validators/master.validator.js';
+import { locationSchema, categorySchema, categoryPatchSchema, combinedMasterSchema } from '../validators/master.validator.js';
 
 const router = express.Router();
 
@@ -34,6 +34,7 @@ router.post('/location', protect, adminOnly, validate(locationSchema), addLocati
 router.post('/category', protect, adminOnly, validate(categorySchema), addCategoryMaster);
 router.post('/combined', protect, adminOnly, validate(combinedMasterSchema), addCombinedMasterData);
 router.put('/category/:id', protect, adminOnly, validate(categorySchema), updateCategoryMaster);
+router.patch('/category/:id', protect, adminOnly, validate(categoryPatchSchema), updateCategoryMaster);
 router.delete('/category/:id', protect, adminOnly, deleteCategoryMaster);
 router.put('/location/:id', protect, adminOnly, updateLocationMaster);
 router.delete('/location/:id', protect, adminOnly, deleteLocationMaster);

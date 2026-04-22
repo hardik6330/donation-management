@@ -5,6 +5,9 @@ import { findOrCreateLocationStructure, extractLocationHierarchy, buildLocationF
 import { notFound, badRequest } from '../utils/httpError.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { locationParentInclude } from '../utils/queryBuilder.js';
+import { createCRUDController } from '../utils/createCRUDController.js';
+
+const crud = createCRUDController({ Model: KartalDhun, name: 'Record' });
 import { Op } from 'sequelize';
 
 export const addKartalDhun = asyncHandler(async (req, res) => {
@@ -76,11 +79,4 @@ export const updateKartalDhun = asyncHandler(async (req, res) => {
   return sendSuccess(res, record, 'Record updated successfully');
 });
 
-export const deleteKartalDhun = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const record = await KartalDhun.findByPk(id);
-  if (!record) throw notFound('Record');
-
-  await record.destroy();
-  return sendSuccess(res, null, 'Record deleted successfully');
-});
+export const deleteKartalDhun = crud.remove;

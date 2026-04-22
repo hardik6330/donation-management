@@ -78,7 +78,7 @@ const masterApi = apiSlice.injectEndpoints({
     updateCategory: builder.mutation({
       query: ({ id, ...data }) => ({
         url: `/master/category/${id}`,
-        method: 'PUT',
+        method: 'PATCH',
         body: data,
       }),
       invalidatesTags: ['Categories'],
