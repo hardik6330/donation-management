@@ -13,6 +13,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "axios": "^1.15.0",
     "bcryptjs": "^3.0.3",
     "bullmq": "^5.73.0",
@@ -29,9 +30,11 @@
     "mysql2": "^3.20.0",
     "node-cron": "^4.2.1",
     "nodemailer": "^8.0.4",
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.18.0",
     "qrcode": "^1.5.4",
     "razorpay": "^2.9.6",
+    "regenerator-runtime": "^0.14.1",
     "sequelize": "^6.37.8"
   },
   "devDependencies": {

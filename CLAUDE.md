@@ -39,8 +39,7 @@ backend/src/
 │   └── rateLimiter.js           # express-rate-limit for API protection
 ├── validators/                  # Joi schemas + validate middleware (top-level, middleware-tier)
 ├── assets/                      # Static assets
-│   ├── slip.jpg                 # Donation slip template
-│   ├── rasid-template.png       # Gujarati receipt template
+│   ├── SARVESHWAR GAU DHAM RASID BOOK.pdf  # Donation slip PDF template (overlaid per donation via pdf-lib)
 │   └── fonts/                   # NotoSansGujarati Regular & Bold
 └── utils/
     ├── apiResponse.js           # sendSuccess / sendError wrappers
