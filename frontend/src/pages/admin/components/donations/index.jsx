@@ -72,7 +72,7 @@ const Donation = () => {
   // Focused polling for the just-created donation's slip status.
   const { data: statusData } = useGetDonationStatusQuery(pendingDonationId, {
     skip: !pendingDonationId,
-    pollingInterval: 1500,
+    pollingInterval: 2000,
   });
 
   // When the worker reports the slip is ready, stop polling and refresh the list.
@@ -113,7 +113,10 @@ const Donation = () => {
   }, []);
   
   const [triggerGetGaushalas] = useLazyGetGaushalasQuery();
-  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas, {
+  const [triggerGetActiveGaushalas] = useLazyGetGaushalasQuery();
+  const gaushalaPagination = useDropdownPagination(triggerGetGaushalas);
+  const activeGaushalaPagination = useDropdownPagination(triggerGetActiveGaushalas, {
+    additionalParams: { active: 'true' }
   });
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
@@ -219,7 +222,7 @@ const Donation = () => {
         <AddDonationModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          gaushalaPagination={gaushalaPagination}
+          gaushalaPagination={activeGaushalaPagination}
           kathaPagination={kathaPagination}
           categoryPagination={activeCategoryPagination}
           onCreated={handleDonationCreated}

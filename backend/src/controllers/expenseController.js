@@ -4,6 +4,9 @@ import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.j
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound } from '../utils/httpError.js';
+import { createCRUDController } from '../utils/createCRUDController.js';
+
+const crud = createCRUDController({ Model: Expense, name: 'Expense' });
 
 // 1. Add New Expense
 export const addExpense = asyncHandler(async (req, res) => {
@@ -86,18 +89,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
   return sendSuccess(res, expense, 'Expense updated successfully');
 });
 
-// 4. Delete Expense
-export const deleteExpense = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const expense = await Expense.findByPk(id);
-  
-  if (!expense) {
-    throw notFound('Expense');
-  }
-
-  await expense.destroy();
-  return sendSuccess(res, null, 'Expense deleted successfully');
-});
+export const deleteExpense = crud.remove;
 
 // 5. Get Expense Stats
 export const getExpenseStats = asyncHandler(async (req, res) => {

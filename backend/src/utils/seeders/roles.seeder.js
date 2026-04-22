@@ -1,4 +1,5 @@
 import { Role } from '../../models/index.js';
+import logger from '../logger.js';
 
 const MODULES = ['dashboard', 'donations', 'donors', 'expenses', 'sevaks', 'gaushala', 'katha', 'mandal', 'kartalDhun', 'bapuSchedule', 'category', 'location', 'users'];
 
@@ -39,8 +40,8 @@ export const seedRoles = async () => {
       await Role.create({ name: 'Entry Operator', permissions: operatorPerms, description: 'Data entry with limited access' });
     }
 
-    console.log('Default roles checked/seeded');
+    logger.info('Default roles checked/seeded');
   } catch (error) {
-    console.error('Error seeding roles:', error.message);
+    logger.error('Error seeding roles:', error.message);
   }
 };

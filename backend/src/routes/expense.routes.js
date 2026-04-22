@@ -7,8 +7,8 @@ import {
   getExpenseStats 
 } from '../controllers/expenseController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
-import { validate } from '../utils/validators/validate.js';
-import { expenseSchema } from '../utils/validators/expense.validator.js';
+import { validate } from '../validators/validate.js';
+import { expenseSchema } from '../validators/expense.validator.js';
 
 const router = express.Router();
 

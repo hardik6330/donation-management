@@ -23,7 +23,10 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 - **CRUD Endpoint Factory**: Frontend `createCRUDEndpoints()` factory generates list/add/update/delete RTK Query endpoints for pure-CRUD modules (gaushala, katha, bapu, sevak, kartalDhun, role, expense), eliminating ~140 LOC of boilerplate.
 - **Strict Donation Validation**: Joi `donationSchema` (create) and `donationUpdateSchema` (update) enforce numeric/positivity rules on `amount`, `paidAmount`, `remainingAmount`, plus cross-field checks for partial payments.
 - **Indexed Queries**: Composite `(status, createdAt)` index on Donations plus supporting indexes on status, paymentDate, razorpay_order_id; User indexed on name, isAdmin, createdAt.
-- **Structured Logging**: Winston-based logging with file rotation (error + combined logs), colored console output, and Morgan HTTP request logging.
+- **Structured Logging**: Winston-based logging with file rotation (error + combined logs), colored console output, and Morgan HTTP request logging. All services, seeders, and controllers route diagnostics through the Winston logger — no stray `console.*` calls.
+- **Split Controllers**: Donation logic separated into `donationController` (CRUD read/update), `donationPaymentController` (create/verify/QR), and `donationSlipController` (resend WhatsApp); master data split into `locationController` and `categoryController`.
+- **Shared Query Builders**: `utils/queryBuilder.js` centralizes reusable Sequelize include patterns (e.g. `locationParentInclude(depth)` for the recursive Location.parent chain) so controllers don't hand-roll nested includes.
+- **Top-level Validators**: Joi schemas + `validate` middleware live in `backend/src/validators/` (promoted from `utils/`) since they operate at the middleware tier.
 - **Skeleton Loading States**: Dashboard cards with animated skeleton placeholders for smooth loading UX.
 - **Enhanced Security & Performance**: JWT-based authentication, Joi validation, Rate limiting, and **Clustered/Serverless-optimized DB initialization**.
 

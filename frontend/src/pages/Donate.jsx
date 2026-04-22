@@ -274,7 +274,7 @@ const Donate = () => {
   }, []);
 
   const { data: categoriesData } = useGetCategoriesQuery({ fetchAll: true });
-  const { data: gaushalasData, isFetching: isFetchingGaushalas } = useGetGaushalasQuery({ fetchAll: 'true' });
+  const { data: gaushalasData, isFetching: isFetchingGaushalas } = useGetGaushalasQuery({ fetchAll: 'true', active: 'true' });
   const { data: kathasData, isFetching: isFetchingKathas } = useGetKathasQuery({ fetchAll: 'true' });
 
   const categories = categoriesData?.data?.items || [];

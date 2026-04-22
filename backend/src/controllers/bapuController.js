@@ -5,6 +5,9 @@ import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.j
 import { Op } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
+import { createCRUDController } from '../utils/createCRUDController.js';
+
+const crud = createCRUDController({ Model: BapuSchedule, name: 'Schedule' });
 
 // Get all schedules with filtering
 export const getBapuSchedules = asyncHandler(async (req, res) => {
@@ -103,12 +106,4 @@ export const updateBapuSchedule = asyncHandler(async (req, res) => {
   return sendSuccess(res, schedule, 'Schedule updated successfully');
 });
 
-// Delete schedule
-export const deleteBapuSchedule = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const schedule = await BapuSchedule.findByPk(id);
-  if (!schedule) throw notFound('Schedule');
-
-  await schedule.destroy();
-  return sendSuccess(res, null, 'Schedule deleted successfully');
-});
+export const deleteBapuSchedule = crud.remove;

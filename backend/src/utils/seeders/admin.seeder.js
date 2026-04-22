@@ -2,6 +2,7 @@ import { User, Role } from '../../models/index.js';
 import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 import { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_MOBILE } from '../../config/env.js';
+import logger from '../logger.js';
 
 export const seedAdmin = async () => {
   try {
@@ -18,7 +19,7 @@ export const seedAdmin = async () => {
       });
 
       if (!adminRole) {
-        console.log('Admin role not found during admin seeding, check roles seeder.');
+        logger.warn('Admin role not found during admin seeding, check roles seeder.');
         return;
       }
 
@@ -32,11 +33,11 @@ export const seedAdmin = async () => {
         roleId: adminRole.id,
         created_by: 'System',
       });
-      console.log(`Initial Admin created successfully with role: ${adminRole.name}`);
+      logger.info(`Initial Admin created successfully with role: ${adminRole.name}`);
     } else {
-      console.log('Admin already exists, skipping creation');
+      logger.info('Admin already exists, skipping creation');
     }
   } catch (error) {
-    console.error('Error seeding admin:', error.message);
+    logger.error('Error seeding admin:', error.message);
   }
 };

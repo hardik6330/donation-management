@@ -68,6 +68,10 @@ const donationApi = apiSlice.injectEndpoints({
     getDonationStatus: builder.query({
       query: (id) => `/donations/${id}/status`,
     }),
+    getLatestSlipNo: builder.query({
+      query: () => '/donations/latest-slip-no',
+      providesTags: ['Donations'],
+    }),
     resendWhatsApp: builder.mutation({
       query: (id) => ({
         url: `/donations/${id}/resend-whatsapp`,
@@ -90,5 +94,6 @@ export const {
   useGetAnnouncementHistoryQuery,
   useGetDonationInstallmentsQuery,
   useGetDonationStatusQuery,
+  useGetLatestSlipNoQuery,
   useResendWhatsAppMutation,
 } = donationApi;

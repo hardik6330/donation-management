@@ -5,8 +5,8 @@ import {
 } from '../controllers/userController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
 import { authRouteLimiter } from '../middlewares/rateLimiter.js';
-import { validate } from '../utils/validators/validate.js';
-import { loginSchema, registerSchema, systemUserSchema } from '../utils/validators/auth.validator.js';
+import { validate } from '../validators/validate.js';
+import { loginSchema, registerSchema, systemUserSchema } from '../validators/auth.validator.js';
 
 const router = express.Router();
 

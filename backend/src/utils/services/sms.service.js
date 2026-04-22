@@ -8,6 +8,9 @@ import { retryWithBackoff } from '../retryHelper.js';
  * @param {string} message - Message content
  */
 export const sendSMS = async (mobileNumber, message) => {
+  // Temporarily disabled due to API limits or errors
+  return { success: false, skipped: true, message: 'SMS service disabled' };
+
   if (!VITE_FAST2SMS_API_KEY) {
     return { success: false, skipped: true };
   }

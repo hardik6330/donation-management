@@ -29,6 +29,7 @@ export const donationSchema = Joi.object({
   country: Joi.string().optional().allow(''),
   companyName: Joi.string().optional().allow(''),
   referenceName: Joi.string().optional().allow(''),
+  slipNo: Joi.string().optional().allow('', null),
   paidAmount: Joi.number()
     .when('status', {
       is: 'partially_paid',
@@ -61,7 +62,8 @@ export const donationUpdateSchema = Joi.object({
     'number.base': 'Remaining amount must be a number',
     'number.min': 'Remaining amount cannot be negative'
   }),
-  notes: Joi.string().optional().allow('', null)
+  notes: Joi.string().optional().allow('', null),
+  slipNo: Joi.string().optional().allow('', null)
 }).custom((value, helpers) => {
   if (value.amount !== undefined && value.paidAmount !== undefined && value.paidAmount !== null) {
     if (Number(value.paidAmount) > Number(value.amount)) {

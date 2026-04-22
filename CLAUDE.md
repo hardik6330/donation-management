@@ -25,6 +25,10 @@ backend/src/
 │   └── cron.js                  # Node-cron scheduler (notification processing)
 ├── models/                      # 17 Sequelize models (with Sequelize scopes for filtering)
 ├── controllers/                 # Controller files
+│                                #   donation split: donationController (CRUD read/update),
+│                                #   donationPaymentController (create/verify/QR),
+│                                #   donationSlipController (resend WhatsApp slip)
+│                                #   master split: locationController + categoryController
 ├── routes/
 │   └── index.js                 # Route aggregator, all under /api/v1
 ├── middlewares/
@@ -33,6 +37,7 @@ backend/src/
 │   ├── errorHandler.js          # Global error handler
 │   ├── asyncHandler.js          # Async wrapper for controllers
 │   └── rateLimiter.js           # express-rate-limit for API protection
+├── validators/                  # Joi schemas + validate middleware (top-level, middleware-tier)
 ├── assets/                      # Static assets
 │   ├── slip.jpg                 # Donation slip template
 │   ├── rasid-template.png       # Gujarati receipt template
@@ -42,15 +47,18 @@ backend/src/
     ├── pagination.js            # getPaginationParams, getPaginatedResponse
     ├── filterHelper.js          # buildSearchFilter, buildDonationFilter (Sequelize where builders)
     ├── locationHelper.js        # Location hierarchy helpers
+    ├── queryBuilder.js          # Reusable Sequelize include builders (locationParentInclude, donorInclude, roleInclude, mandalInclude, gaushalaWithLocationInclude)
+    ├── donationHelpers.js       # Shared retryAction + managePartialPaymentReminder
+    ├── retryHelper.js           # retryWithBackoff (used by email/sms/whatsapp services)
     ├── httpError.js             # HTTP error class
     ├── logger.js                # Winston logger (file + console, Morgan stream)
     ├── services/                # External integrations
     │   ├── email.service.js     # Nodemailer + donation receipt template
     │   ├── sms.service.js       # Fast2SMS integration
     │   ├── donationSlip.service.js  # PDF generation + Cloudinary upload
+    │   ├── donationQueue.service.js # BullMQ queue for async donation side-effects
     │   ├── whatsapp.service.js  # WhatsApp Business API integration
     │   └── notification.service.js  # Cron-based notification processing
-    ├── validators/              # Joi schemas + validate middleware
     └── seeders/                 # Initial data setup (Roles, Admin)
 
 frontend/src/
@@ -143,8 +151,8 @@ frontend/src/
 ## Backend Structure
 
 - `src/config/`: `env.js` (validated env vars), `db.js` (Sequelize init), `cron.js` (node-cron scheduler).
-- `src/utils/services/`: External integrations (Email, SMS, WhatsApp, Cloudinary, PDF Slips, Notifications).
-- `src/utils/validators/`: Joi schemas and `validate` middleware.
+- `src/utils/services/`: External integrations (Email, SMS, WhatsApp, Cloudinary, PDF Slips, Notifications, Queue).
+- `src/validators/`: Joi schemas and `validate` middleware (top-level, middleware-tier).
 - `src/utils/seeders/`: Initial data setup (Roles, Admin).
 - `src/middlewares/`: `auth`, `errorHandler`, `asyncHandler`, `ipAuth`, `rateLimiter`.
 - `src/assets/`: Static assets (slip templates, Gujarati fonts).
@@ -177,6 +185,8 @@ frontend/src/
 - **Filtering:** `FilterSection` component with inline typing search (direct search in dropdown trigger). Server-side search for paginated dropdowns. `buildSearchFilter()` for generic multi-field search. `buildDonationFilter()` builds complex Sequelize where clauses.
 - **Validation:** 10-digit mobile number enforcement on input. Required Category/Gaushala/Katha validation in donation modal. Donation routes use `donationSchema` (create — `paidAmount` required+positive+less than `amount` when `status='partially_paid'`) and `donationUpdateSchema` (PUT — numeric checks on amount/paidAmount/remainingAmount + cross-field `paidAmount <= amount`).
 - **Responses:** All backend responses via `sendSuccess()`/`sendError()` wrappers.
+- **Query Builder:** Shared Sequelize include helpers in `utils/queryBuilder.js` (e.g. `locationParentInclude(depth)` for the recursive Location.parent chain) replace hand-rolled nested `include: [{ model, as }]` across controllers.
+- **Logging discipline:** Services, seeders, and controllers route all diagnostic output through the Winston `logger` — no stray `console.*` in notification/slip/seeder paths.
 - **WhatsApp Announcements:** Send templated WhatsApp messages to donors/sevaks with template variables and document attachments. Announcement history tracked in DB.
 - **Notification Scheduling:** Cron job (1-minute interval) processes pending partial payment reminders via Email + WhatsApp. Retry logic with attempt tracking.
 - **Gujarati Support:** Roman-to-Gujarati transliteration utility. Gujarati fonts for PDF slip generation. Language context for future UI translations.

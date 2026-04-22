@@ -5,6 +5,9 @@ import { Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound } from '../utils/httpError.js';
+import { createCRUDController } from '../utils/createCRUDController.js';
+
+const crud = createCRUDController({ Model: Sevak, name: 'Sevak' });
 
 // 1. Add New Sevak
 export const addSevak = asyncHandler(async (req, res) => {
@@ -93,43 +96,18 @@ export const getAllSevaks = asyncHandler(async (req, res) => {
   return sendSuccess(res, response, 'All sevaks records fetched successfully');
 });
 
-// 3. Get Single Sevak
-export const getSevakById = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const sevak = await Sevak.findByPk(id);
-  if (!sevak) {
-    throw notFound('Sevak');
-  }
-  return sendSuccess(res, sevak, 'Sevak details fetched successfully');
-});
+export const getSevakById = crud.getById;
+export const deleteSevak = crud.remove;
 
-// 4. Update Sevak
+// Update has a small email='' → null normalization; keep hand-written.
 export const updateSevak = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const updateData = req.body;
-
   const sevak = await Sevak.findByPk(id);
-  if (!sevak) {
-    throw notFound('Sevak');
-  }
+  if (!sevak) throw notFound('Sevak');
 
-  if (updateData.email === '') {
-    updateData.email = null;
-  }
+  const updateData = { ...req.body };
+  if (updateData.email === '') updateData.email = null;
 
   await sevak.update(updateData);
   return sendSuccess(res, sevak, 'Sevak updated successfully');
-});
-
-// 5. Delete Sevak
-export const deleteSevak = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const sevak = await Sevak.findByPk(id);
-  
-  if (!sevak) {
-    throw notFound('Sevak');
-  }
-
-  await sevak.destroy();
-  return sendSuccess(res, null, 'Sevak deleted successfully');
 });

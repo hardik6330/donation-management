@@ -5,15 +5,21 @@ import { getPaginationParams, getPaginatedResponse } from '../utils/pagination.j
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
+import { locationParentInclude } from '../utils/queryBuilder.js';
+import { createCRUDController } from '../utils/createCRUDController.js';
+
+const crud = createCRUDController({ Model: Gaushala, name: 'Gaushala' });
 
 export const getGaushalas = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
-  const { search, city, state, country } = req.query;
-  
+  const { search, city, state, country, active } = req.query;
+
   const activeScopes = [
     { method: ['search', search] },
     { method: ['location', city, state, country] }
   ].filter(s => s !== null && s !== undefined);
+
+  if (active === 'true' || active === true) activeScopes.push('active');
 
   // If only specific fields are requested (e.g. id, name), avoid complex logic
   if (requestedFields) {
@@ -33,16 +39,7 @@ export const getGaushalas = asyncHandler(async (req, res) => {
         model: Location,
         as: 'location',
         attributes: ['id', 'name', 'type'],
-        include: [{
-          model: Location,
-          as: 'parent',
-          attributes: ['id', 'name', 'type'],
-          include: [{
-            model: Location,
-            as: 'parent',
-            attributes: ['id', 'name', 'type']
-          }]
-        }]
+        include: [locationParentInclude(2)]
       },
       {
         model: Donation,
@@ -130,10 +127,4 @@ export const updateGaushala = asyncHandler(async (req, res) => {
   return sendSuccess(res, gaushala, 'Gaushala updated successfully');
 });
 
-export const deleteGaushala = asyncHandler(async (req, res) => {
-  const { id } = req.params;
-  const gaushala = await Gaushala.findByPk(id);
-  if (!gaushala) throw notFound('Gaushala');
-  await gaushala.destroy();
-  return sendSuccess(res, null, 'Gaushala deleted successfully');
-});
+export const deleteGaushala = crud.remove;
