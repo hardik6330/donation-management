@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  createUser, loginUser, logoutUser, getUsers, getUserByMobile,
+  createUser, loginUser, logoutUser, getUsers, getUserByMobile, getUserById,
   getSystemUsers, addSystemUser, updateSystemUser, deleteSystemUser
 } from '../controllers/userController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
@@ -21,5 +21,7 @@ router.get('/system', protect, adminOnly, getSystemUsers);
 router.post('/system', protect, adminOnly, validate(systemUserSchema), addSystemUser);
 router.put('/system/:id', protect, adminOnly, updateSystemUser);
 router.delete('/system/:id', protect, adminOnly, deleteSystemUser);
+
+router.get('/:id', protect, getUserById);
 
 export default router;

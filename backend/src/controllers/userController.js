@@ -184,3 +184,13 @@ export const getUserByMobile = asyncHandler(async (req, res) => {
   }
   return sendSuccess(res, user, 'User found successfully');
 });
+
+export const getUserById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const user = await User.findByPk(id, {
+    attributes: { exclude: ['password'] },
+    include: [{ model: Role, as: 'role', attributes: ['id', 'name'] }],
+  });
+  if (!user) throw notFound('User');
+  return sendSuccess(res, user, 'User fetched successfully');
+});
