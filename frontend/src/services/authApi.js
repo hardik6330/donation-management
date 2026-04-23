@@ -19,6 +19,9 @@ const authApi = apiSlice.injectEndpoints({
     getUserByMobile: builder.query({
       query: (mobileNumber) => `/users/mobile/${mobileNumber}`,
     }),
+    getUserById: builder.query({
+      query: (id) => `/users/${id}`,
+    }),
     getSystemUsers: builder.query({
       query: (params) => ({
         url: '/users/system',
@@ -56,6 +59,7 @@ export const {
   useLoginMutation,
   useRegisterMutation,
   useGetUserByMobileQuery,
+  useGetUserByIdQuery,
   useGetSystemUsersQuery,
   useAddSystemUserMutation,
   useUpdateSystemUserMutation,

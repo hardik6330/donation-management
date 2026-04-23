@@ -1,10 +1,16 @@
 import React from 'react';
-import { Users, Settings } from 'lucide-react';
+import { Users, Loader2 } from 'lucide-react';
 import { useAuth } from '../../../../context/AuthContext';
+import { useGetUserByIdQuery } from '../../../../services/authApi';
 
 const Profile = () => {
   const { user: authUser } = useAuth();
-  const user = authUser || { name: 'Administrator' };
+
+  const { data, isLoading, isError } = useGetUserByIdQuery(authUser?.id, {
+    skip: !authUser?.id,
+  });
+
+  const user = data?.data || authUser || { name: 'Administrator' };
 
   return (
     <div className="space-y-6">
@@ -20,30 +26,40 @@ const Profile = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="pt-16 p-8">
-          <div className="flex justify-between items-start mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
-              <p className="text-gray-500 font-medium">{user.email}</p>
-              <span className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                {user.role?.name || user.role || 'Administrator'}
-              </span>
+          {isLoading ? (
+            <div className="flex items-center gap-2 text-gray-500">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading profile...
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-6 mt-6">
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Mobile Number</p>
-              <p className="text-gray-700 font-semibold">{user.mobileNumber || user.mobile || '7845124512'}</p>
-            </div>
-            <div className="p-4 bg-gray-50 rounded-xl">
-              <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Account Created</p>
-              <p className="text-gray-700 font-semibold">
-                {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '07/04/2026'}
-              </p>
-            </div>
-          </div>
+          ) : isError ? (
+            <p className="text-sm text-red-500">Failed to load profile.</p>
+          ) : (
+            <>
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-800">{user.name}</h2>
+                  <p className="text-gray-500 font-medium">{user.email}</p>
+                  <span className="mt-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                    {user.role?.name || user.role || 'Administrator'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t border-gray-100 pt-6 mt-6">
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Mobile Number</p>
+                  <p className="text-gray-700 font-semibold">{user.mobileNumber || user.mobile || '—'}</p>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-xl">
+                  <p className="text-xs text-gray-400 font-bold uppercase tracking-wider mb-1">Account Created</p>
+                  <p className="text-gray-700 font-semibold">
+                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : '—'}
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
