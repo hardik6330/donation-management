@@ -11,9 +11,12 @@ import {
 import { 
   useLazyGetGaushalasQuery 
 } from '../../../../services/gaushalaApi';
-import { 
-  useLazyGetKathasQuery 
+import {
+  useLazyGetKathasQuery
 } from '../../../../services/kathaApi';
+import {
+  useLazyGetExpenseCategoriesQuery
+} from '../../../../services/expenseCategoryApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
@@ -52,6 +55,9 @@ const Expense = () => {
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
   const kathaPagination = useDropdownPagination(triggerGetKathas);
+
+  const [triggerGetExpenseCategories] = useLazyGetExpenseCategoriesQuery();
+  const expenseCategoryPagination = useDropdownPagination(triggerGetExpenseCategories, { fields: 'id,name' });
 
   const expenses = expensesData?.data?.items || [];
   const pagination = {
@@ -117,6 +123,7 @@ const Expense = () => {
         hasPermission={hasPermission}
         gaushalaPagination={gaushalaPagination}
         kathaPagination={kathaPagination}
+        expenseCategoryPagination={expenseCategoryPagination}
       />
 
       {isModalOpen && (
@@ -126,6 +133,7 @@ const Expense = () => {
           editingExpense={editingExpense}
           gaushalaPagination={gaushalaPagination}
           kathaPagination={kathaPagination}
+          expenseCategoryPagination={expenseCategoryPagination}
           key={editingExpense?.id || 'new'}
         />
       )}

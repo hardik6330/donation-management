@@ -13,7 +13,7 @@ import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 import AddExpenseCategoryModal from './AddExpenseCategoryModal';
-import { useGetExpenseCategoriesQuery, useDeleteExpenseCategoryMutation } from '../../../../services/expenseCategoryApi';
+import { useDeleteExpenseCategoryMutation } from '../../../../services/expenseCategoryApi';
 
 const paymentModes = [
   { id: 'cash', name: 'Cash' },
@@ -26,14 +26,14 @@ const AddExpenseModal = ({
   onClose, 
   editingExpense = null,
   gaushalaPagination,
-  kathaPagination
+  kathaPagination,
+  expenseCategoryPagination
 }) => {
   const [addExpense, { isLoading: isAdding }] = useAddExpenseMutation();
   const [updateExpense, { isLoading: isUpdating }] = useUpdateExpenseMutation();
 
-  const { data: expenseCategoriesData } = useGetExpenseCategoriesQuery({ fetchAll: true });
   const [deleteExpenseCategory] = useDeleteExpenseCategoryMutation();
-  const categories = (expenseCategoriesData?.data?.items || []).map(c => ({ id: c.name, name: c.name, realId: c.id }));
+  const categories = (expenseCategoryPagination?.items || []).map(c => ({ id: c.name, name: c.name, realId: c.id }));
 
   const handleDeleteCategory = async (item) => {
     if (!window.confirm(`Delete category "${item.name}"?`)) return;
@@ -44,6 +44,7 @@ const AddExpenseModal = ({
         setForm(prev => ({ ...prev, category: '' }));
         setDropdownLabels(prev => ({ ...prev, categoryName: '' }));
       }
+      expenseCategoryPagination?.fetchItems(1, expenseCategoryPagination.search || '', false);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete category');
     }
@@ -256,6 +257,7 @@ const AddExpenseModal = ({
               setDropdownLabels(prev => ({ ...prev, categoryName: e.target.value }));
               setForm(prev => ({ ...prev, category: '' }));
               setActiveDropdown('categoryName');
+              expenseCategoryPagination?.handleSearch(e.target.value);
             }}
             onSelect={(id, name) => handleDropdownSelect('category', id, name)}
             onKeyDown={(e) => handleKeyDown(e, gaushalaRef)}
@@ -265,6 +267,10 @@ const AddExpenseModal = ({
             inputRef={categoryRef}
             icon={Tag}
             allowTransliteration={false}
+            isServerSearch={true}
+            onLoadMore={expenseCategoryPagination?.handleLoadMore}
+            hasMore={expenseCategoryPagination?.hasMore}
+            loading={expenseCategoryPagination?.loading}
             onItemDelete={handleDeleteCategory}
             footerAction={
               <button
@@ -399,6 +405,7 @@ const AddExpenseModal = ({
           if (cat?.name) {
             setForm(prev => ({ ...prev, category: cat.name }));
             setDropdownLabels(prev => ({ ...prev, categoryName: cat.name }));
+            expenseCategoryPagination?.fetchItems(1, '', false);
             setTimeout(() => gaushalaRef.current?.focus(), 100);
           }
         }}

@@ -6,7 +6,6 @@ import AdminTable from '../../../../components/common/AdminTable';
 import { getPaymentModeColor } from '../../../../utils/tableUtils';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
-import { useGetExpenseCategoriesQuery } from '../../../../services/expenseCategoryApi';
 
 const ExpenseList = ({
   expenses,
@@ -22,10 +21,10 @@ const ExpenseList = ({
   onLimitChange,
   hasPermission,
   gaushalaPagination,
-  kathaPagination
+  kathaPagination,
+  expenseCategoryPagination
 }) => {
-  const { data: expenseCategoriesData } = useGetExpenseCategoriesQuery({ fetchAll: true });
-  const expenseCategoryOptions = (expenseCategoriesData?.data?.items || []).map(c => ({
+  const expenseCategoryOptions = (expenseCategoryPagination?.items || []).map(c => ({
     value: c.name,
     label: c.name
   }));
