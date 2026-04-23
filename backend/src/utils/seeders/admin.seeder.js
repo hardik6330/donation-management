@@ -6,9 +6,9 @@ import logger from '../logger.js';
 
 export const seedAdmin = async () => {
   try {
-    const adminEmail = ADMIN_EMAIL || 'admin@example.com';
-    const adminPassword = ADMIN_PASSWORD || 'Admin@123';
-    const adminMobile = ADMIN_MOBILE || '9876543210';
+    const adminEmail = ADMIN_EMAIL;
+    const adminPassword = ADMIN_PASSWORD;
+    const adminMobile = ADMIN_MOBILE;
 
     const adminExists = await User.unscoped().findOne({ where: { email: adminEmail } });
     if (!adminExists) {
