@@ -33,8 +33,8 @@ STEP 1 - Go to backend folder:
 
 STEP 2 - Run export command (copy-paste this whole thing):
 
-    mysqldump -h turntable.proxy.rlwy.net -P 23434 -u root \
-      -pRlxmugQfmCFxNfCvnNlLjaebYwnCtlZb \
+    mysqldump -h shortline.proxy.rlwy.net -P 51769 -u root \
+      -pNJUagcnEMAesuowLXcwqUlovSkANaIqT \
       --single-transaction --no-tablespaces \
       --default-character-set=utf8mb4 \
       railway > railway_backup.sql
