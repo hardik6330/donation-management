@@ -67,19 +67,22 @@ export const initDB = async (force = false) => {
 
       await connectDB();
       
-      // OPTIMIZATION: Only sync and seed in development or when explicitly requested
-      const shouldSync = NODE_ENV === 'development' || process.env.FORCE_DB_SYNC === 'true';
+      // Always sync tables in development, or if forced. 
+      // In production, we still sync if tables don't exist (Sequelize default behavior).
+      const shouldSync = NODE_ENV !== 'production' || process.env.FORCE_DB_SYNC === 'true';
       
       if (shouldSync) {
-        const syncOptions = NODE_ENV === 'production' ? {} : { alter: false };
-        await sequelize.sync(syncOptions);
-        console.log('Database synchronized (Tables created/updated)');
-
-        await seedRoles();
-        await seedAdmin();
+        await sequelize.sync({ alter: false });
+        console.log('Database synchronized');
       } else {
-        console.log('Database sync skipped (Production mode)');
+        // In production, just sync without alter to ensure tables exist
+        await sequelize.sync();
+        console.log('Database sync check completed');
       }
+
+      // Always run seeders to ensure basic roles and admin exist
+      await seedRoles();
+      await seedAdmin();
       
       dbInitialized = true;
       return { initialized: true };
