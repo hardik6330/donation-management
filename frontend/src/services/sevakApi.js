@@ -9,6 +9,9 @@ const sevakApi = apiSlice.injectEndpoints({
       tag: 'Sevaks',
       basePath: '/sevak',
     })(builder),
+    getSevakByMobile: builder.query({
+      query: (mobileNumber) => `/sevak/mobile/${mobileNumber}`,
+    }),
   }),
 });
 
@@ -18,4 +21,5 @@ export const {
   useAddSevakMutation,
   useUpdateSevakMutation,
   useDeleteSevakMutation,
+  useGetSevakByMobileQuery,
 } = sevakApi;
