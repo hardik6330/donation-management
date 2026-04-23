@@ -12,6 +12,7 @@ import mandalRoutes from './mandal.routes.js';
 import kartalDhunRoutes from './kartalDhun.routes.js';
 import roleRoutes from './role.routes.js';
 import incomeRoutes from './income.routes.js';
+import expenseCategoryRoutes from './expenseCategory.routes.js';
 
 const router = express.Router();
 
@@ -28,5 +29,6 @@ router.use('/mandal', mandalRoutes);
 router.use('/kartal-dhun', kartalDhunRoutes);
 router.use('/roles', roleRoutes);
 router.use('/income', incomeRoutes);
+router.use('/expense-categories', expenseCategoryRoutes);
 
 export default router;

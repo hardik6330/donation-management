@@ -19,6 +19,7 @@ import { KartalDhun } from './kartalDhun.js';
 import { Notification } from './notification.js';
 import { Announcement } from './announcement.js';
 import { Income } from './income.js';
+import { ExpenseCategory } from './expenseCategory.js';
 
 // ──────────────────────────────────────
 // Associations
@@ -116,4 +117,5 @@ export {
   Notification,
   Announcement,
   Income,
+  ExpenseCategory,
 };

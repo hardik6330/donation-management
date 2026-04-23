@@ -8,9 +8,9 @@ export const expenseSchema = Joi.object({
     'number.positive': 'Amount must be greater than 0',
     'any.required': 'Amount is required'
   }),
-  category: Joi.string().valid('Food', 'Medicine', 'Maintenance', 'Salary', 'Utility', 'Other').required().messages({
-    'any.only': 'Invalid category',
-    'any.required': 'Category is required'
+  category: Joi.string().trim().min(1).max(100).required().messages({
+    'any.required': 'Category is required',
+    'string.empty': 'Category is required'
   }),
   description: Joi.string().optional().allow(''),
   gaushalaId: Joi.string().uuid().optional().allow(null, ''),

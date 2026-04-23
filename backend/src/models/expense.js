@@ -17,7 +17,7 @@ export const Expense = sequelize.define('Expense', {
     allowNull: false,
   },
   category: {
-    type: DataTypes.ENUM('Food', 'Medicine', 'Maintenance', 'Salary', 'Utility', 'Other'),
+    type: DataTypes.STRING,
     allowNull: false,
     defaultValue: 'Other',
   },

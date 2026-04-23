@@ -12,15 +12,8 @@ import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
-
-const categories = [
-  { id: 'Food', name: 'Food' },
-  { id: 'Medicine', name: 'Medicine' },
-  { id: 'Maintenance', name: 'Maintenance' },
-  { id: 'Salary', name: 'Salary' },
-  { id: 'Utility', name: 'Utility' },
-  { id: 'Other', name: 'Other' },
-];
+import AddExpenseCategoryModal from './AddExpenseCategoryModal';
+import { useGetExpenseCategoriesQuery, useDeleteExpenseCategoryMutation } from '../../../../services/expenseCategoryApi';
 
 const paymentModes = [
   { id: 'cash', name: 'Cash' },
@@ -37,7 +30,27 @@ const AddExpenseModal = ({
 }) => {
   const [addExpense, { isLoading: isAdding }] = useAddExpenseMutation();
   const [updateExpense, { isLoading: isUpdating }] = useUpdateExpenseMutation();
-  
+
+  const { data: expenseCategoriesData } = useGetExpenseCategoriesQuery({ fetchAll: true });
+  const [deleteExpenseCategory] = useDeleteExpenseCategoryMutation();
+  const categories = (expenseCategoriesData?.data?.items || []).map(c => ({ id: c.name, name: c.name, realId: c.id }));
+
+  const handleDeleteCategory = async (item) => {
+    if (!window.confirm(`Delete category "${item.name}"?`)) return;
+    try {
+      await deleteExpenseCategory(item.realId).unwrap();
+      toast.success('Category deleted');
+      if (form.category === item.name) {
+        setForm(prev => ({ ...prev, category: '' }));
+        setDropdownLabels(prev => ({ ...prev, categoryName: '' }));
+      }
+    } catch (err) {
+      toast.error(err?.data?.message || 'Failed to delete category');
+    }
+  };
+
+  const [isAddCategoryOpen, setIsAddCategoryOpen] = useState(false);
+
   const gaushalas = gaushalaPagination.items;
   const kathas = kathaPagination.items;
 
@@ -252,6 +265,21 @@ const AddExpenseModal = ({
             inputRef={categoryRef}
             icon={Tag}
             allowTransliteration={false}
+            onItemDelete={handleDeleteCategory}
+            footerAction={
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  setActiveDropdown(null);
+                  setIsAddCategoryOpen(true);
+                }}
+                className="w-full flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                Add New Category
+              </button>
+            }
           />
           <SearchableDropdown
             label="Gaushala"
@@ -363,6 +391,18 @@ const AddExpenseModal = ({
           </button>
         </div>
       </form>
+
+      <AddExpenseCategoryModal
+        isOpen={isAddCategoryOpen}
+        onClose={() => setIsAddCategoryOpen(false)}
+        onCreated={(cat) => {
+          if (cat?.name) {
+            setForm(prev => ({ ...prev, category: cat.name }));
+            setDropdownLabels(prev => ({ ...prev, categoryName: cat.name }));
+            setTimeout(() => gaushalaRef.current?.focus(), 100);
+          }
+        }}
+      />
     </AdminModal>
   );
 };
