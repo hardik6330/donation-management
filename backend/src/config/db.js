@@ -35,6 +35,7 @@ export const sequelize = new Sequelize(
 
 export const connectDB = async () => {
   try {
+    console.log(`Connecting to MySQL at ${DB_HOST}:${DB_PORT} as ${DB_USER}...`);
     await sequelize.authenticate();
     console.log('MySQL connected successfully with Sequelize');
   } catch (error) {

@@ -99,8 +99,8 @@ export const getSystemUsers = asyncHandler(async (req, res) => {
   const sanitizedScopes = activeScopes.filter(s => s !== null && s !== undefined);
 
   const where = {
-    // Super Admin ને લિસ્ટમાં ન બતાવવા માટે (admin@example.com)
-    email: { [Op.ne]: 'admin@example.com' }
+    // Super Admin ને લિસ્ટમાં ન બતાવવા માટે (ashreesarveshwargaudham.org@gmail.com)
+    email: { [Op.ne]: ADMIN_EMAIL }
   };
 
   if (roleId && roleId.trim() !== '') {
