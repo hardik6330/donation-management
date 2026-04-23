@@ -30,6 +30,7 @@ const SearchableDropdown = ({
 }) => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+  const [openUp, setOpenUp] = useState(false);
   const listRef = useRef(null);
   const inputContainerRef = useRef(null);
   const { isGujarati } = useLanguage();
@@ -48,8 +49,14 @@ const SearchableDropdown = ({
     if (isActive && inputContainerRef.current) {
       const updateCoords = () => {
         const rect = inputContainerRef.current.getBoundingClientRect();
+        const dropdownHeight = 200; // max-h-48 is 192px + small buffer
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const shouldOpenUp = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+
+        setOpenUp(shouldOpenUp);
         setCoords({
-          top: rect.bottom + window.scrollY,
+          top: shouldOpenUp ? rect.top + window.scrollY : rect.bottom + window.scrollY,
           left: rect.left + window.scrollX,
           width: rect.width
         });
@@ -261,9 +268,12 @@ const SearchableDropdown = ({
               top: `${coords.top}px`, 
               left: `${coords.left}px`, 
               width: `${coords.width}px`,
+              transform: openUp ? 'translateY(calc(-100% - 8px))' : 'none',
               zIndex: 9999 
             }}
-            className="mt-1 bg-white border border-gray-100 rounded-xl shadow-2xl max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200"
+            className={`bg-white border border-gray-100 rounded-xl shadow-2xl max-h-[25vh] sm:max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in duration-200 ${
+              openUp ? 'slide-in-from-bottom-2 mb-1' : 'slide-in-from-top-2 mt-1'
+            }`}
           >
             {filtered.map((item, index) => (
               <button
