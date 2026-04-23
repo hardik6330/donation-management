@@ -34,4 +34,8 @@ export const DonationInstallment = sequelize.define('DonationInstallment', {
   }
 }, {
   timestamps: true,
+  indexes: [
+    { fields: ['donationId'] },
+    { fields: ['paymentDate'] },
+  ]
 });

@@ -67,5 +67,13 @@ export const Expense = sequelize.define('Expense', {
         }
       };
     }
-  }
+  },
+  indexes: [
+    { fields: ['date'] },
+    { fields: ['category'] },
+    { fields: ['gaushalaId'] },
+    { fields: ['kathaId'] },
+    { fields: ['paymentMode'] },
+    { fields: ['createdAt'] },
+  ]
 });

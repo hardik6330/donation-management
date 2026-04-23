@@ -100,12 +100,14 @@ export const User = sequelize.define('User', {
       if (country) where.country = { [Op.like]: `%${country}%` };
       return { where };
     }
-  }
-  // indexes: [
-  //   { fields: ['name'] },
-  //   { fields: ['mobileNumber'] },
-  //   { fields: ['email'] },
-  //   { fields: ['isAdmin'] },
-  //   { fields: ['createdAt'] },
-  // ]
+  },
+  indexes: [
+    { fields: ['name'] },
+    { fields: ['mobileNumber'] },
+    { fields: ['email'] },
+    { fields: ['city'] },
+    { fields: ['state'] },
+    { fields: ['isAdmin'] },
+    { fields: ['createdAt'] },
+  ]
 });
