@@ -26,7 +26,9 @@ const SearchableDropdown = ({
   onClear,
   hasMore = false,
   loading = false,
-  allowTransliteration = true
+  allowTransliteration = true,
+  footerAction = null,
+  onItemDelete = null
 }) => {
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
@@ -259,7 +261,7 @@ const SearchableDropdown = ({
           <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none transition-transform ${isActive ? 'rotate-180' : ''}`} />
         ))}
 
-        {isActive && filtered.length > 0 && coords.width > 0 && createPortal(
+        {isActive && (filtered.length > 0 || footerAction) && coords.width > 0 && createPortal(
           <div 
             ref={listRef} 
             onScroll={handleScroll}
@@ -276,23 +278,49 @@ const SearchableDropdown = ({
             }`}
           >
             {filtered.map((item, index) => (
-              <button
+              <div
                 key={item.id}
-                type="button"
-                onClick={() => {
-                  onSelect(item.id, item.name);
-                  setActive(null);
-                }}
-                className={`w-full text-left px-4 py-2.5 text-sm font-medium transition-colors border-b border-gray-50 last:border-0 ${
-                  index === highlightIndex ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-blue-50'
+                className={`flex items-center border-b border-gray-50 last:border-0 ${
+                  index === highlightIndex ? 'bg-blue-50' : 'hover:bg-blue-50'
                 }`}
               >
-                {item.name}
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelect(item.id, item.name);
+                    setActive(null);
+                  }}
+                  className={`flex-1 text-left px-4 py-2.5 text-sm font-medium transition-colors ${
+                    index === highlightIndex ? 'text-blue-600' : 'text-gray-700'
+                  }`}
+                >
+                  {item.name}
+                </button>
+                {onItemDelete && (
+                  <button
+                    type="button"
+                    tabIndex={-1}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onItemDelete(item);
+                    }}
+                    className="px-3 py-2.5 text-gray-400 hover:text-red-500 transition-colors"
+                    title="Delete"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             ))}
             {loading && (
               <div className="p-3 text-center">
                 <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+              </div>
+            )}
+            {footerAction && (
+              <div className="sticky bottom-0 bg-white border-t border-gray-100">
+                {footerAction}
               </div>
             )}
           </div>,

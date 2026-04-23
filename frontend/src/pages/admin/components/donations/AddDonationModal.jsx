@@ -258,7 +258,7 @@ const AddDonationModal = ({
     if (field === 'categoryId') {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
-      nextRef = paymentModeRef;
+      nextRef = gaushalaRef;
     } else if (field === 'gaushalaId') {
       setAddForm(prev => ({ ...prev, gaushalaId: id, kathaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, gaushalaName: name, kathaName: '' }));
@@ -270,7 +270,7 @@ const AddDonationModal = ({
     } else if (field === 'paymentMode') {
       setAddForm(prev => ({ ...prev, paymentMode: id }));
       setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
-      nextRef = amountRef;
+      nextRef = statusRef;
     } else if (field === 'status') {
       setAddForm(prev => ({ ...prev, status: id, paidAmount: '' }));
       setAddDropdownLabels(prev => ({ ...prev, statusName: name }));

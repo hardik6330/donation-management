@@ -37,6 +37,7 @@ export const apiSlice = createApi({
     'Gaushalas', 'Kathas', 'BapuSchedule', 'Expenses',
     'Sevaks', 'Mandals', 'MandalMembers', 'MandalPayments',
     'KartalDhun', 'Roles', 'SystemUsers', 'AnnouncementHistory',
+    'ExpenseCategories',
   ],
   endpoints: () => ({}),
 });
