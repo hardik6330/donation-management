@@ -1,10 +1,11 @@
 import express from 'express';
-import { 
-  addSevak, 
-  getAllSevaks, 
-  getSevakById, 
-  updateSevak, 
-  deleteSevak 
+import {
+  addSevak,
+  getAllSevaks,
+  getSevakById,
+  updateSevak,
+  deleteSevak,
+  getSevakByMobile
 } from '../controllers/sevakController.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
 import { validate } from '../validators/validate.js';
@@ -15,6 +16,8 @@ const router = express.Router();
 router.route('/')
   .post(protect, adminOnly, validate(sevakSchema), addSevak)
   .get(protect, adminOnly, getAllSevaks);
+
+router.get('/mobile/:mobileNumber', protect, adminOnly, getSevakByMobile);
 
 router.route('/:id')
   .get(protect, adminOnly, getSevakById)

@@ -7,6 +7,9 @@ import {
   useGetUserByMobileQuery
 } from '../../../../services/authApi';
 import {
+  useGetSevakByMobileQuery
+} from '../../../../services/sevakApi';
+import {
   Loader2, IndianRupee, Plus, Phone, User,
   MapPin, UserCheck, Mail, Building2, Tag, CreditCard,
   HandCoins
@@ -131,6 +134,10 @@ const AddDonationModal = ({
     skip: addForm.mobileNumber.length !== 10 || !isOpen,
   });
 
+  const { data: existingSevak } = useGetSevakByMobileQuery(addForm.mobileNumber, {
+    skip: addForm.mobileNumber.length !== 10 || !isOpen || !!existingUser?.success,
+  });
+
   // Fast Entry: Focus first field
   useEffect(() => {
     if (isOpen) {
@@ -188,6 +195,26 @@ const AddDonationModal = ({
       return () => clearTimeout(timer);
     }
   }, [existingUser]);
+
+  // Fallback: auto-fill from Sevak when no User matches
+  useEffect(() => {
+    if (existingSevak?.success && existingSevak.data) {
+      const sevak = existingSevak.data;
+      const timer = setTimeout(() => {
+        setAddForm(prev => ({
+          ...prev,
+          name: sevak.name || '',
+          email: sevak.email || '',
+          address: sevak.address || '',
+          city: sevak.city || '',
+          state: sevak.state || '',
+          country: sevak.country || '',
+        }));
+        toast.info('Sevak found! Details auto-filled.');
+      }, 0);
+      return () => clearTimeout(timer);
+    }
+  }, [existingSevak]);
 
   // Auto-fill latest slip number
   useEffect(() => {

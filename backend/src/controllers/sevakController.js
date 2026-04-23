@@ -99,6 +99,13 @@ export const getAllSevaks = asyncHandler(async (req, res) => {
 export const getSevakById = crud.getById;
 export const deleteSevak = crud.remove;
 
+export const getSevakByMobile = asyncHandler(async (req, res) => {
+  const { mobileNumber } = req.params;
+  const sevak = await Sevak.findOne({ where: { mobileNumber } });
+  if (!sevak) throw notFound('Sevak');
+  return sendSuccess(res, sevak, 'Sevak found successfully');
+});
+
 // Update has a small email='' → null normalization; keep hand-written.
 export const updateSevak = asyncHandler(async (req, res) => {
   const { id } = req.params;
