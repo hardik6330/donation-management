@@ -16,6 +16,7 @@ import SearchableDropdown from '../../../../components/common/SearchableDropdown
 import FormInput from '../../../../components/common/FormInput';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
+import { kathaStatuses } from '../../../../utils/tableUtils';
 
 const AddKathaModal = ({
   isOpen,
@@ -294,11 +295,7 @@ const AddKathaModal = ({
             name="statusName"
             placeholder="Select Status"
             value={formData.statusName}
-            items={[
-              { id: 'upcoming', name: 'Upcoming' },
-              { id: 'active', name: 'Active' },
-              { id: 'completed', name: 'Completed' }
-            ]}
+            items={kathaStatuses}
             onChange={handleChange}
             onSelect={(id, name) => {
               setFormData(prev => ({ ...prev, status: id, statusName: name }));

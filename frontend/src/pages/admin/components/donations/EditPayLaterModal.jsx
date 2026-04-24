@@ -5,6 +5,7 @@ import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
 import { useUpdateDonationMutation } from '../../../../services/donationApi';
+import { donationPaymentModes as paymentModes, donationStatuses as statuses } from '../../../../utils/tableUtils';
 
 const EditPayLaterModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const [updateDonation, { isLoading }] = useUpdateDonationMutation();
@@ -45,17 +46,6 @@ const EditPayLaterModal = ({ isOpen, onClose, donation, onUpdated }) => {
       }
     }
   };
-
-  const paymentModes = [
-    { id: 'cash', name: 'Cash' },
-    { id: 'online', name: 'Online' },
-    { id: 'cheque', name: 'Cheque' }
-  ];
-
-  const statuses = [
-    { id: 'completed', name: 'Completed' },
-    { id: 'partially_paid', name: 'Partially Paid' }
-  ];
 
   if (!donation) return null;
 

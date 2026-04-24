@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ExpenseList from './ExpenseList';
 import AddExpenseModal from './AddExpenseModal';
+import AddExpensePartialPaymentModal from './AddExpensePartialPaymentModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
@@ -27,6 +28,7 @@ const Expense = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [partialPaymentExpense, setPartialPaymentExpense] = useState(null);
 
   const initialFilters = {
     startDate: '',
@@ -37,6 +39,7 @@ const Expense = () => {
     minAmount: '',
     maxAmount: '',
     paymentMode: '',
+    status: '',
     page: 1,
     limit: 10
   };
@@ -116,6 +119,7 @@ const Expense = () => {
         filters={filters}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onAddPayment={setPartialPaymentExpense}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
         onPageChange={handlePageChange}
@@ -137,6 +141,12 @@ const Expense = () => {
           key={editingExpense?.id || 'new'}
         />
       )}
+
+      <AddExpensePartialPaymentModal
+        isOpen={!!partialPaymentExpense}
+        onClose={() => setPartialPaymentExpense(null)}
+        expense={partialPaymentExpense}
+      />
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

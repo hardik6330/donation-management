@@ -13,6 +13,10 @@ const expenseApi = apiSlice.injectEndpoints({
       query: () => '/expenses/stats',
       providesTags: ['Expenses'],
     }),
+    getExpenseInstallments: builder.query({
+      query: (id) => `/expenses/${id}/installments`,
+      providesTags: ['Expenses'],
+    }),
   }),
 });
 
@@ -22,4 +26,5 @@ export const {
   useUpdateExpenseMutation,
   useDeleteExpenseMutation,
   useGetExpenseStatsQuery,
+  useGetExpenseInstallmentsQuery,
 } = expenseApi;

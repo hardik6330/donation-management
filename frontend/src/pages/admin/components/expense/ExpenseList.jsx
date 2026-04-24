@@ -1,11 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Calendar, IndianRupee, Edit, Trash2, Tag, Building2, Mic2, CreditCard
+  Calendar, IndianRupee, Edit, Trash2, Tag, Building2, Mic2, CreditCard, Activity, PlusCircle, Eye
 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
-import { getPaymentModeColor } from '../../../../utils/tableUtils';
+import { getPaymentModeColor, paymentModes, expenseStatuses } from '../../../../utils/tableUtils';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
+import ExpenseInstallmentTable from './ExpenseInstallmentTable';
 
 const ExpenseList = ({
   expenses,
@@ -15,6 +16,7 @@ const ExpenseList = ({
   filters,
   onEdit,
   onDelete,
+  onAddPayment,
   onFilterChange,
   onClearFilters,
   onPageChange,
@@ -24,6 +26,8 @@ const ExpenseList = ({
   kathaPagination,
   expenseCategoryPagination
 }) => {
+  const [expandedRowId, setExpandedRowId] = useState(null);
+  const toggleExpand = (id) => setExpandedRowId(prev => (prev === id ? null : id));
   const expenseCategoryOptions = (expenseCategoryPagination?.items || []).map(c => ({
     value: c.name,
     label: c.name
@@ -35,9 +39,23 @@ const ExpenseList = ({
     { label: 'Amount', className: 'text-right' },
     { label: 'Gaushala/Katha' },
     { label: 'Payment Mode', className: 'text-center' },
+    { label: 'Status', className: 'text-center' },
     { label: 'Description' },
     { label: 'Actions' }
   ];
+
+  const statusBadge = (status) => {
+    if (status === 'completed') return 'bg-green-100 text-green-700';
+    if (status === 'pay_later') return 'bg-gray-200 text-gray-700';
+    if (status === 'partially_paid') return 'bg-orange-100 text-orange-700';
+    return 'bg-gray-100 text-gray-600';
+  };
+  const statusLabel = (status) => {
+    if (status === 'completed') return 'Completed';
+    if (status === 'pay_later') return 'Pay Later';
+    if (status === 'partially_paid') return 'Partially Paid';
+    return status || '-';
+  };
   
   const filterFields = [
     {
@@ -80,11 +98,14 @@ const ExpenseList = ({
       label: 'Payment Mode',
       type: 'select',
       icon: CreditCard,
-      options: [
-        { value: 'cash', label: 'Cash' },
-        { value: 'bank', label: 'Bank' },
-        { value: 'online', label: 'Online' }
-      ]
+      options: paymentModes.map(m => ({ value: m.id, label: m.name }))
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select',
+      icon: Activity,
+      options: expenseStatuses.map(s => ({ value: s.id, label: s.name }))
     }
   ];
 
@@ -103,15 +124,29 @@ const ExpenseList = ({
         emptyMessage="No expenses found."
       >
         {expenses.map((expense) => (
-          <tr key={expense.id} className="hover:bg-gray-50 transition">
+          <React.Fragment key={expense.id}>
+          <tr className="hover:bg-gray-50 transition">
             <td className="p-4 px-6 text-sm text-gray-500">
               {new Date(expense.date).toLocaleDateString('en-IN')}
             </td>
             <td className="p-4 px-6 font-bold text-gray-800">{expense.category}</td>
-            <td className="p-4 px-6 text-blue-600 font-bold text-right">
-              <div className="flex items-center justify-end gap-0.5">
-                <IndianRupee className="w-3.5 h-3.5" />
-                {Number(expense.amount).toLocaleString('en-IN')}
+            <td className="p-4 px-6 text-right">
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-0.5 text-blue-600 font-bold text-lg">
+                  <IndianRupee className="w-4 h-4" />
+                  {Number(expense.amount).toLocaleString('en-IN')}
+                </div>
+                
+                {(expense.status === 'partially_paid' || expense.status === 'pay_later') && (
+                  <div className="flex flex-col items-end mt-0.5 leading-tight">
+                    <div className="text-[11px] font-bold text-emerald-600">
+                      Paid: ₹{Number(expense.paidAmount || 0).toLocaleString('en-IN')}
+                    </div>
+                    <div className="text-[11px] font-bold text-orange-600">
+                      Rem: ₹{Number(expense.remainingAmount || 0).toLocaleString('en-IN')}
+                    </div>
+                  </div>
+                )}
               </div>
             </td>
             <td className="p-4 px-6">
@@ -128,11 +163,34 @@ const ExpenseList = ({
                 {expense.paymentMode}
               </span>
             </td>
+            <td className="p-4 px-6 text-center">
+              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusBadge(expense.status)}`}>
+                {statusLabel(expense.status)}
+              </span>
+            </td>
             <td className="p-4 px-6 text-sm text-gray-500 max-w-xs truncate">
               {expense.description || '-'}
             </td>
             <td className="p-4 px-6">
               <div className="flex items-center gap-2">
+                {(expense.status === 'partially_paid' || expense.status === 'completed') && (
+                  <button
+                    onClick={() => toggleExpand(expense.id)}
+                    className={`p-1.5 rounded-lg transition-colors ${expandedRowId === expense.id ? 'bg-blue-100 text-blue-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                    title="View History"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                )}
+                {hasPermission('expenses', 'entry') && expense.status === 'partially_paid' && (
+                  <button
+                    onClick={() => onAddPayment?.(expense)}
+                    className="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                    title="Add Partial Payment"
+                  >
+                    <PlusCircle className="w-4 h-4" />
+                  </button>
+                )}
                 {hasPermission('expenses', 'entry') && (
                   <button
                     onClick={() => onEdit(expense)}
@@ -155,6 +213,16 @@ const ExpenseList = ({
               </div>
             </td>
           </tr>
+          {expandedRowId === expense.id && (
+            <tr className="bg-gray-50/30">
+              <td colSpan={tableHeaders.length} className="p-6 pt-0">
+                <div className="animate-in slide-in-from-top-2 duration-300">
+                  <ExpenseInstallmentTable expenseId={expense.id} />
+                </div>
+              </td>
+            </tr>
+          )}
+          </React.Fragment>
         ))}
       </AdminTable>
 

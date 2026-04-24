@@ -51,3 +51,34 @@ export const getEventTypeColor = (type) => {
   };
   return colors[type] || 'text-blue-600';
 };
+
+// ── Common Constants ──────────────────────────────────────────
+export const paymentModes = [
+  { id: 'cash', name: 'Cash' },
+  { id: 'online', name: 'Online' },
+  { id: 'check', name: 'Check' }
+];
+
+export const donationPaymentModes = [
+  { id: 'cash', name: 'Cash' },
+  { id: 'online', name: 'Online' },
+  { id: 'cheque', name: 'Cheque' }
+];
+
+export const expenseStatuses = [
+  { id: 'completed', name: 'Completed' },
+  { id: 'partially_paid', name: 'Partially Paid' },
+  { id: 'pay_later', name: 'Pay Later' },
+];
+
+export const donationStatuses = [
+  { id: 'completed', name: 'Completed' },
+  { id: 'partially_paid', name: 'Partially Paid' },
+  { id: 'pay_later', name: 'Pay Later' },
+];
+
+export const kathaStatuses = [
+  { id: 'upcoming', name: 'Upcoming' },
+  { id: 'active', name: 'Active' },
+  { id: 'completed', name: 'Completed' }
+];
