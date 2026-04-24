@@ -14,6 +14,7 @@ const expenseCategoryApi = apiSlice.injectEndpoints({
 
 export const {
   useGetExpenseCategoriesQuery,
+  useLazyGetExpenseCategoriesQuery,
   useAddExpenseCategoryMutation,
   useUpdateExpenseCategoryMutation,
   useDeleteExpenseCategoryMutation,

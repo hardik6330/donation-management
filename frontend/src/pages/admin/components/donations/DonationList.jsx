@@ -3,7 +3,7 @@ import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, 
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
-import { getStatusColor, getPaymentModeColor } from '../../../../utils/tableUtils';
+import { getStatusColor, getPaymentModeColor, donationStatuses } from '../../../../utils/tableUtils';
 import InstallmentTable from './InstallmentTable';
 
 const DonationList = ({
@@ -95,9 +95,7 @@ const DonationList = ({
       icon: CreditCard,
       options: [
         { value: 'pending', label: 'Pending' },
-        { value: 'completed', label: 'Completed' },
-        { value: 'partially_paid', label: 'Partially Paid' },
-        { value: 'pay_later', label: 'Pay Later' },
+        ...donationStatuses.map(s => ({ value: s.id, label: s.name })),
         { value: 'failed', label: 'Failed' }
       ]
     },

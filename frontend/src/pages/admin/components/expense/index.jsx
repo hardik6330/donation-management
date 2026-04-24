@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import ExpenseList from './ExpenseList';
 import AddExpenseModal from './AddExpenseModal';
+import AddExpensePartialPaymentModal from './AddExpensePartialPaymentModal';
 import DeleteConfirmationModal from '../../../../components/common/DeleteConfirmationModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
@@ -11,9 +12,12 @@ import {
 import { 
   useLazyGetGaushalasQuery 
 } from '../../../../services/gaushalaApi';
-import { 
-  useLazyGetKathasQuery 
+import {
+  useLazyGetKathasQuery
 } from '../../../../services/kathaApi';
+import {
+  useLazyGetExpenseCategoriesQuery
+} from '../../../../services/expenseCategoryApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { useTable } from '../../../../hooks/useTable';
 import { toast } from 'react-toastify';
@@ -24,6 +28,7 @@ const Expense = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
   const [editingExpense, setEditingExpense] = useState(null);
+  const [partialPaymentExpense, setPartialPaymentExpense] = useState(null);
 
   const initialFilters = {
     startDate: '',
@@ -34,6 +39,7 @@ const Expense = () => {
     minAmount: '',
     maxAmount: '',
     paymentMode: '',
+    status: '',
     page: 1,
     limit: 10
   };
@@ -52,6 +58,9 @@ const Expense = () => {
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
   const kathaPagination = useDropdownPagination(triggerGetKathas);
+
+  const [triggerGetExpenseCategories] = useLazyGetExpenseCategoriesQuery();
+  const expenseCategoryPagination = useDropdownPagination(triggerGetExpenseCategories, { fields: 'id,name' });
 
   const expenses = expensesData?.data?.items || [];
   const pagination = {
@@ -110,6 +119,7 @@ const Expense = () => {
         filters={filters}
         onEdit={handleEdit}
         onDelete={handleDelete}
+        onAddPayment={setPartialPaymentExpense}
         onFilterChange={handleFilterChange}
         onClearFilters={handleClearFilters}
         onPageChange={handlePageChange}
@@ -117,6 +127,7 @@ const Expense = () => {
         hasPermission={hasPermission}
         gaushalaPagination={gaushalaPagination}
         kathaPagination={kathaPagination}
+        expenseCategoryPagination={expenseCategoryPagination}
       />
 
       {isModalOpen && (
@@ -126,9 +137,16 @@ const Expense = () => {
           editingExpense={editingExpense}
           gaushalaPagination={gaushalaPagination}
           kathaPagination={kathaPagination}
+          expenseCategoryPagination={expenseCategoryPagination}
           key={editingExpense?.id || 'new'}
         />
       )}
+
+      <AddExpensePartialPaymentModal
+        isOpen={!!partialPaymentExpense}
+        onClose={() => setPartialPaymentExpense(null)}
+        expense={partialPaymentExpense}
+      />
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

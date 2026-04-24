@@ -13,27 +13,22 @@ import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 import AddExpenseCategoryModal from './AddExpenseCategoryModal';
-import { useGetExpenseCategoriesQuery, useDeleteExpenseCategoryMutation } from '../../../../services/expenseCategoryApi';
-
-const paymentModes = [
-  { id: 'cash', name: 'Cash' },
-  { id: 'online', name: 'Online' },
-  { id: 'check', name: 'Check' }
-];
+import { useDeleteExpenseCategoryMutation } from '../../../../services/expenseCategoryApi';
+import { paymentModes, expenseStatuses as statuses } from '../../../../utils/tableUtils';
 
 const AddExpenseModal = ({ 
   isOpen, 
   onClose, 
   editingExpense = null,
   gaushalaPagination,
-  kathaPagination
+  kathaPagination,
+  expenseCategoryPagination
 }) => {
   const [addExpense, { isLoading: isAdding }] = useAddExpenseMutation();
   const [updateExpense, { isLoading: isUpdating }] = useUpdateExpenseMutation();
 
-  const { data: expenseCategoriesData } = useGetExpenseCategoriesQuery({ fetchAll: true });
   const [deleteExpenseCategory] = useDeleteExpenseCategoryMutation();
-  const categories = (expenseCategoriesData?.data?.items || []).map(c => ({ id: c.name, name: c.name, realId: c.id }));
+  const categories = (expenseCategoryPagination?.items || []).map(c => ({ id: c.name, name: c.name, realId: c.id }));
 
   const handleDeleteCategory = async (item) => {
     if (!window.confirm(`Delete category "${item.name}"?`)) return;
@@ -44,6 +39,7 @@ const AddExpenseModal = ({
         setForm(prev => ({ ...prev, category: '' }));
         setDropdownLabels(prev => ({ ...prev, categoryName: '' }));
       }
+      expenseCategoryPagination?.fetchItems(1, expenseCategoryPagination.search || '', false);
     } catch (err) {
       toast.error(err?.data?.message || 'Failed to delete category');
     }
@@ -60,6 +56,8 @@ const AddExpenseModal = ({
   const gaushalaRef = useRef(null);
   const kathaRef = useRef(null);
   const paymentModeRef = useRef(null);
+  const statusRef = useRef(null);
+  const paidAmountRef = useRef(null);
   const descriptionRef = useRef(null);
   const submitRef = useRef(null);
 
@@ -70,7 +68,9 @@ const AddExpenseModal = ({
     description: '',
     gaushalaId: '',
     kathaId: '',
-    paymentMode: 'cash'
+    paymentMode: 'cash',
+    status: 'completed',
+    paidAmount: ''
   });
 
   const [dropdownLabels, setDropdownLabels] = useState({
@@ -78,6 +78,7 @@ const AddExpenseModal = ({
     gaushalaName: '',
     kathaName: '',
     paymentModeName: 'Cash',
+    statusName: 'Completed',
   });
   const [activeDropdown, setActiveDropdown] = useState(null);
 
@@ -87,6 +88,7 @@ const AddExpenseModal = ({
         const gaushala = gaushalas.find(g => g.id === editingExpense.gaushalaId);
         const katha = kathas.find(k => k.id === editingExpense.kathaId);
         const mode = paymentModes.find(m => m.id === editingExpense.paymentMode);
+        const st = statuses.find(s => s.id === editingExpense.status);
         setForm({
           date: editingExpense.date ? new Date(editingExpense.date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
           amount: editingExpense.amount,
@@ -94,13 +96,16 @@ const AddExpenseModal = ({
           description: editingExpense.description || '',
           gaushalaId: editingExpense.gaushalaId || '',
           kathaId: editingExpense.kathaId || '',
-          paymentMode: editingExpense.paymentMode || 'cash'
+          paymentMode: editingExpense.paymentMode || 'cash',
+          status: editingExpense.status || 'completed',
+          paidAmount: editingExpense.paidAmount ?? '',
         });
         setDropdownLabels({
           categoryName: editingExpense.category || '',
           gaushalaName: gaushala?.name || editingExpense.gaushala?.name || '',
           kathaName: katha?.name || editingExpense.katha?.name || '',
           paymentModeName: mode?.name || 'Cash',
+          statusName: st?.name || 'Completed',
         });
       } else {
         setForm({
@@ -110,13 +115,16 @@ const AddExpenseModal = ({
           description: '',
           gaushalaId: '',
           kathaId: '',
-          paymentMode: 'cash'
+          paymentMode: 'cash',
+          status: 'completed',
+          paidAmount: '',
         });
         setDropdownLabels({
           categoryName: '',
           gaushalaName: '',
           kathaName: '',
           paymentModeName: 'Cash',
+          statusName: 'Completed',
         });
       }
     }, 0);
@@ -162,7 +170,11 @@ const AddExpenseModal = ({
     } else if (field === 'paymentMode') {
       setForm(prev => ({ ...prev, paymentMode: id }));
       setDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
-      nextRef = descriptionRef;
+      nextRef = statusRef;
+    } else if (field === 'status') {
+      setForm(prev => ({ ...prev, status: id, paidAmount: id === 'partially_paid' ? prev.paidAmount : '' }));
+      setDropdownLabels(prev => ({ ...prev, statusName: name }));
+      nextRef = id === 'partially_paid' ? paidAmountRef : descriptionRef;
     }
     setActiveDropdown(null);
     if (nextRef?.current) {
@@ -197,13 +209,30 @@ const AddExpenseModal = ({
       kathaRef.current?.focus();
       return;
     }
+    if (form.status === 'partially_paid') {
+      const total = Number(form.amount);
+      const paid = Number(form.paidAmount);
+      if (!form.paidAmount || paid <= 0) {
+        toast.error('Please enter paid amount');
+        paidAmountRef.current?.focus();
+        return;
+      }
+      if (paid >= total) {
+        toast.error('Paid amount must be less than total amount');
+        paidAmountRef.current?.focus();
+        return;
+      }
+    }
+
+    const payload = { ...form };
+    if (payload.status !== 'partially_paid') delete payload.paidAmount;
 
     try {
       if (editingExpense) {
-        await updateExpense({ id: editingExpense.id, ...form }).unwrap();
+        await updateExpense({ id: editingExpense.id, ...payload }).unwrap();
         toast.success('Expense updated successfully');
       } else {
-        await addExpense(form).unwrap();
+        await addExpense(payload).unwrap();
         toast.success('Expense recorded successfully');
       }
       onClose();
@@ -256,6 +285,7 @@ const AddExpenseModal = ({
               setDropdownLabels(prev => ({ ...prev, categoryName: e.target.value }));
               setForm(prev => ({ ...prev, category: '' }));
               setActiveDropdown('categoryName');
+              expenseCategoryPagination?.handleSearch(e.target.value);
             }}
             onSelect={(id, name) => handleDropdownSelect('category', id, name)}
             onKeyDown={(e) => handleKeyDown(e, gaushalaRef)}
@@ -265,6 +295,10 @@ const AddExpenseModal = ({
             inputRef={categoryRef}
             icon={Tag}
             allowTransliteration={false}
+            isServerSearch={true}
+            onLoadMore={expenseCategoryPagination?.handleLoadMore}
+            hasMore={expenseCategoryPagination?.hasMore}
+            loading={expenseCategoryPagination?.loading}
             onItemDelete={handleDeleteCategory}
             footerAction={
               <button
@@ -341,7 +375,7 @@ const AddExpenseModal = ({
               setActiveDropdown('paymentModeName');
             }}
             onSelect={(id, name) => handleDropdownSelect('paymentMode', id, name)}
-            onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
+            onKeyDown={(e) => handleKeyDown(e, statusRef)}
             isActive={activeDropdown === 'paymentModeName'}
             setActive={setActiveDropdown}
             required
@@ -350,6 +384,58 @@ const AddExpenseModal = ({
             allowTransliteration={false}
           />
         </div>
+
+        <div className={`grid ${form.status === 'partially_paid' ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'} gap-4`}>
+          <SearchableDropdown
+            label="Status"
+            name="statusName"
+            placeholder="Select Status"
+            value={dropdownLabels.statusName}
+            items={statuses}
+            onChange={(e) => {
+              setDropdownLabels(prev => ({ ...prev, statusName: e.target.value }));
+              setActiveDropdown('statusName');
+            }}
+            onSelect={(id, name) => handleDropdownSelect('status', id, name)}
+            onKeyDown={(e) => handleKeyDown(e, form.status === 'partially_paid' ? paidAmountRef : descriptionRef)}
+            isActive={activeDropdown === 'statusName'}
+            setActive={setActiveDropdown}
+            required
+            inputRef={statusRef}
+            icon={CreditCard}
+            allowTransliteration={false}
+          />
+          {form.status === 'partially_paid' && (
+            <FormInput
+              label="Paid Amount"
+              name="paidAmount"
+              type="number"
+              placeholder="0.00"
+              value={form.paidAmount}
+              onChange={handleChange}
+              onKeyDown={(e) => handleKeyDown(e, descriptionRef)}
+              inputRef={paidAmountRef}
+              icon={IndianRupee}
+              required
+            />
+          )}
+        </div>
+
+        {form.status === 'partially_paid' && form.amount && form.paidAmount && (() => {
+          const remaining = Number(form.amount) - Number(form.paidAmount);
+          if (remaining > 0) {
+            return (
+              <div className="flex items-center justify-between px-3 py-2 bg-orange-50 border border-orange-200 rounded-lg">
+                <span className="text-xs font-semibold text-orange-700">Remaining</span>
+                <span className="text-sm font-bold text-orange-600 flex items-center gap-0.5">
+                  <IndianRupee className="w-3.5 h-3.5" />
+                  {remaining.toLocaleString('en-IN')}
+                </span>
+              </div>
+            );
+          }
+          return null;
+        })()}
 
         <div className="space-y-2">
           <FormInput
@@ -399,6 +485,7 @@ const AddExpenseModal = ({
           if (cat?.name) {
             setForm(prev => ({ ...prev, category: cat.name }));
             setDropdownLabels(prev => ({ ...prev, categoryName: cat.name }));
+            expenseCategoryPagination?.fetchItems(1, '', false);
             setTimeout(() => gaushalaRef.current?.focus(), 100);
           }
         }}

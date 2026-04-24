@@ -44,6 +44,19 @@ export const Expense = sequelize.define('Expense', {
   paymentMode: {
     type: DataTypes.ENUM('cash', 'online', 'check'),
     defaultValue: 'cash',
+  },
+  status: {
+    type: DataTypes.ENUM('completed', 'pay_later', 'partially_paid'),
+    allowNull: false,
+    defaultValue: 'completed',
+  },
+  paidAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
+  },
+  remainingAmount: {
+    type: DataTypes.DECIMAL(10, 2),
+    allowNull: true,
   }
 }, {
   timestamps: true,
@@ -67,5 +80,14 @@ export const Expense = sequelize.define('Expense', {
         }
       };
     }
-  }
+  },
+  indexes: [
+    { fields: ['date'] },
+    { fields: ['category'] },
+    { fields: ['gaushalaId'] },
+    { fields: ['kathaId'] },
+    { fields: ['paymentMode'] },
+    { fields: ['status'] },
+    { fields: ['createdAt'] },
+  ]
 });

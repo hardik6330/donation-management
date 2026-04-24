@@ -19,6 +19,7 @@ import { handleMutationError } from '../../../../utils/errorHelper';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
+import { donationPaymentModes, donationStatuses } from '../../../../utils/tableUtils';
 
 const LAST_DONATION_PREFS_KEY = 'LAST_DONATION_PREFS';
 
@@ -626,11 +627,7 @@ const AddDonationModal = ({
                   name="paymentModeName"
                   placeholder="Select Mode"
                   value={addDropdownLabels.paymentModeName}
-                  items={[
-                    { id: 'cash', name: 'Cash' },
-                    { id: 'online', name: 'Online' },
-                    { id: 'cheque', name: 'Cheque' }
-                  ]}
+                  items={donationPaymentModes}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('paymentMode', id, name)}
                   onKeyDown={(e) => handleKeyDown(e, statusRef, addForm.gaushalaId ? gaushalaRef : addForm.kathaId ? kathaRef : categoryRef)}
@@ -646,11 +643,7 @@ const AddDonationModal = ({
                   name="statusName"
                   placeholder="Select Status"
                   value={addDropdownLabels.statusName}
-                  items={[
-                    { id: 'completed', name: 'Completed' },
-                    { id: 'partially_paid', name: 'Partially Pay' },
-                    { id: 'pay_later', name: 'Pay Later' }
-                  ]}
+                  items={donationStatuses}
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('status', id, name)}
                   onKeyDown={(e) => handleKeyDown(e, amountRef, paymentModeRef)}

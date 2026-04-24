@@ -45,5 +45,10 @@ export const Gaushala = sequelize.define('Gaushala', {
       if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
       return { where };
     }
-  }
+  },
+  indexes: [
+    { fields: ['name'] },
+    { fields: ['locationId'] },
+    { fields: ['isActive'] },
+  ]
 });

@@ -20,6 +20,7 @@ import { Notification } from './notification.js';
 import { Announcement } from './announcement.js';
 import { Income } from './income.js';
 import { ExpenseCategory } from './expenseCategory.js';
+import { ExpenseInstallment } from './expenseInstallment.js';
 
 // ──────────────────────────────────────
 // Associations
@@ -80,6 +81,10 @@ Expense.belongsTo(Gaushala, { as: 'gaushala', foreignKey: 'gaushalaId' });
 Katha.hasMany(Expense, { foreignKey: 'kathaId' });
 Expense.belongsTo(Katha, { as: 'katha', foreignKey: 'kathaId' });
 
+// Expense <-> ExpenseInstallment
+Expense.hasMany(ExpenseInstallment, { as: 'installments', foreignKey: 'expenseId' });
+ExpenseInstallment.belongsTo(Expense, { as: 'expense', foreignKey: 'expenseId' });
+
 // Income associations
 // No associations for Income as gaushalaId and kathaId were removed
 
@@ -118,4 +123,5 @@ export {
   Announcement,
   Income,
   ExpenseCategory,
+  ExpenseInstallment,
 };

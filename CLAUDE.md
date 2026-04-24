@@ -23,7 +23,7 @@ backend/src/
 │   ├── razorpay.js              # Currently disabled
 │   ├── redis.js                 # Currently disabled
 │   └── cron.js                  # Node-cron scheduler (notification processing)
-├── models/                      # 17 Sequelize models (with Sequelize scopes for filtering)
+├── models/                      # 18 Sequelize models (with Sequelize scopes for filtering)
 ├── controllers/                 # Controller files
 │                                #   donation split: donationController (CRUD read/update),
 │                                #   donationPaymentController (create/verify/QR),
@@ -99,7 +99,7 @@ frontend/src/
                                  #   donations/ has partial payment modals & InstallmentTable
 ```
 
-## Database Models (17 tables)
+## Database Models (18 tables)
 
 | Model          | Key Fields                                                        | Relationships                          |
 | -------------- | ----------------------------------------------------------------- | -------------------------------------- |
@@ -110,7 +110,8 @@ frontend/src/
 | Category       | name, description, isActive                                       | hasMany Donations                      |
 | Gaushala       | name, locationId, isActive                                        | belongsTo Location, hasMany Donations/Expenses |
 | Katha          | name, locationId, startDate, endDate, status                      | belongsTo Location, hasMany Donations/Expenses |
-| Expense        | date, amount, category, description, paymentMode                  | belongsTo Gaushala, Katha              |
+| Expense        | date, amount, category (string), description, paymentMode         | belongsTo Gaushala, Katha              |
+| ExpenseCategory | name (unique)                                                     | standalone (referenced by Expense.category string) |
 | Sevak          | name, mobileNumber, email, address, isActive                      | standalone                             |
 | Mandal         | name, price, mandalType, isActive                                 | hasMany MandalMembers                  |
 | MandalMember   | name, mobileNumber, city, mandalId                                | belongsTo Mandal, hasMany Payments     |
@@ -126,7 +127,7 @@ frontend/src/
 | Route            | Key Endpoints                                      | Auth        |
 | ---------------- | -------------------------------------------------- | ----------- |
 | /donations       | GET /, POST /order, POST /verify, PUT /:id, GET /:id/installments, GET /:id/status | Mixed |
-| /users           | POST /register, /login, /logout; GET /mobile/:num; /system CRUD | Mixed/Admin |
+| /users           | POST /register, /login, /logout; GET /mobile/:num; GET /:id; /system CRUD | Mixed/Admin |
 | /admin           | GET /stats, /donations, /donors                    | Admin       |
 | /master          | GET /categories, /cities, /sub-locations/:id        | Public GET  |
 |                  | POST /location, /category; PUT/DELETE by id         | Admin       |
@@ -134,7 +135,8 @@ frontend/src/
 | /katha           | CRUD: same pattern                                  | Admin       |
 | /bapu            | CRUD: same pattern                                  | Admin       |
 | /expenses        | CRUD + GET /stats                                   | Admin       |
-| /sevak           | CRUD                                                | Admin       |
+| /expense-categories | CRUD (dynamic categories used by Expense.category) | Admin      |
+| /sevak           | CRUD + GET /mobile/:num                             | Admin       |
 | /mandal          | CRUD mandals + /members + /payments + /payments/report | Admin    |
 | /kartal-dhun     | CRUD                                                | Admin       |
 | /roles           | CRUD                                                | Admin       |
@@ -179,6 +181,9 @@ frontend/src/
 - **Slip-Ready Polling:** Donations list no longer constant-polls. After a create OR after an update that transitions a donation to `completed` (via `EditPayLaterModal`, `AddPartialPaymentModal`, `EditPartialPaymentModal`), the container sets `pendingDonationId` and polls lightweight `GET /donations/:id/status` every ~2s (response is `{ ready, slipUrl }`). When `ready=true` the full list is refetched and polling stops. Trigger helpers: `handleDonationCreated(id)` for create flow, `handleDonationUpdated(result)` for update flows — the latter only starts polling when `result.data.status === 'completed'` and `slipUrl` is empty. 30s safety timeout prevents runaway polling.
 - **Reports:** PDF export (with Gujarati font support via jsPDF) and Excel export (via XLSX). Advanced filtering by date range, amount, location, category.
 - **Dynamic Locations:** `findOrCreateLocationStructure` in backend allows on-the-fly creation of City > Taluka > Village hierarchy during entry in Donations, Gaushala, Katha, and Kartal Dhun modules. Frontend `useLocationDropdowns` hook manages hierarchical dropdown state.
+- **Dynamic Expense Categories:** `ExpenseCategory` table backs the expense `category` field (now a free STRING, no longer an ENUM). `AddExpenseModal` loads categories via RTK Query and exposes an inline `+ Add New Category` footer action inside the Category `SearchableDropdown` (new `footerAction` + `onItemDelete` props) — users can add/delete categories without leaving the expense form. The Expense list filter also pulls options from `/expense-categories`.
+- **Donor Auto-fill:** Add Donation form looks up a 10-digit mobile against `/users/mobile/:num` first; if no User matches it falls back to `/sevak/mobile/:num` so sevak contacts auto-fill the same way donors do.
+- **Profile Page:** `/admin/profile` fetches the live user via `GET /users/:id` (protected, password excluded, role included) using `authUser.id` from `AuthContext`, instead of rendering directly from localStorage.
 - **Model Scopes:** All models define Sequelize scopes (search, active, location, etc.) for reusable filtering. Controllers use `Model.scope([...scopes]).findAndCountAll()` instead of building inline where clauses. Scopes accept parameters via `{ method: ['scopeName', arg] }` syntax.
 - **DB Indexes:** Donation model indexes `status`, `createdAt`, `paymentDate`, `razorpay_order_id`, and composite `(status, createdAt)`. User model indexes `name`, `isAdmin`, `createdAt`. FK columns and unique fields (mobileNumber, email) rely on auto-indexes.
 - **Filtering:** `FilterSection` component with inline typing search (direct search in dropdown trigger). Server-side search for paginated dropdowns. `buildSearchFilter()` for generic multi-field search. `buildDonationFilter()` builds complex Sequelize where clauses.

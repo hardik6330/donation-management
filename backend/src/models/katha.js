@@ -56,5 +56,12 @@ export const Katha = sequelize.define('Katha', {
       if (country) where['$location.parent.parent.name$'] = { [Op.like]: `%${country}%` };
       return { where };
     }
-  }
+  },
+  indexes: [
+    { fields: ['name'] },
+    { fields: ['locationId'] },
+    { fields: ['status'] },
+    { fields: ['startDate'] },
+    { fields: ['endDate'] },
+  ]
 });

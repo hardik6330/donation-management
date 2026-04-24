@@ -17,6 +17,9 @@ A full-stack donation management application built with Node.js, Express, MySQL,
 - **Multi-language Support**: Seamless switching between **Gujarati and English** across the Admin dashboard.
 - **QR Code Donations**: Quick access to the public donation form via a dynamically generated QR code on the landing page.
 - **Master Data Management**: Dedicated modules for managing Gaushala, Katha, Bapu Schedule, Sevak, Mandal, and Kartal Dhun.
+- **Dynamic Expense Categories**: Expense categories are DB-backed (`ExpenseCategory` table) instead of a fixed enum. Users can add or delete categories inline from within the Add Expense modal via a footer action in the Category dropdown, and the Expense list filter pulls the same list.
+- **Donor Auto-fill from Sevak**: Entering a 10-digit mobile in the Add Donation form first looks up the User by mobile, then falls back to the Sevak table so sevak contacts auto-fill donor details the same way returning donors do.
+- **Live Profile Fetch**: Admin profile page fetches the signed-in user via `GET /users/:id` (password excluded, role included) instead of rendering from localStorage, so updates reflect immediately.
 - **Advanced Filtering & Export**: Powerful server-side filtering (Amount range, Date, Category) and data export to XLSX/PDF.
 - **Model Scopes**: Reusable Sequelize scopes across all models for search, filtering by status/location/date range, reducing controller complexity.
 - **Standardized Pagination**: All paginated APIs return a uniform `{ items, totalData, totalPages, currentPage, limit, fetchAll }` shape — no per-controller key overrides.

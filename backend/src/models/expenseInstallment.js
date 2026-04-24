@@ -1,17 +1,17 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/db.js';
 
-export const DonationInstallment = sequelize.define('DonationInstallment', {
+export const ExpenseInstallment = sequelize.define('ExpenseInstallment', {
   id: {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
   },
-  donationId: {
+  expenseId: {
     type: DataTypes.UUID,
     allowNull: false,
     references: {
-      model: 'Donations',
+      model: 'Expenses',
       key: 'id',
     },
     onDelete: 'CASCADE',
@@ -21,7 +21,7 @@ export const DonationInstallment = sequelize.define('DonationInstallment', {
     allowNull: false,
   },
   paymentMode: {
-    type: DataTypes.ENUM('online', 'cash', 'cheque'),
+    type: DataTypes.ENUM('cash', 'online', 'check'),
     allowNull: false,
   },
   paymentDate: {
@@ -35,7 +35,7 @@ export const DonationInstallment = sequelize.define('DonationInstallment', {
 }, {
   timestamps: true,
   indexes: [
-    { fields: ['donationId'] },
+    { fields: ['expenseId'] },
     { fields: ['paymentDate'] },
   ]
 });

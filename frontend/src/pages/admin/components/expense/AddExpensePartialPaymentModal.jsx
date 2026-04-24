@@ -4,11 +4,11 @@ import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
-import { useUpdateDonationMutation } from '../../../../services/donationApi';
-import { donationPaymentModes as paymentModes } from '../../../../utils/tableUtils';
+import { useUpdateExpenseMutation } from '../../../../services/expenseApi';
+import { paymentModes } from '../../../../utils/tableUtils';
 
-const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
-  const [updateDonation, { isLoading }] = useUpdateDonationMutation();
+const AddExpensePartialPaymentModal = ({ isOpen, onClose, expense }) => {
+  const [updateExpense, { isLoading }] = useUpdateExpenseMutation();
   const [addAmount, setAddAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [paymentMode, setPaymentMode] = useState('cash');
@@ -31,65 +31,51 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
     }
   }, [isOpen]);
 
-  const handleKeyDown = (e, nextRef, prevRef) => {
+  const handleKeyDown = (e, nextRef) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef === submitRef) {
-        handleSubmit(e);
-      } else if (nextRef?.current) {
-        nextRef.current.focus();
-      }
-    } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && prevRef?.current) {
-      if (e.target.selectionStart === 0 || e.target.selectionStart === undefined) {
-        e.preventDefault();
-        prevRef.current.focus();
-      }
-    } else if ((e.key === 'ArrowRight' || e.key === 'ArrowDown') && nextRef?.current) {
-      if (e.target.selectionStart === e.target.value.length || e.target.selectionStart === undefined) {
-        e.preventDefault();
-        nextRef.current.focus();
-      }
+      if (nextRef === submitRef) handleSubmit(e);
+      else if (nextRef?.current) nextRef.current.focus();
     }
   };
 
-  if (!donation) return null;
+  if (!expense) return null;
 
-  const totalAmount = Number(donation.amount || 0);
-  const currentPaidAmount = Number(donation.paidAmount || 0);
-  const currentRemainingAmount = Number(donation.remainingAmount || 0);
+  const totalAmount = Number(expense.amount || 0);
+  const currentPaid = Number(expense.paidAmount || 0);
+  const currentRemaining = Number(expense.remainingAmount != null ? expense.remainingAmount : (totalAmount - currentPaid));
   const numericAddAmount = Number((addAmount || '').replace(/,/g, '')) || 0;
-  const updatedPaidAmount = currentPaidAmount + numericAddAmount;
-  const updatedRemainingAmount = totalAmount - updatedPaidAmount;
+  const updatedPaid = currentPaid + numericAddAmount;
+  const updatedRemaining = Math.max(totalAmount - updatedPaid, 0);
 
   const handleAddAmountChange = (e) => {
-    const rawValue = e.target.value.replace(/,/g, '');
-    if (rawValue === '' || /^\d+$/.test(rawValue)) {
-      setAddAmount(rawValue === '' ? '' : Number(rawValue).toLocaleString('en-IN'));
+    const raw = e.target.value.replace(/,/g, '');
+    if (raw === '' || /^\d+$/.test(raw)) {
+      setAddAmount(raw === '' ? '' : Number(raw).toLocaleString('en-IN'));
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!numericAddAmount || numericAddAmount <= 0) {
       toast.error('Please enter add payment amount');
       return;
     }
-
-    if (numericAddAmount > currentRemainingAmount) {
+    if (numericAddAmount > currentRemaining) {
       toast.error('Add amount cannot be greater than remaining amount');
       return;
     }
 
-    try {
-      const result = await updateDonation({
-        id: donation.id,
-        paymentMode: paymentMode,
-        remainingAmount: updatedRemainingAmount,
-        notes: notes
-      }).unwrap();
+    const nextStatus = updatedPaid >= totalAmount ? 'completed' : 'partially_paid';
 
-      if (typeof onUpdated === 'function') onUpdated(result);
+    try {
+      await updateExpense({
+        id: expense.id,
+        paidAmount: updatedPaid,
+        paymentMode,
+        status: nextStatus,
+        notes,
+      }).unwrap();
       toast.success('Partial payment added successfully');
       onClose();
     } catch (error) {
@@ -104,24 +90,23 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
       title="Add Partial Payment"
       icon={<PlusCircle />}
       maxWidth="max-w-lg"
-      showLanguageToggle={true}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
-          <p className="text-xs text-gray-500">Donor</p>
-          <p className="text-sm font-semibold text-gray-800">{donation.donor?.name || 'Anonymous'}</p>
-          <p className="text-xs text-gray-500">Total Donation</p>
+          <p className="text-xs text-gray-500">Category</p>
+          <p className="text-sm font-semibold text-gray-800">{expense.category || '-'}</p>
+          <p className="text-xs text-gray-500">Total Expense</p>
           <p className="text-lg font-bold text-blue-700">₹{totalAmount.toLocaleString('en-IN')}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div className="rounded-xl border border-green-200 bg-green-50 p-3">
             <p className="text-xs text-green-700 font-semibold">Current Paid</p>
-            <p className="text-base font-bold text-green-700">₹{currentPaidAmount.toLocaleString('en-IN')}</p>
+            <p className="text-base font-bold text-green-700">₹{currentPaid.toLocaleString('en-IN')}</p>
           </div>
           <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
             <p className="text-xs text-orange-700 font-semibold">Current Remaining</p>
-            <p className="text-base font-bold text-orange-700">₹{currentRemainingAmount.toLocaleString('en-IN')}</p>
+            <p className="text-base font-bold text-orange-700">₹{currentRemaining.toLocaleString('en-IN')}</p>
           </div>
         </div>
 
@@ -148,7 +133,7 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
             icon={CreditCard}
             allowTransliteration={false}
             inputRef={paymentModeRef}
-            onKeyDown={(e) => handleKeyDown(e, addAmountRef, null)}
+            onKeyDown={(e) => handleKeyDown(e, addAmountRef)}
           />
 
           <div className="space-y-2">
@@ -162,32 +147,30 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
               required
               placeholder="0"
               ref={addAmountRef}
-              onKeyDown={(e) => handleKeyDown(e, notesRef, paymentModeRef)}
+              onKeyDown={(e) => handleKeyDown(e, notesRef)}
               className="w-full px-4 py-3 text-lg font-bold border border-emerald-300 bg-emerald-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <FormInput
-            label="Notes / Remark"
-            name="notes"
-            placeholder="Add some notes about this payment..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            icon={MessageSquare}
-            inputRef={notesRef}
-            onKeyDown={(e) => handleKeyDown(e, submitRef, addAmountRef)}
-          />
-        </div>
+        <FormInput
+          label="Notes / Remark"
+          name="notes"
+          placeholder="Add some notes about this payment..."
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          icon={MessageSquare}
+          inputRef={notesRef}
+          onKeyDown={(e) => handleKeyDown(e, submitRef)}
+        />
 
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-1">
           <p className="text-xs text-blue-700 font-semibold">After Update</p>
           <p className="text-sm text-blue-800">
-            Paid: <span className="font-bold">₹{Math.max(updatedPaidAmount, 0).toLocaleString('en-IN')}</span>
+            Paid: <span className="font-bold">₹{updatedPaid.toLocaleString('en-IN')}</span>
           </p>
           <p className="text-sm text-blue-800">
-            Remaining: <span className="font-bold">₹{Math.max(updatedRemainingAmount, 0).toLocaleString('en-IN')}</span>
+            Remaining: <span className="font-bold">₹{updatedRemaining.toLocaleString('en-IN')}</span>
           </p>
         </div>
 
@@ -203,7 +186,6 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
             ref={submitRef}
             type="submit"
             disabled={isLoading}
-            onKeyDown={(e) => handleKeyDown(e, null, notesRef)}
             className="flex-1 px-5 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
@@ -215,4 +197,4 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
   );
 };
 
-export default AddPartialPaymentModal;
+export default AddExpensePartialPaymentModal;
