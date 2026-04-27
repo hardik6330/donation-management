@@ -173,7 +173,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         slipNo: finalSlipNo
       });
     } else {
-      (async () => {
+      const processSlip = async () => {
         try {
           const [gaushala, katha] = await Promise.all([
             gaushalaId ? Gaushala.findByPk(gaushalaId, { include: [{ model: Location, as: 'location' }] }) : Promise.resolve(null),
@@ -231,7 +231,16 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         } catch (error) {
           logger.error(`[Donation ${donation.id}] Fallback background processing error:`, error);
         }
-      })();
+      };
+
+      // On serverless (Vercel) the lambda is killed as soon as the response is
+      // sent, so fire-and-forget never completes. Await synchronously there.
+      // Locally we keep it backgrounded so the API returns quickly.
+      if (VERCEL) {
+        await processSlip();
+      } else {
+        processSlip();
+      }
     }
   }
 
