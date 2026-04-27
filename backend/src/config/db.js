@@ -19,17 +19,21 @@ export const sequelize = new Sequelize(
     dialect: DB_DIALECT,
     logging: false,
     pool: {
-      max: 10,
+      max: 5,
       min: 0,
-      acquire: 30000,
-      idle: 10000
+      acquire: 60000,
+      idle: 5000,
+      evict: 1000
     },
     dialectOptions: DB_HOST !== 'localhost' && DB_HOST !== '127.0.0.1' ? {
       ssl: {
         require: true,
         rejectUnauthorized: false
-      }
-    } : {}
+      },
+      connectTimeout: 60000
+    } : {
+      connectTimeout: 60000
+    }
   }
 );
 
