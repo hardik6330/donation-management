@@ -94,12 +94,18 @@ const Donation = () => {
     pendingTimeoutRef.current = setTimeout(() => setPendingDonationId(null), 30000);
   };
 
-  const handleDonationCreated = (id) => startSlipPolling(id);
+  const handleDonationCreated = (id) => {
+    refetchDonations();
+    startSlipPolling(id);
+  };
 
   // Called by edit/add-partial modals after update.
   const handleDonationUpdated = (result) => {
     const d = result?.data;
-    // Always start polling if status is completed to ensure we get the latest slip
+    // 1. Immediately refetch the list so the UI shows `slipUrl: null` (loader icon)
+    refetchDonations();
+    
+    // 2. Start polling for the new slip if it's completed
     if (d?.id && d?.status === 'completed') {
       startSlipPolling(d.id);
     }

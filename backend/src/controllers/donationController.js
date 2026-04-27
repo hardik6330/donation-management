@@ -326,8 +326,22 @@ export const updateDonation = asyncHandler(async (req, res) => {
   );
 
   if (isCompleted && (wasNotCompleted || slipFieldsChanged)) {
+    // 1. Clear current slip URL in DB immediately so the status endpoint reports `ready: false`.
+    // This ensures the frontend shows a loader icon instead of the old PDF link.
+    await donation.update({ slipUrl: null });
+
+    // 2. Delete the old file from Cloudinary immediately so the old URL becomes invalid.
+    if (oldSlipUrl) {
+      runBackground(deleteFileFromCloudinary(oldSlipUrl), `Donation ${donation.id} delete old slip`);
+    }
+
     const processSlip = async () => {
       try {
+        // Add a small delay in live environment to simulate "later" processing
+        // and allow the frontend to show the update success first.
+        if (VERCEL) {
+          await new Promise(resolve => setTimeout(resolve, 3000));
+        }
         const donor = await User.findByPk(donation.donorId);
         if (donor) {
           const [gaushala, katha] = await Promise.all([
@@ -356,11 +370,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
           const tasks = [];
 
           const uploadTask = retryAction(async () => {
-            // Delete old slip if it exists
-            if (oldSlipUrl) {
-              await deleteFileFromCloudinary(oldSlipUrl);
-            }
-
             const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id);
             await donation.update({ slipUrl: cloudinaryUrl });
 
