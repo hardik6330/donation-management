@@ -37,7 +37,9 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     status,
     referenceName,
     paidAmount,
-    slipNo
+    slipNo,
+    paymentDate,
+    donationDate
   } = req.body;
 
   let finalSlipNo = slipNo;
@@ -79,8 +81,24 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   const fromCity = city ? `${city} માંથી ` : '';
   causeString = `${targetName} માટે ${fromCity}${name} એ દાન આપ્યું`;
 
-  let user = await User.findOne({ where: { mobileNumber } });
-  if (!user) {
+  let user;
+  if (mobileNumber) {
+    user = await User.findOne({ where: { mobileNumber } });
+  } else if (email && isValidEmail(email)) {
+    user = await User.findOne({ where: { email } });
+  }
+
+  if (user && user.id) {
+    await user.update({
+      name: name || user.name,
+      email: email || user.email,
+      address: address || user.address,
+      city: city?.toUpperCase() || user.city,
+      state: state?.toUpperCase() || user.state,
+      country: country?.toUpperCase() || user.country,
+      companyName: companyName || user.companyName
+    });
+  } else {
     const tempPassword = crypto.randomBytes(8).toString('hex');
     user = await User.create({
       name,
@@ -90,18 +108,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       state: state?.toUpperCase() || null,
       country: country?.toUpperCase() || null,
       companyName,
-      mobileNumber,
+      mobileNumber: mobileNumber || null,
       password: tempPassword
-    });
-  } else {
-    await user.update({
-      name: name || user.name,
-      email: email || user.email,
-      address: address || user.address,
-      city: city?.toUpperCase() || user.city,
-      state: state?.toUpperCase() || user.state,
-      country: country?.toUpperCase() || user.country,
-      companyName: companyName || user.companyName
     });
   }
 
@@ -126,11 +134,11 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     categoryId: categoryId || null,
     gaushalaId: gaushalaId || null,
     kathaId: kathaId || null,
-    locationId: null,
     paymentMode,
     referenceName,
     status: status || 'pending',
-    paymentDate: (isDirectPay || isPartialPay) ? new Date() : null,
+    donationDate: donationDate ? new Date(donationDate) : new Date(),
+    paymentDate: paymentDate ? new Date(paymentDate) : null,
     paidAmount: isPartialPay ? partialPaidAmount : isDirectPay ? amount : null,
     remainingAmount: isPartialPay ? (amount - partialPaidAmount) : null,
     slipNo: finalSlipNo,
@@ -143,12 +151,12 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       donationId: donation.id,
       amount: isPartialPay ? partialPaidAmount : amount,
       paymentMode: paymentMode,
-      paymentDate: new Date(),
+      paymentDate: paymentDate ? new Date(paymentDate) : null,
       notes: isPartialPay ? 'Initial partial payment' : 'Full payment'
     });
   }
 
-  if (isPartialPay) {
+  if (isPartialPay && user.id) {
     await managePartialPaymentReminder(donation.id, user.id, 'partially_paid');
   }
 
@@ -180,7 +188,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             causeString,
             donation.id,
             paymentMode,
-            donation.paymentDate,
+            donation.donationDate || donation.paymentDate,
             gaushala,
             katha,
             locationAddress,

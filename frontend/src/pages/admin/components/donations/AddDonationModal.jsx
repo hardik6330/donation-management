@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   useCreateOrderMutation,
-  useGetLatestSlipNoQuery
+  useGetLatestSlipNoQuery,
+  useUpdateDonationMutation
 } from '../../../../services/donationApi';
 import {
   useGetUserByMobileQuery
@@ -12,13 +13,16 @@ import {
 import {
   Loader2, IndianRupee, Plus, Phone, User,
   MapPin, UserCheck, Mail, Building2, Tag, CreditCard,
-  HandCoins
+  HandCoins, Calendar
 } from 'lucide-react';
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 import { toast } from 'react-toastify';
 import { handleMutationError } from '../../../../utils/errorHelper';
 import AdminModal from '../../../../components/common/AdminModal';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import FormInput from '../../../../components/common/FormInput';
+import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 import { donationPaymentModes, donationStatuses } from '../../../../utils/tableUtils';
 
 const LAST_DONATION_PREFS_KEY = 'LAST_DONATION_PREFS';
@@ -40,11 +44,15 @@ const AddDonationModal = ({
   kathaPagination,
   categoryPagination,
   onCreated,
+  onUpdated,
+  editingDonation = null,
 }) => {
+  const isEditMode = !!editingDonation;
   const storedPrefs = getStoredDonationPrefs();
   const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
+  const [updateDonation, { isLoading: isUpdating }] = useUpdateDonationMutation();
   const { data: latestSlipData } = useGetLatestSlipNoQuery(undefined, {
-    skip: !isOpen
+    skip: !isOpen || isEditMode
   });
 
   const [addForm, setAddForm] = useState({
@@ -65,6 +73,8 @@ const AddDonationModal = ({
     paymentMode: storedPrefs.paymentMode || 'cash',
     status: storedPrefs.status || 'completed',
     slipNo: '',
+    donationDate: todayISO(),
+    paymentDate: todayISO(),
   });
 
   const [addDropdownLabels, setAddDropdownLabels] = useState({
@@ -80,8 +90,7 @@ const AddDonationModal = ({
   const validateField = (name, value) => {
     let error = '';
     if (name === 'mobileNumber') {
-      if (!value) error = 'Mobile number is required';
-      else if (value.length !== 10) error = 'Enter exactly 10 digits';
+      if (value && value.length !== 10) error = 'Enter exactly 10 digits';
     } else if (name === 'name') {
       if (!value) error = 'Donor name is required';
     } else if (name === 'amount') {
@@ -122,6 +131,8 @@ const AddDonationModal = ({
   const paymentModeRef = useRef(null);
   const statusRef = useRef(null);
   const slipNoRef = useRef(null);
+  const donationDateRef = useRef(null);
+  const paymentDateRef = useRef(null);
   const amountRef = useRef(null);
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
@@ -149,9 +160,7 @@ const AddDonationModal = ({
   const handleKeyDown = (e, nextRef, prevRef) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if (nextRef === submitRef) {
-        handleAddSubmit(e);
-      } else if (nextRef?.current) {
+      if (nextRef?.current) {
         nextRef.current.focus();
       }
     } else if ((e.key === 'ArrowLeft' || e.key === 'ArrowUp') && prevRef?.current) {
@@ -219,13 +228,50 @@ const AddDonationModal = ({
 
   // Auto-fill latest slip number
   useEffect(() => {
-    if (isOpen && latestSlipData?.success && latestSlipData.data?.nextSlipNo) {
+    if (isOpen && !isEditMode && latestSlipData?.success && latestSlipData.data?.nextSlipNo) {
       setAddForm(prev => ({
         ...prev,
         slipNo: latestSlipData.data.nextSlipNo
       }));
     }
-  }, [isOpen, latestSlipData]);
+  }, [isOpen, latestSlipData, isEditMode]);
+
+  // Prefill when editing an existing donation
+  useEffect(() => {
+    if (!isOpen || !editingDonation) return;
+    const d = editingDonation;
+    const donor = d.donor || {};
+    const isoDate = (v) => v ? new Date(v).toISOString().slice(0, 10) : '';
+    setAddForm({
+      mobileNumber: donor.mobileNumber || '',
+      name: donor.name || '',
+      email: donor.email || '',
+      address: donor.address || '',
+      city: donor.city || '',
+      state: donor.state || '',
+      country: donor.country || '',
+      categoryId: d.categoryId || '',
+      gaushalaId: d.gaushalaId || '',
+      kathaId: d.kathaId || '',
+      companyName: donor.companyName || '',
+      referenceName: d.referenceName || '',
+      amount: d.amount != null ? Number(d.amount).toLocaleString('en-IN') : '',
+      paidAmount: d.paidAmount != null ? Number(d.paidAmount).toLocaleString('en-IN') : '',
+      paymentMode: d.paymentMode || 'cash',
+      status: d.status || 'completed',
+      slipNo: d.slipNo || '',
+      donationDate: isoDate(d.donationDate) || todayISO(),
+      paymentDate: isoDate(d.paymentDate) || '',
+    });
+    setAddDropdownLabels({
+      categoryName: d.category?.name || '',
+      gaushalaName: d.gaushala?.name || '',
+      kathaName: d.katha?.name || '',
+      paymentModeName: (donationPaymentModes.find(m => m.id === d.paymentMode)?.name) || 'Cash',
+      statusName: (donationStatuses.find(s => s.id === d.status)?.name) || 'Completed',
+    });
+    setErrors({});
+  }, [isOpen, editingDonation]);
 
   const handleAddInputChange = (e) => {
     const { name, value } = e.target;
@@ -276,6 +322,19 @@ const AddDonationModal = ({
       return;
     }
 
+    if (name === 'donationDate') {
+      setAddForm(prev => {
+        let nextPayment = prev.paymentDate;
+        if (prev.status === 'completed') {
+          nextPayment = value;
+        } else if (nextPayment && value && nextPayment < value) {
+          nextPayment = value;
+        }
+        return { ...prev, donationDate: value, paymentDate: nextPayment };
+      });
+      return;
+    }
+
     setAddForm(prev => ({ ...prev, [name]: value }));
     validateField(name, value);
   };
@@ -300,7 +359,12 @@ const AddDonationModal = ({
       setAddDropdownLabels(prev => ({ ...prev, paymentModeName: name }));
       nextRef = statusRef;
     } else if (field === 'status') {
-      setAddForm(prev => ({ ...prev, status: id, paidAmount: '' }));
+      setAddForm(prev => ({
+        ...prev,
+        status: id,
+        paidAmount: '',
+        paymentDate: id === 'completed' ? prev.donationDate : (id === 'pay_later' ? '' : (prev.paymentDate || prev.donationDate)),
+      }));
       setAddDropdownLabels(prev => ({ ...prev, statusName: name }));
       nextRef = amountRef;
     }
@@ -355,10 +419,30 @@ const AddDonationModal = ({
     isSubmittingRef.current = true;
     try {
       const rawPaid = addForm.paidAmount.toString().replace(/,/g, '');
+
+      if (isEditMode) {
+        const result = await updateDonation({
+          id: editingDonation.id,
+          amount: Number(rawAmount),
+          status: addForm.status,
+          paymentMode: addForm.paymentMode,
+          slipNo: addForm.slipNo,
+          categoryId: addForm.categoryId || null,
+          paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
+          paymentDate: addForm.status === 'pay_later' ? null : (addForm.paymentDate || null),
+        }).unwrap();
+
+        if (typeof onUpdated === 'function') onUpdated(result);
+        toast.success('Donation updated successfully');
+        onClose();
+        return;
+      }
+
       const result = await createDonation({
         ...addForm,
         amount: Number(rawAmount),
         paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
+        paymentDate: addForm.status === 'pay_later' ? null : (addForm.paymentDate || null),
       }).unwrap();
 
       // Trigger focused polling in parent so the PDF icon appears as soon as the worker finishes.
@@ -387,7 +471,7 @@ const AddDonationModal = ({
       resetAddForm();
       onClose();
     } catch (error) {
-      handleMutationError(error, 'Failed to add donation');
+      handleMutationError(error, isEditMode ? 'Failed to update donation' : 'Failed to add donation');
     } finally {
       isSubmittingRef.current = false;
     }
@@ -414,6 +498,8 @@ const AddDonationModal = ({
       paymentMode: lastPrefs.paymentMode || 'cash',
       status: lastPrefs.status || 'completed',
       slipNo: '',
+      donationDate: todayISO(),
+      paymentDate: todayISO(),
     });
     setAddDropdownLabels({
       categoryName: lastPrefs.categoryName || '',
@@ -429,7 +515,7 @@ const AddDonationModal = ({
     <AdminModal
       isOpen={isOpen}
       onClose={onClose}
-      title="Create New Donation"
+      title={isEditMode ? 'Edit Donation' : 'Create New Donation'}
       icon={<HandCoins />}
       maxWidth="max-w-4xl"
     >
@@ -446,7 +532,6 @@ const AddDonationModal = ({
                 label="Mobile Number"
                 name="mobileNumber"
                 placeholder="10-digit mobile number"
-                required
                 value={addForm.mobileNumber}
                 onChange={handleAddInputChange}
                 onKeyDown={(e) => handleKeyDown(e, nameRef)}
@@ -693,11 +778,34 @@ const AddDonationModal = ({
                 required
                 value={addForm.slipNo}
                 onChange={handleAddInputChange}
-                onKeyDown={(e) => handleKeyDown(e, submitRef, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
+                onKeyDown={(e) => handleKeyDown(e, donationDateRef, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
                 inputRef={slipNoRef}
                 icon={Tag}
                 error={errors.slipNo}
               />
+
+              <div className="grid grid-cols-2 gap-4">
+                <CustomDatePicker
+                  label="Donation Date"
+                  name="donationDate"
+                  value={addForm.donationDate}
+                  onChange={handleAddInputChange}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'pay_later' ? submitRef : paymentDateRef, slipNoRef)}
+                  inputRef={donationDateRef}
+                  icon={Calendar}
+                />
+                <CustomDatePicker
+                  label="Payment Date"
+                  name="paymentDate"
+                  value={addForm.paymentDate}
+                  onChange={handleAddInputChange}
+                  onKeyDown={(e) => handleKeyDown(e, submitRef, donationDateRef)}
+                  inputRef={paymentDateRef}
+                  icon={Calendar}
+                  disabled={addForm.status === 'pay_later'}
+                  minDate={addForm.donationDate}
+                />
+              </div>
 
               {addForm.status === 'partially_paid' && addForm.amount && addForm.paidAmount && (() => {
                 const total = Number(addForm.amount.toString().replace(/,/g, ''));
@@ -732,11 +840,11 @@ const AddDonationModal = ({
           <button
             ref={submitRef}
             type="submit"
-            disabled={isAdding}
+            disabled={isAdding || isUpdating}
             className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-50 shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
           >
-            {isAdding ? <Loader2 className="animate-spin" /> : <Plus className="w-5 h-5" />}
-            {isAdding ? 'Creating...' : 'Create Donation'}
+            {(isAdding || isUpdating) ? <Loader2 className="animate-spin" /> : <Plus className="w-5 h-5" />}
+            {isEditMode ? ((isUpdating ? 'Updating...' : 'Update Donation')) : (isAdding ? 'Creating...' : 'Create Donation')}
           </button>
         </div>
       </form>

@@ -20,7 +20,7 @@ const AddLocationModal = ({
   const [updateLocation, { isLoading: isUpdatingLocation }] = useUpdateLocationMutation();
   const isLoading = isAdding || isUpdatingLocation;
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({  
     cityName: '',
     stateName: '',
     countryName: '',

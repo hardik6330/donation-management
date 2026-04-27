@@ -5,7 +5,6 @@ import DonationList from './DonationList';
 import AddDonationModal from './AddDonationModal';
 import EditPartialPaymentModal from './EditPartialPaymentModal';
 import AddPartialPaymentModal from './AddPartialPaymentModal';
-import EditPayLaterModal from './EditPayLaterModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetAllDonationsQuery, useGetDonationStatusQuery, useResendWhatsAppMutation } from '../../../../services/donationApi';
@@ -47,7 +46,7 @@ const Donation = () => {
       page: 1,
       limit: 10,
       fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,'
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,donationDate,slipNo,categoryId,gaushalaId,kathaId'
     }
   });
 
@@ -177,6 +176,7 @@ const Donation = () => {
 
   const handleEditPayLater = (donation) => {
     setEditingPayLaterDonation(donation);
+    setIsModalOpen(true);
   };
 
   const handleResendWhatsApp = async (donation) => {
@@ -221,11 +221,16 @@ const Donation = () => {
       {isModalOpen && (
         <AddDonationModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingPayLaterDonation(null);
+          }}
           gaushalaPagination={activeGaushalaPagination}
           kathaPagination={kathaPagination}
           categoryPagination={activeCategoryPagination}
           onCreated={handleDonationCreated}
+          onUpdated={handleDonationUpdated}
+          editingDonation={editingPayLaterDonation}
         />
       )}
 
@@ -247,14 +252,6 @@ const Donation = () => {
         />
       )}
 
-      {editingPayLaterDonation && (
-        <EditPayLaterModal
-          isOpen={!!editingPayLaterDonation}
-          donation={editingPayLaterDonation}
-          onClose={() => setEditingPayLaterDonation(null)}
-          onUpdated={handleDonationUpdated}
-        />
-      )}
     </div>
   );
 };

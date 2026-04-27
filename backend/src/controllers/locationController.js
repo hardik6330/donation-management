@@ -177,15 +177,6 @@ export const deleteLocationMaster = asyncHandler(async (req, res) => {
 
     const allAffectedLocationIds = await getAllChildIds(id);
 
-    const donationsCount = await Donation.count({
-      where: { locationId: { [Op.in]: allAffectedLocationIds } }
-    });
-
-    if (donationsCount > 0) {
-      await transaction.rollback();
-      throw badRequest('Cannot delete location or its sub-locations because they have linked donations. Please deactivate them instead.');
-    }
-
     await Location.destroy({
       where: { id: { [Op.in]: allAffectedLocationIds } },
       transaction

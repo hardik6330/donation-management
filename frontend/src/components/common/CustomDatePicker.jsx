@@ -15,8 +15,18 @@ const CustomDatePicker = ({
   icon: Icon, 
   disabled = false,
   onKeyDown,
-  inputRef
+  inputRef,
+  minDate
 }) => {
+  const minDateObj = minDate ? new Date(minDate + 'T00:00:00') : null;
+  const isBeforeMin = (y, m, d) => {
+    if (!minDateObj) return false;
+    const candidate = new Date(y, m, d);
+    candidate.setHours(0, 0, 0, 0);
+    const min = new Date(minDateObj);
+    min.setHours(0, 0, 0, 0);
+    return candidate < min;
+  };
   const [isOpen, setIsOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => {
     if (value) return new Date(value + 'T00:00:00');
@@ -103,6 +113,7 @@ const CustomDatePicker = ({
 
   const handleSelect = (day) => {
     if (!day.current) return;
+    if (isBeforeMin(year, month, day.day)) return;
     const selected = `${year}-${String(month + 1).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
     onChange({ target: { name, value: selected } });
     setIsOpen(false);
@@ -128,15 +139,21 @@ const CustomDatePicker = ({
         e.preventDefault();
       } else {
         // If open, select current viewDate
+        if (isBeforeMin(year, month, viewDate.getDate())) {
+          e.preventDefault();
+          return;
+        }
         const selected = `${year}-${String(month + 1).padStart(2, '0')}-${String(viewDate.getDate()).padStart(2, '0')}`;
         onChange({ target: { name, value: selected } });
         setIsOpen(false);
         e.preventDefault();
-        
-        // After selection, manually move focus to next element since Enter was intercepted
-        setTimeout(() => {
-          handleFormNavigation({ ...e, key: 'Enter', target: triggerRef.current });
-        }, 0);
+
+        // Hand off to parent onKeyDown (which advances focus to next field)
+        if (onKeyDown) {
+          setTimeout(() => onKeyDown({ key: 'Enter', preventDefault: () => {} }), 0);
+        } else {
+          setTimeout(() => handleFormNavigation({ ...e, key: 'Enter', target: triggerRef.current }), 0);
+        }
       }
     } else if (isOpen) {
       if (e.key === 'ArrowRight') {
@@ -232,12 +249,14 @@ const CustomDatePicker = ({
                 key={i}
                 type="button"
                 onClick={() => handleSelect(day)}
-                disabled={!day.current}
+                disabled={!day.current || isBeforeMin(year, month, day.day)}
                 className={`w-9 h-9 flex items-center justify-center text-xs font-medium rounded-lg transition-all
-                  ${!day.current ? 'text-gray-300 cursor-default' : 'cursor-pointer hover:bg-blue-50 hover:text-blue-600'}
-                  ${isSelected(day) ? 'bg-blue-600 text-white hover:bg-blue-700 hover:text-white font-bold' : ''}
-                  ${isToday(day) && !isSelected(day) ? 'bg-blue-50 text-blue-600 font-bold ring-1 ring-blue-200' : ''}
-                  ${day.current && !isSelected(day) && !isToday(day) ? 'text-gray-700' : ''}
+                  ${!day.current || isBeforeMin(year, month, day.day)
+                    ? 'text-gray-300 cursor-not-allowed line-through'
+                    : `cursor-pointer hover:bg-blue-50 hover:text-blue-600
+                       ${isSelected(day) ? 'bg-blue-600 text-white hover:bg-blue-700 hover:text-white font-bold' : ''}
+                       ${isToday(day) && !isSelected(day) ? 'bg-blue-50 text-blue-600 font-bold ring-1 ring-blue-200' : ''}
+                       ${!isSelected(day) && !isToday(day) ? 'text-gray-700' : ''}`}
                 `}
               >
                 {day.day}

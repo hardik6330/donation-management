@@ -26,12 +26,12 @@ export const User = sequelize.define('User', {
   mobileNumber: {
     type: DataTypes.STRING,
     unique: 'users_mobile_unique',
-    allowNull: false,
+    allowNull: true,
     validate: {
-      notEmpty: { msg: 'Mobile number is required' },
-      len: {
-        args: [10, 10],
-        msg: 'Mobile number must be exactly 10 digits'
+      isTenDigits(value) {
+        if (value && value.trim() !== '' && !/^\d{10}$/.test(value)) {
+          throw new Error('Mobile number must be exactly 10 digits');
+        }
       }
     }
   },

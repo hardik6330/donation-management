@@ -2,7 +2,6 @@ import { Donation, DonationInstallment, User, Category, Gaushala, Katha, Locatio
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
-import { formatLocationAddress } from '../utils/locationHelper.js';
 import { sequelize } from '../config/db.js';
 import { Op } from 'sequelize';
 import { sendEmail, getDonationEmailTemplate, isValidEmail } from '../utils/services/email.service.js';
@@ -12,7 +11,6 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
 import logger from '../utils/logger.js';
 import { retryAction, managePartialPaymentReminder } from '../utils/donationHelpers.js';
-import { locationParentInclude } from '../utils/queryBuilder.js';
 
 export const getDonations = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -221,7 +219,7 @@ export const getDonors = asyncHandler(async (req, res) => {
 
 export const updateDonation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { amount, cause, status, paymentMode, paymentDate, categoryId, locationId, paidAmount, remainingAmount, notes, slipNo } = req.body;
+  const { amount, cause, status, paymentMode, paymentDate, categoryId, paidAmount, remainingAmount, notes, slipNo } = req.body;
 
   const donation = await Donation.findByPk(id);
   if (!donation) {
@@ -241,7 +239,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
     paymentMode: nextPaymentMode,
     paymentDate: paymentDate || donation.paymentDate,
     categoryId: categoryId || donation.categoryId,
-    locationId: locationId || donation.locationId,
     slipNo: slipNo || donation.slipNo,
   };
 
@@ -261,9 +258,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
     updateData.paidAmount = finalPaidAmount;
     updateData.remainingAmount = Number(nextAmount) - finalPaidAmount;
     updateData.status = finalPaidAmount === Number(nextAmount) ? 'completed' : 'partially_paid';
-    if (finalPaidAmount === Number(nextAmount) && !updateData.paymentDate) {
-      updateData.paymentDate = new Date();
-    }
   } else if (incomingPaidAmount !== null || incomingRemainingAmount !== null) {
     const finalPaidAmount = incomingRemainingAmount !== null
       ? Number(nextAmount) - incomingRemainingAmount
@@ -279,27 +273,23 @@ export const updateDonation = asyncHandler(async (req, res) => {
     updateData.paidAmount = finalPaidAmount;
     updateData.remainingAmount = Number(nextAmount) - finalPaidAmount;
     updateData.status = finalPaidAmount === Number(nextAmount) ? 'completed' : 'partially_paid';
-    if (finalPaidAmount === Number(nextAmount) && !updateData.paymentDate) {
-      updateData.paymentDate = new Date();
-    }
   }
 
   const wasNotCompleted = donation.status !== 'completed';
-  if (updateData.status === 'completed' && wasNotCompleted && !updateData.paymentDate) {
-    updateData.paymentDate = new Date();
-  }
 
   if (updateData.paidAmount !== undefined) {
     const currentPaid = Number(donation.paidAmount || 0);
     const newPaid = Number(updateData.paidAmount);
     if (newPaid > currentPaid) {
+      const installmentDate = paymentDate ? new Date(paymentDate) : null;
       await DonationInstallment.create({
         donationId: donation.id,
         amount: newPaid - currentPaid,
         paymentMode: nextPaymentMode,
-        paymentDate: new Date(),
+        paymentDate: installmentDate,
         notes: notes || (updateData.status === 'completed' ? 'Final payment' : 'Partial payment installment')
       });
+      if (installmentDate) updateData.paymentDate = installmentDate;
     }
   }
 
@@ -319,13 +309,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
             donation.kathaId ? Katha.findByPk(donation.kathaId) : null,
           ]);
 
-          let locationAddress = '';
-          if (donation.locationId) {
-            const loc = await Location.findByPk(donation.locationId, {
-              include: [locationParentInclude(2)]
-            });
-            locationAddress = formatLocationAddress(loc);
-          }
+          const locationAddress = '';
 
           const pdfBuffer = await generateDonationSlipBuffer(
             donor,
@@ -333,7 +317,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
             donation.cause,
             donation.id,
             donation.paymentMode,
-            donation.paymentDate,
+            donation.donationDate || donation.paymentDate,
             gaushala,
             katha,
             locationAddress,
@@ -350,13 +334,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
               const category = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
               const categoryName = category?.name || donation.cause || 'ગૌસેવા';
 
-              let locationName = '';
-              if (donation.locationId) {
-                const loc = await Location.findByPk(donation.locationId);
-                locationName = loc?.nameGuj || loc?.name || 'કોબડી';
-              } else {
-                locationName = donor.city || donor.state || donor.country || 'કોબડી';
-              }
+              const locationName = donor.city || donor.state || donor.country || 'કોબડી';
 
               await retryAction(
                 () => sendDetailedDonationSuccessWhatsAppPDF(donor.mobileNumber, donor.name, donation.amount, categoryName, locationName, cloudinaryUrl),
