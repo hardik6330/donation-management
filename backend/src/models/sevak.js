@@ -16,9 +16,9 @@ export const Sevak = sequelize.define('Sevak', {
     allowNull: false,
     unique: 'unique_sevak_mobile',
     validate: {
-      len: {
-        args: [10, 10],
-        msg: 'Mobile number must be exactly 10 digits'
+      is: {
+        args: /^\d+$/,
+        msg: 'Mobile number must contain only digits'
       }
     }
   },

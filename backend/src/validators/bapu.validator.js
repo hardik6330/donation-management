@@ -12,8 +12,7 @@ export const bapuScheduleSchema = Joi.object({
   locationId: Joi.string().optional().allow(''),
   eventType: Joi.string().valid('Padhramani', 'Katha', 'Event', 'Personal').optional(),
   contactPerson: Joi.string().optional().allow(''),
-  mobileNumber: Joi.string().length(10).pattern(/^[0-9]+$/).optional().allow('').messages({
-    'string.length': 'Mobile number must be 10 digits',
+  mobileNumber: Joi.string().pattern(/^[0-9]+$/).optional().allow('').messages({
     'string.pattern.base': 'Mobile number must contain only numbers'
   }),
   description: Joi.string().optional().allow(''),

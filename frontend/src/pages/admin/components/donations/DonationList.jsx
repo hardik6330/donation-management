@@ -203,7 +203,7 @@ const DonationList = ({
                       )}
                     </button>
                   )}
-                  {donation.status === 'completed' && (
+                  {donation.status === 'completed' && donation.donor?.mobileNumber && (
                     <button
                       onClick={() => onResendWhatsApp(donation)}
                       disabled={isResending}

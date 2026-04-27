@@ -16,9 +16,9 @@ export const MandalMember = sequelize.define('MandalMember', {
     allowNull: false,
     unique: 'unique_mandal_member_mobile',
     validate: {
-      len: {
-        args: [10, 10],
-        msg: 'Mobile number must be exactly 10 digits'
+      is: {
+        args: /^\d+$/,
+        msg: 'Mobile number must contain only digits'
       }
     }
   },

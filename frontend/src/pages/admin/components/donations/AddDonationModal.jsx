@@ -68,13 +68,14 @@ const AddDonationModal = ({
     kathaId: storedPrefs.kathaId || '',
     companyName: '',
     referenceName: '',
-    amount: storedPrefs.amount || '',
+    amount: '',
     paidAmount: '',
     paymentMode: storedPrefs.paymentMode || 'cash',
     status: storedPrefs.status || 'completed',
     slipNo: '',
     donationDate: todayISO(),
     paymentDate: todayISO(),
+    notes: '',
   });
 
   const [addDropdownLabels, setAddDropdownLabels] = useState({
@@ -90,12 +91,10 @@ const AddDonationModal = ({
   const validateField = (name, value) => {
     let error = '';
     if (name === 'mobileNumber') {
-      if (value && value.length !== 10) error = 'Enter exactly 10 digits';
     } else if (name === 'name') {
       if (!value) error = 'Donor name is required';
     } else if (name === 'amount') {
-      const amt = Number(value.toString().replace(/,/g, ''));
-      if (!value || amt <= 0) error = 'Enter valid amount';
+      if (!value) error = 'Enter amount';
     } else if (name === 'paidAmount' && addForm.status === 'partially_paid') {
       const total = Number(addForm.amount.toString().replace(/,/g, ''));
       const paid = Number(value.toString().replace(/,/g, ''));
@@ -133,6 +132,7 @@ const AddDonationModal = ({
   const slipNoRef = useRef(null);
   const donationDateRef = useRef(null);
   const paymentDateRef = useRef(null);
+  const notesRef = useRef(null);
   const amountRef = useRef(null);
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
@@ -143,11 +143,11 @@ const AddDonationModal = ({
   const categories = categoryPagination.items;
 
   const { data: existingUser } = useGetUserByMobileQuery(addForm.mobileNumber, {
-    skip: addForm.mobileNumber.length !== 10 || !isOpen,
+    skip: addForm.mobileNumber.length < 10 || !isOpen,
   });
 
   const { data: existingSevak } = useGetSevakByMobileQuery(addForm.mobileNumber, {
-    skip: addForm.mobileNumber.length !== 10 || !isOpen || !!existingUser?.success,
+    skip: addForm.mobileNumber.length < 10 || !isOpen || !!existingUser?.success,
   });
 
   // Fast Entry: Focus first field
@@ -262,22 +262,24 @@ const AddDonationModal = ({
       slipNo: d.slipNo || '',
       donationDate: isoDate(d.donationDate) || todayISO(),
       paymentDate: isoDate(d.paymentDate) || '',
+      notes: d.notes || '',
     });
+    const lookupName = (list, id) => list.find(item => item.id === id)?.name || '';
     setAddDropdownLabels({
-      categoryName: d.category?.name || '',
-      gaushalaName: d.gaushala?.name || '',
-      kathaName: d.katha?.name || '',
+      categoryName: d.category?.name || lookupName(categoryPagination.items, d.categoryId),
+      gaushalaName: d.gaushala?.name || lookupName(gaushalaPagination.items, d.gaushalaId),
+      kathaName: d.katha?.name || lookupName(kathaPagination.items, d.kathaId),
       paymentModeName: (donationPaymentModes.find(m => m.id === d.paymentMode)?.name) || 'Cash',
       statusName: (donationStatuses.find(s => s.id === d.status)?.name) || 'Completed',
     });
     setErrors({});
-  }, [isOpen, editingDonation]);
+  }, [isOpen, editingDonation, categoryPagination.items, gaushalaPagination.items, kathaPagination.items]);
 
   const handleAddInputChange = (e) => {
     const { name, value } = e.target;
 
     if (name === 'mobileNumber') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 10);
+      const cleaned = value.replace(/\D/g, '');
       setAddForm(prev => ({ ...prev, [name]: cleaned }));
       validateField(name, cleaned);
       return;
@@ -430,6 +432,7 @@ const AddDonationModal = ({
           categoryId: addForm.categoryId || null,
           paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
           paymentDate: addForm.status === 'pay_later' ? null : (addForm.paymentDate || null),
+          notes: addForm.notes || null,
         }).unwrap();
 
         if (typeof onUpdated === 'function') onUpdated(result);
@@ -460,7 +463,6 @@ const AddDonationModal = ({
         categoryName: addDropdownLabels.categoryName,
         gaushalaName: addDropdownLabels.gaushalaName,
         kathaName: addDropdownLabels.kathaName,
-        amount: addForm.amount,
         paymentMode: addForm.paymentMode,
         status: addForm.status,
         paymentModeName: addDropdownLabels.paymentModeName,
@@ -493,13 +495,14 @@ const AddDonationModal = ({
       kathaId: lastPrefs.kathaId || '',
       companyName: '',
       referenceName: '',
-      amount: lastPrefs.amount || '',
+      amount: '',
       paidAmount: '',
       paymentMode: lastPrefs.paymentMode || 'cash',
       status: lastPrefs.status || 'completed',
       slipNo: '',
       donationDate: todayISO(),
       paymentDate: todayISO(),
+      notes: '',
     });
     setAddDropdownLabels({
       categoryName: lastPrefs.categoryName || '',
@@ -599,17 +602,8 @@ const AddDonationModal = ({
                 onKeyDown={(e) => handleKeyDown(e, cityRef, companyRef)}
                 inputRef={addressRef}
               />
-            </div>
-          </div>
 
-          {/* Location & Donation Details Section */}
-          <div className="space-y-6">
-            <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
-              <MapPin className="w-3 h-3" /> Location & Donation Details
-            </h4>
-
-            <div className="grid grid-cols-1 gap-4">
-              {/* Row 1: City, State, Country */}
+              {/* Location: City, State, Country */}
               <div className="grid grid-cols-3 gap-4">
                 <FormInput
                   label="City"
@@ -645,7 +639,16 @@ const AddDonationModal = ({
                   allowTransliteration={false}
                 />
               </div>
+            </div>
+          </div>
 
+          {/* Donation Details Section */}
+          <div className="space-y-6">
+            <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider flex items-center gap-2">
+              <MapPin className="w-3 h-3" /> Donation Details
+            </h4>
+
+            <div className="grid grid-cols-1 gap-4">
               {/* Row 2: Category, Gaushala */}
               <div className="grid grid-cols-2 gap-4">
                 <SearchableDropdown
@@ -666,27 +669,6 @@ const AddDonationModal = ({
                   required
                 />
                 <SearchableDropdown
-                  label="Gaushala"
-                  name="gaushalaName"
-                  placeholder="Select Gaushala"
-                  value={addDropdownLabels.gaushalaName}
-                  items={gaushalas}
-                  onChange={handleAddInputChange}
-                  onSelect={(id, name) => handleAddDropdownSelect('gaushalaId', id, name)}
-                  onClear={() => handleAddDropdownSelect('gaushalaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, addForm.gaushalaId ? paymentModeRef : kathaRef, categoryRef)}
-                  isActive={activeAddDropdown === 'gaushalaName'}
-                  setActive={handleSetActiveAddDropdown}
-                  disabled={!!addForm.kathaId}
-                  inputRef={gaushalaRef}
-                  icon={Building2}
-                  allowTransliteration={false}
-                />
-              </div>
-
-              {/* Row 3: Active Katha */}
-              <div className="grid grid-cols-2 gap-4">
-                <SearchableDropdown
                   label="Active Katha"
                   name="kathaName"
                   placeholder="Select Katha"
@@ -695,12 +677,33 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('kathaId', id, name)}
                   onClear={() => handleAddDropdownSelect('kathaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, addForm.kathaId ? categoryRef : gaushalaRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.kathaId ? paymentModeRef : gaushalaRef, categoryRef)}
                   isActive={activeAddDropdown === 'kathaName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!!addForm.gaushalaId}
                   inputRef={kathaRef}
                   icon={Tag}
+                  allowTransliteration={false}
+                />
+              </div>
+
+              {/* Row 3: Gaushala */}
+              <div className="grid grid-cols-2 gap-4">
+                <SearchableDropdown
+                  label="Gaushala"
+                  name="gaushalaName"
+                  placeholder="Select Gaushala"
+                  value={addDropdownLabels.gaushalaName}
+                  items={gaushalas}
+                  onChange={handleAddInputChange}
+                  onSelect={(id, name) => handleAddDropdownSelect('gaushalaId', id, name)}
+                  onClear={() => handleAddDropdownSelect('gaushalaId', '', '')}
+                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, addForm.gaushalaId ? categoryRef : kathaRef)}
+                  isActive={activeAddDropdown === 'gaushalaName'}
+                  setActive={handleSetActiveAddDropdown}
+                  disabled={!!addForm.kathaId}
+                  inputRef={gaushalaRef}
+                  icon={Building2}
                   allowTransliteration={false}
                 />
               </div>
@@ -790,7 +793,7 @@ const AddDonationModal = ({
                   name="donationDate"
                   value={addForm.donationDate}
                   onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'pay_later' ? submitRef : paymentDateRef, slipNoRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.status === 'pay_later' ? notesRef : paymentDateRef, slipNoRef)}
                   inputRef={donationDateRef}
                   icon={Calendar}
                 />
@@ -799,13 +802,25 @@ const AddDonationModal = ({
                   name="paymentDate"
                   value={addForm.paymentDate}
                   onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, submitRef, donationDateRef)}
+                  onKeyDown={(e) => handleKeyDown(e, notesRef, donationDateRef)}
                   inputRef={paymentDateRef}
                   icon={Calendar}
                   disabled={addForm.status === 'pay_later'}
                   minDate={addForm.donationDate}
                 />
               </div>
+
+              <FormInput
+                label="Note"
+                name="notes"
+                type="textarea"
+                rows="2"
+                placeholder="Optional note about this donation"
+                value={addForm.notes}
+                onChange={handleAddInputChange}
+                onKeyDown={(e) => handleKeyDown(e, submitRef, addForm.status === 'pay_later' ? donationDateRef : paymentDateRef)}
+                inputRef={notesRef}
+              />
 
               {addForm.status === 'partially_paid' && addForm.amount && addForm.paidAmount && (() => {
                 const total = Number(addForm.amount.toString().replace(/,/g, ''));

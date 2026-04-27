@@ -21,8 +21,7 @@ export const registerSchema = Joi.object({
     'string.email': 'Valid email is required',
     'any.required': 'Email is required'
   }),
-  mobileNumber: Joi.string().length(10).pattern(/^[0-9]+$/).required().messages({
-    'string.length': 'Mobile number must be 10 digits',
+  mobileNumber: Joi.string().pattern(/^[0-9]+$/).required().messages({
     'string.pattern.base': 'Mobile number must contain only numbers',
     'any.required': 'Mobile number is required'
   }),
@@ -44,8 +43,7 @@ export const systemUserSchema = Joi.object({
     'string.email': 'Valid email is required',
     'any.required': 'Email is required'
   }),
-  mobileNumber: Joi.string().length(10).pattern(/^[0-9]+$/).required().messages({
-    'string.length': 'Mobile number must be 10 digits',
+  mobileNumber: Joi.string().pattern(/^[0-9]+$/).required().messages({
     'string.pattern.base': 'Mobile number must contain only numbers',
     'any.required': 'Mobile number is required'
   }),

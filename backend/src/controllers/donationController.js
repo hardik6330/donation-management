@@ -241,6 +241,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
     paymentDate: paymentDate || donation.paymentDate,
     categoryId: categoryId || donation.categoryId,
     slipNo: slipNo || donation.slipNo,
+    notes: notes !== undefined ? notes : donation.notes,
   };
 
   if (nextStatus === 'partially_paid') {
@@ -312,6 +313,8 @@ export const updateDonation = asyncHandler(async (req, res) => {
 
           const locationAddress = '';
 
+          const categoryRow = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
+
           const pdfBuffer = await generateDonationSlipBuffer(
             donor,
             donation.amount,
@@ -322,7 +325,8 @@ export const updateDonation = asyncHandler(async (req, res) => {
             gaushala,
             katha,
             locationAddress,
-            donation.slipNo || '-'
+            donation.slipNo || '-',
+            categoryRow?.name || ''
           );
 
           const tasks = [];

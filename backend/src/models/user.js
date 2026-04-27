@@ -28,9 +28,9 @@ export const User = sequelize.define('User', {
     unique: 'users_mobile_unique',
     allowNull: true,
     validate: {
-      isTenDigits(value) {
-        if (value && value.trim() !== '' && !/^\d{10}$/.test(value)) {
-          throw new Error('Mobile number must be exactly 10 digits');
+      digitsOnly(value) {
+        if (value && value.trim() !== '' && !/^\d+$/.test(value)) {
+          throw new Error('Mobile number must contain only digits');
         }
       }
     }

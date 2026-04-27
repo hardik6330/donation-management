@@ -282,7 +282,7 @@ const Donate = () => {
   const kathas = kathasData?.data?.items || [];
 
   const { data: existingUser, isFetching: isCheckingUser } = useGetUserByMobileQuery(formData.mobileNumber, {
-    skip: formData.mobileNumber.length !== 10,
+    skip: formData.mobileNumber.length < 10,
   });
 
   useEffect(() => {
@@ -306,7 +306,6 @@ const Donate = () => {
     const { name, value } = e.target;
     if (name === 'mobileNumber') {
       const cleaned = value.replace(/\D/g, '');
-      if (cleaned.length > 10) return;
       setFormData(prev => ({ ...prev, [name]: cleaned }));
       return;
     }
@@ -358,8 +357,8 @@ const Donate = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.mobileNumber || formData.mobileNumber.length !== 10) {
-      toast.warning('Please enter a valid 10-digit mobile number');
+    if (!formData.mobileNumber) {
+      toast.warning('Please enter a mobile number');
       mobileRef.current?.focus();
       return;
     }

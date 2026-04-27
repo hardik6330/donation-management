@@ -16,10 +16,8 @@ const Signup = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     
-    // Limit mobile number to 10 digits and allow only numbers
     if (name === 'mobileNumber') {
-      const cleaned = value.replace(/\D/g, ''); // Remove non-digits
-      if (cleaned.length > 10) return; // Prevent more than 10 digits
+      const cleaned = value.replace(/\D/g, '');
       setFormData((prev) => ({ ...prev, [name]: cleaned }));
       return;
     }

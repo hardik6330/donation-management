@@ -63,7 +63,7 @@ const AddSystemUserModal = ({ isOpen, onClose, editingUser = null }) => {
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     if (name === 'mobileNumber') {
-      setForm(prev => ({ ...prev, [name]: value.replace(/\D/g, '').slice(0, 10) }));
+      setForm(prev => ({ ...prev, [name]: value.replace(/\D/g, '') }));
       return;
     }
     if (name === 'roleName') {

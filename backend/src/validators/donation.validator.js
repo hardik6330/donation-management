@@ -1,13 +1,13 @@
 import Joi from 'joi';
 
 export const donationSchema = Joi.object({
-  amount: Joi.number().positive().required().messages({
+  amount: Joi.number().min(0).required().messages({
     'number.base': 'Amount must be a number',
-    'number.positive': 'Amount must be greater than 0',
+    'number.min': 'Amount cannot be negative',
     'any.required': 'Amount is required'
   }),
-  mobileNumber: Joi.string().length(10).pattern(/^[0-9]+$/).optional().allow('', null).messages({
-    'string.length': 'Mobile number must be 10 digits'
+  mobileNumber: Joi.string().pattern(/^[0-9]+$/).optional().allow('', null).messages({
+    'string.pattern.base': 'Mobile number must contain only digits'
   }),
   name: Joi.string().required().messages({
     'any.required': 'Donor name is required'
@@ -31,6 +31,7 @@ export const donationSchema = Joi.object({
   slipNo: Joi.string().optional().allow('', null),
   paymentDate: Joi.date().optional().allow(null, ''),
   donationDate: Joi.date().optional().allow(null, ''),
+  notes: Joi.string().optional().allow('', null),
   paidAmount: Joi.number()
     .when('status', {
       is: 'partially_paid',
@@ -45,9 +46,9 @@ export const donationSchema = Joi.object({
 });
 
 export const donationUpdateSchema = Joi.object({
-  amount: Joi.number().positive().optional().messages({
+  amount: Joi.number().min(0).optional().messages({
     'number.base': 'Amount must be a number',
-    'number.positive': 'Amount must be greater than 0'
+    'number.min': 'Amount cannot be negative'
   }),
   cause: Joi.string().optional().allow(''),
   status: Joi.string().valid('pending', 'completed', 'failed', 'partially_paid', 'pay_later').optional(),
