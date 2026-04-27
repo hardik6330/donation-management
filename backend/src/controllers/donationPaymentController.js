@@ -1,4 +1,5 @@
 import { Donation, DonationInstallment, User, Category, Gaushala, Katha, Location } from '../models/index.js';
+import { sequelize } from '../config/db.js';
 import { sendSuccess } from '../utils/apiResponse.js';
 import QRCode from 'qrcode';
 import crypto from 'crypto';
@@ -22,151 +23,144 @@ export const generateQRCode = asyncHandler(async (req, res) => {
 
 export const createDonationOrder = asyncHandler(async (req, res) => {
   const {
-    amount,
-    name,
-    email,
-    address,
-    city,
-    state,
-    country,
-    categoryId,
-    gaushalaId,
-    kathaId,
-    companyName,
-    mobileNumber,
-    paymentMode,
-    status,
-    referenceName,
-    paidAmount,
-    slipNo,
-    paymentDate,
-    donationDate,
-    notes,
-    birthDate
+    amount, name, email, address, city, state, country, categoryId, gaushalaId, kathaId,
+    companyName, mobileNumber, paymentMode, status, referenceName, paidAmount,
+    slipNo, paymentDate, donationDate, notes, birthDate
   } = req.body;
 
-  let finalSlipNo = slipNo;
-  if (!finalSlipNo) {
-    const lastDonation = await Donation.findOne({
-      where: { slipNo: { [Op.ne]: null } },
-      order: [['createdAt', 'DESC']],
-      attributes: ['slipNo']
-    });
+  // Use a transaction to ensure slip number generation is atomic and safe for multiple devices.
+  const result = await sequelize.transaction(async (t) => {
+    let finalSlipNo = slipNo;
+    if (!finalSlipNo) {
+      // Find the last donation and lock it so no other request can generate a slip number 
+      // until this transaction finishes.
+      const lastDonation = await Donation.findOne({
+        where: { slipNo: { [Op.ne]: null } },
+        order: [['createdAt', 'DESC']],
+        attributes: ['slipNo'],
+        lock: true, // SELECT ... FOR UPDATE
+        transaction: t
+      });
 
-    if (lastDonation && !isNaN(lastDonation.slipNo)) {
-      finalSlipNo = (parseInt(lastDonation.slipNo) + 1).toString();
+      if (lastDonation && !isNaN(lastDonation.slipNo)) {
+        finalSlipNo = (parseInt(lastDonation.slipNo) + 1).toString();
+      } else {
+        finalSlipNo = "1";
+      }
+    }
+
+    let causeString = '';
+    let categoryName = 'General Donation';
+    let kathaName = '';
+    let gaushalaName = '';
+
+    if (categoryId) {
+      const category = await Category.findByPk(categoryId, { transaction: t });
+      if (category) categoryName = category.name;
+    }
+
+    if (gaushalaId) {
+      const gaushala = await Gaushala.findByPk(gaushalaId, { transaction: t });
+      if (gaushala) gaushalaName = gaushala.name;
+    }
+
+    if (kathaId) {
+      const katha = await Katha.findByPk(kathaId, { transaction: t });
+      if (katha) kathaName = katha.name;
+    }
+
+    const targetName = kathaName || gaushalaName || categoryName;
+    const fromCity = city ? `${city} માંથી ` : '';
+    causeString = `${targetName} માટે ${fromCity}${name} એ દાન આપ્યું`;
+
+    let user;
+    if (mobileNumber) {
+      user = await User.findOne({ where: { mobileNumber }, transaction: t });
+    } else if (email && isValidEmail(email)) {
+      user = await User.findOne({ where: { email }, transaction: t });
+    }
+
+    if (user && user.id) {
+      await user.update({
+        name: name || user.name,
+        email: email || user.email,
+        address: address || user.address,
+        city: city?.toUpperCase() || user.city,
+        state: state?.toUpperCase() || user.state,
+        country: country?.toUpperCase() || user.country,
+        companyName: companyName || user.companyName,
+        birthDate: birthDate || user.birthDate
+      }, { transaction: t });
     } else {
-      finalSlipNo = "1";
+      const tempPassword = crypto.randomBytes(8).toString('hex');
+      user = await User.create({
+        name,
+        email: email || null,
+        address,
+        city: city?.toUpperCase() || null,
+        state: state?.toUpperCase() || null,
+        country: country?.toUpperCase() || null,
+        companyName,
+        birthDate: birthDate || null,
+        mobileNumber: mobileNumber || null,
+        password: tempPassword
+      }, { transaction: t });
     }
-  }
 
-  let causeString = '';
-  let categoryName = 'General Donation';
-  let kathaName = '';
-  let gaushalaName = '';
+    const isDirectPay = status === 'completed';
+    const isPartialPay = status === 'partially_paid';
+    const totalAmount = Number(amount);
+    const partialPaidAmount = Number(paidAmount);
 
-  if (categoryId) {
-    const category = await Category.findByPk(categoryId);
-    if (category) categoryName = category.name;
-  }
-
-  if (gaushalaId) {
-    const gaushala = await Gaushala.findByPk(gaushalaId);
-    if (gaushala) gaushalaName = gaushala.name;
-  }
-
-  if (kathaId) {
-    const katha = await Katha.findByPk(kathaId);
-    if (katha) kathaName = katha.name;
-  }
-
-  const targetName = kathaName || gaushalaName || categoryName;
-  const fromCity = city ? `${city} માંથી ` : '';
-  causeString = `${targetName} માટે ${fromCity}${name} એ દાન આપ્યું`;
-
-  let user;
-  if (mobileNumber) {
-    user = await User.findOne({ where: { mobileNumber } });
-  } else if (email && isValidEmail(email)) {
-    user = await User.findOne({ where: { email } });
-  }
-
-  if (user && user.id) {
-    await user.update({
-      name: name || user.name,
-      email: email || user.email,
-      address: address || user.address,
-      city: city?.toUpperCase() || user.city,
-      state: state?.toUpperCase() || user.state,
-      country: country?.toUpperCase() || user.country,
-      companyName: companyName || user.companyName,
-      birthDate: birthDate || user.birthDate
-    });
-  } else {
-    const tempPassword = crypto.randomBytes(8).toString('hex');
-    user = await User.create({
-      name,
-      email: email || null,
-      address,
-      city: city?.toUpperCase() || null,
-      state: state?.toUpperCase() || null,
-      country: country?.toUpperCase() || null,
-      companyName,
-      birthDate: birthDate || null,
-      mobileNumber: mobileNumber || null,
-      password: tempPassword
-    });
-  }
-
-  const isDirectPay = status === 'completed';
-  const isPartialPay = status === 'partially_paid';
-  const totalAmount = Number(amount);
-  const partialPaidAmount = Number(paidAmount);
-
-  if (isPartialPay) {
-    if (!Number.isFinite(partialPaidAmount) || partialPaidAmount <= 0) {
-      throw badRequest('Paid amount is required for partial payment');
+    if (isPartialPay) {
+      if (!Number.isFinite(partialPaidAmount) || partialPaidAmount <= 0) {
+        throw badRequest('Paid amount is required for partial payment');
+      }
+      if (partialPaidAmount >= totalAmount) {
+        throw badRequest('Paid amount must be less than total donation amount');
+      }
     }
-    if (partialPaidAmount >= totalAmount) {
-      throw badRequest('Paid amount must be less than total donation amount');
-    }
-  }
 
-  const donationData = {
-    donorId: user.id,
-    amount,
-    cause: causeString,
-    categoryId: categoryId || null,
-    gaushalaId: gaushalaId || null,
-    kathaId: kathaId || null,
-    paymentMode,
-    referenceName,
-    status: status || 'pending',
-    donationDate: donationDate ? new Date(donationDate) : new Date(),
-    paymentDate: paymentDate ? new Date(paymentDate) : null,
-    paidAmount: isPartialPay ? partialPaidAmount : isDirectPay ? amount : null,
-    remainingAmount: isPartialPay ? (amount - partialPaidAmount) : null,
-    slipNo: finalSlipNo,
-    notes: notes || null,
-  };
-
-  const donation = await Donation.create(donationData);
-
-  if (isDirectPay || isPartialPay) {
-    await DonationInstallment.create({
-      donationId: donation.id,
-      amount: isPartialPay ? partialPaidAmount : amount,
-      paymentMode: paymentMode,
+    const donationData = {
+      donorId: user.id,
+      amount,
+      cause: causeString,
+      categoryId: categoryId || null,
+      gaushalaId: gaushalaId || null,
+      kathaId: kathaId || null,
+      paymentMode,
+      referenceName,
+      status: status || 'pending',
+      donationDate: donationDate ? new Date(donationDate) : new Date(),
       paymentDate: paymentDate ? new Date(paymentDate) : null,
-      notes: isPartialPay ? 'Initial partial payment' : 'Full payment'
-    });
-  }
+      paidAmount: isPartialPay ? partialPaidAmount : isDirectPay ? amount : null,
+      remainingAmount: isPartialPay ? (amount - partialPaidAmount) : null,
+      slipNo: finalSlipNo,
+      notes: notes || null,
+    };
 
-  if (isPartialPay && user.id) {
+    const donation = await Donation.create(donationData, { transaction: t });
+
+    if (isDirectPay || isPartialPay) {
+      await DonationInstallment.create({
+        donationId: donation.id,
+        amount: isPartialPay ? partialPaidAmount : amount,
+        paymentMode: paymentMode,
+        paymentDate: paymentDate ? new Date(paymentDate) : null,
+        notes: isPartialPay ? 'Initial partial payment' : 'Full payment'
+      }, { transaction: t });
+    }
+
+    return { donation, user, categoryName, causeString, finalSlipNo };
+  });
+
+  const { donation, user, categoryName, causeString, finalSlipNo } = result;
+
+  if (donation.status === 'partially_paid' && user.id) {
     await managePartialPaymentReminder(donation.id, user.id, 'partially_paid');
   }
 
-  if (isDirectPay) {
+  if (donation.status === 'completed') {
     if (donationQueue && !VERCEL) {
       await donationQueue.add('process-donation', {
         donationId: donation.id,
