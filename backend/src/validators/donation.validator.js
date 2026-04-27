@@ -55,6 +55,8 @@ export const donationUpdateSchema = Joi.object({
   paymentMode: Joi.string().valid('online', 'cash', 'cheque').optional(),
   paymentDate: Joi.date().optional().allow(null, ''),
   categoryId: Joi.string().optional().allow('', null),
+  gaushalaId: Joi.string().optional().allow('', null),
+  kathaId: Joi.string().optional().allow('', null),
   paidAmount: Joi.number().min(0).optional().allow(null).messages({
     'number.base': 'Paid amount must be a number',
     'number.min': 'Paid amount cannot be negative'

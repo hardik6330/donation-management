@@ -12,6 +12,7 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { badRequest } from '../utils/httpError.js';
 import logger from '../utils/logger.js';
 import { retryAction, managePartialPaymentReminder } from '../utils/donationHelpers.js';
+import { runBackground } from '../utils/backgroundTask.js';
 
 export const generateQRCode = asyncHandler(async (req, res) => {
   const frontendURL = FRONTEND_URL + '/donate';
@@ -195,7 +196,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             katha,
             locationAddress,
             finalSlipNo,
-            categoryName
+            categoryName,
+            donation.notes || notes || ''
           );
 
           const tasks = [];
@@ -236,14 +238,11 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         }
       };
 
-      // On serverless (Vercel) the lambda is killed as soon as the response is
-      // sent, so fire-and-forget never completes. Await synchronously there.
-      // Locally we keep it backgrounded so the API returns quickly.
-      if (VERCEL) {
-        await processSlip();
-      } else {
-        processSlip();
-      }
+      // Send the response immediately and let the slip generation continue in
+      // the background. On Vercel `waitUntil` keeps the lambda alive until the
+      // promise resolves (so concurrent device creates don't block each other).
+      // Locally it just runs as a normal pending promise.
+      runBackground(processSlip(), `Donation ${donation.id} slip`);
     }
   }
 

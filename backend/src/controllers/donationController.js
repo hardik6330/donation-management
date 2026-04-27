@@ -7,11 +7,12 @@ import { VERCEL } from '../config/env.js';
 import { Op } from 'sequelize';
 import { sendEmail, getDonationEmailTemplate, isValidEmail } from '../utils/services/email.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from '../utils/services/whatsapp.service.js';
-import { generateDonationSlipBuffer, uploadSlipToCloudinary } from '../utils/services/donationSlip.service.js';
+import { generateDonationSlipBuffer, uploadSlipToCloudinary, deleteFileFromCloudinary } from '../utils/services/donationSlip.service.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { notFound, badRequest } from '../utils/httpError.js';
 import logger from '../utils/logger.js';
 import { retryAction, managePartialPaymentReminder } from '../utils/donationHelpers.js';
+import { runBackground } from '../utils/backgroundTask.js';
 
 export const getDonations = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
@@ -220,13 +221,15 @@ export const getDonors = asyncHandler(async (req, res) => {
 
 export const updateDonation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { amount, cause, status, paymentMode, paymentDate, categoryId, paidAmount, remainingAmount, notes, slipNo } = req.body;
+  const { amount, cause, status, paymentMode, paymentDate, categoryId, gaushalaId, kathaId, paidAmount, remainingAmount, notes, slipNo } = req.body;
 
   const donation = await Donation.findByPk(id);
   if (!donation) {
     throw notFound('Donation');
   }
 
+  const oldSlipUrl = donation.slipUrl;
+  const wasNotCompleted = donation.status !== 'completed';
   const nextAmount = amount ?? donation.amount;
   const nextPaymentMode = paymentMode || donation.paymentMode;
   const nextStatus = status || donation.status;
@@ -240,6 +243,8 @@ export const updateDonation = asyncHandler(async (req, res) => {
     paymentMode: nextPaymentMode,
     paymentDate: paymentDate || donation.paymentDate,
     categoryId: categoryId || donation.categoryId,
+    gaushalaId: gaushalaId || donation.gaushalaId,
+    kathaId: kathaId || donation.kathaId,
     slipNo: slipNo || donation.slipNo,
     notes: notes !== undefined ? notes : donation.notes,
   };
@@ -277,8 +282,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
     updateData.status = finalPaidAmount === Number(nextAmount) ? 'completed' : 'partially_paid';
   }
 
-  const wasNotCompleted = donation.status !== 'completed';
-
   if (updateData.paidAmount !== undefined) {
     const currentPaid = Number(donation.paidAmount || 0);
     const newPaid = Number(updateData.paidAmount);
@@ -301,7 +304,23 @@ export const updateDonation = asyncHandler(async (req, res) => {
     await managePartialPaymentReminder(donation.id, donation.donorId, updateData.status);
   }
 
-  if (updateData.status === 'completed' && wasNotCompleted) {
+  // Check if slip needs to be (re)generated:
+  // 1. Status is now completed (wasn't before)
+  // 2. Already completed, but slip-relevant fields changed
+  const isCompleted = updateData.status === 'completed';
+  const slipFieldsChanged = (
+    amount !== undefined ||
+    cause !== undefined ||
+    paymentMode !== undefined ||
+    paymentDate !== undefined ||
+    categoryId !== undefined ||
+    gaushalaId !== undefined ||
+    kathaId !== undefined ||
+    notes !== undefined ||
+    slipNo !== undefined
+  );
+
+  if (isCompleted && (wasNotCompleted || slipFieldsChanged)) {
     const processSlip = async () => {
       try {
         const donor = await User.findByPk(donation.donorId);
@@ -312,7 +331,6 @@ export const updateDonation = asyncHandler(async (req, res) => {
           ]);
 
           const locationAddress = '';
-
           const categoryRow = donation.categoryId ? await Category.findByPk(donation.categoryId) : null;
 
           const pdfBuffer = await generateDonationSlipBuffer(
@@ -326,12 +344,18 @@ export const updateDonation = asyncHandler(async (req, res) => {
             katha,
             locationAddress,
             donation.slipNo || '-',
-            categoryRow?.name || ''
+            categoryRow?.name || '',
+            donation.notes || ''
           );
 
           const tasks = [];
 
           const uploadTask = retryAction(async () => {
+            // Delete old slip if it exists
+            if (oldSlipUrl) {
+              await deleteFileFromCloudinary(oldSlipUrl);
+            }
+
             const cloudinaryUrl = await uploadSlipToCloudinary(pdfBuffer, donor.name, donor.mobileNumber, donation.id);
             await donation.update({ slipUrl: cloudinaryUrl });
 
@@ -368,11 +392,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
         logger.error(`[Donation ${donation.id}] Post-update background tasks failed:`, slipError);
       }
     };
-    if (VERCEL) {
-      await processSlip();
-    } else {
-      processSlip();
-    }
+    runBackground(processSlip(), `Donation ${donation.id} update slip`);
   }
 
   return sendSuccess(res, donation, 'Donation updated successfully');
