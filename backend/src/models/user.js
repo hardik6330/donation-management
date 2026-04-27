@@ -50,6 +50,10 @@ export const User = sequelize.define('User', {
   country: {
     type: DataTypes.STRING,
   },
+  birthDate: {
+    type: DataTypes.DATEONLY,
+    allowNull: true,
+  },
   companyName: {
     type: DataTypes.STRING,
   },

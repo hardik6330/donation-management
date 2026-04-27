@@ -41,7 +41,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     slipNo,
     paymentDate,
     donationDate,
-    notes
+    notes,
+    birthDate
   } = req.body;
 
   let finalSlipNo = slipNo;
@@ -98,7 +99,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       city: city?.toUpperCase() || user.city,
       state: state?.toUpperCase() || user.state,
       country: country?.toUpperCase() || user.country,
-      companyName: companyName || user.companyName
+      companyName: companyName || user.companyName,
+      birthDate: birthDate || user.birthDate
     });
   } else {
     const tempPassword = crypto.randomBytes(8).toString('hex');
@@ -110,6 +112,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       state: state?.toUpperCase() || null,
       country: country?.toUpperCase() || null,
       companyName,
+      birthDate: birthDate || null,
       mobileNumber: mobileNumber || null,
       password: tempPassword
     });

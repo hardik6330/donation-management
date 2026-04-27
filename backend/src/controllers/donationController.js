@@ -27,7 +27,7 @@ export const getDonations = asyncHandler(async (req, res) => {
       model: User,
       as: 'donor',
       where: Object.keys(donorWhere).length > 0 ? donorWhere : null,
-      attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'city', 'state', 'country']
+      attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'city', 'state', 'country', 'address', 'companyName', 'birthDate']
     }],
     order: [['createdAt', 'DESC']],
     limit: queryLimit,
@@ -221,11 +221,16 @@ export const getDonors = asyncHandler(async (req, res) => {
 
 export const updateDonation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { amount, cause, status, paymentMode, paymentDate, categoryId, gaushalaId, kathaId, paidAmount, remainingAmount, notes, slipNo } = req.body;
+  const { amount, cause, status, paymentMode, paymentDate, categoryId, gaushalaId, kathaId, paidAmount, remainingAmount, notes, slipNo, birthDate } = req.body;
 
   const donation = await Donation.findByPk(id);
   if (!donation) {
     throw notFound('Donation');
+  }
+
+  if (birthDate !== undefined && donation.donorId) {
+    const donor = await User.findByPk(donation.donorId);
+    if (donor) await donor.update({ birthDate: birthDate || null });
   }
 
   const oldSlipUrl = donation.slipUrl;
