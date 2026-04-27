@@ -96,11 +96,11 @@ const Donation = () => {
 
   const handleDonationCreated = (id) => startSlipPolling(id);
 
-  // Called by edit/add-partial modals after update. Only start polling if the
-  // donation just became completed and the slip isn't generated yet.
+  // Called by edit/add-partial modals after update.
   const handleDonationUpdated = (result) => {
     const d = result?.data;
-    if (d?.id && d?.status === 'completed' && !d?.slipUrl) {
+    // Always start polling if status is completed to ensure we get the latest slip
+    if (d?.id && d?.status === 'completed') {
       startSlipPolling(d.id);
     }
   };

@@ -146,10 +146,12 @@ const SearchableDropdown = ({
         onSelect(item.id, item.name);
         setActive(null);
         setHighlightIndex(-1);
-        
-        // After selection, move focus to next element
+
+        // Hand off to parent onKeyDown so it can advance focus by ref-chain.
+        // Falls back to DOM tab order if no parent handler.
         setTimeout(() => {
-          handleFormNavigation(e);
+          if (onKeyDown) onKeyDown({ key: 'Enter', preventDefault: () => {} });
+          else handleFormNavigation(e);
         }, 0);
         return;
       }
