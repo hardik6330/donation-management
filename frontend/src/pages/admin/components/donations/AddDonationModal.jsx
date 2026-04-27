@@ -67,6 +67,7 @@ const AddDonationModal = ({
     gaushalaId: storedPrefs.gaushalaId || '',
     kathaId: storedPrefs.kathaId || '',
     companyName: '',
+    birthDate: '',
     referenceName: '',
     amount: '0',
     paidAmount: '',
@@ -133,6 +134,7 @@ const AddDonationModal = ({
   const donationDateRef = useRef(null);
   const paymentDateRef = useRef(null);
   const notesRef = useRef(null);
+  const birthDateRef = useRef(null);
   const amountRef = useRef(null);
   const paidAmountRef = useRef(null);
   const submitRef = useRef(null);
@@ -199,6 +201,7 @@ const AddDonationModal = ({
           state: user.state || '',
           country: user.country || '',
           companyName: user.companyName || '',
+          birthDate: user.birthDate ? new Date(user.birthDate).toISOString().slice(0, 10) : '',
         }));
         toast.info('User found! Details auto-filled.');
       }, 0);
@@ -254,6 +257,7 @@ const AddDonationModal = ({
       gaushalaId: d.gaushalaId || '',
       kathaId: d.kathaId || '',
       companyName: donor.companyName || '',
+      birthDate: donor.birthDate ? new Date(donor.birthDate).toISOString().slice(0, 10) : '',
       referenceName: d.referenceName || '',
       amount: d.amount != null ? Number(d.amount).toLocaleString('en-IN') : '',
       paidAmount: d.paidAmount != null ? Number(d.paidAmount).toLocaleString('en-IN') : '',
@@ -433,6 +437,7 @@ const AddDonationModal = ({
           paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
           paymentDate: addForm.status === 'pay_later' ? null : (addForm.paymentDate || null),
           notes: addForm.notes || null,
+          birthDate: addForm.birthDate || null,
         }).unwrap();
 
         if (typeof onUpdated === 'function') onUpdated(result);
@@ -494,6 +499,7 @@ const AddDonationModal = ({
       gaushalaId: lastPrefs.gaushalaId || '',
       kathaId: lastPrefs.kathaId || '',
       companyName: '',
+    birthDate: '',
       referenceName: '',
       amount: '0',
       paidAmount: '',
@@ -585,11 +591,21 @@ const AddDonationModal = ({
                   placeholder="Business name"
                   value={addForm.companyName}
                   onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, addressRef, emailRef)}
+                  onKeyDown={(e) => handleKeyDown(e, birthDateRef, emailRef)}
                   inputRef={companyRef}
                   icon={Building2}
                 />
               </div>
+
+              <CustomDatePicker
+                label="Birth Date"
+                name="birthDate"
+                value={addForm.birthDate}
+                onChange={handleAddInputChange}
+                onKeyDown={(e) => handleKeyDown(e, addressRef, companyRef)}
+                inputRef={birthDateRef}
+                icon={Calendar}
+              />
 
               <FormInput
                 label="Address"

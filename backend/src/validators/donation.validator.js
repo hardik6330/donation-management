@@ -31,6 +31,7 @@ export const donationSchema = Joi.object({
   slipNo: Joi.string().optional().allow('', null),
   paymentDate: Joi.date().optional().allow(null, ''),
   donationDate: Joi.date().optional().allow(null, ''),
+  birthDate: Joi.date().optional().allow(null, ''),
   notes: Joi.string().optional().allow('', null),
   paidAmount: Joi.number()
     .when('status', {
