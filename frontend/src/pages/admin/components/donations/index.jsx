@@ -44,7 +44,7 @@ const Donation = () => {
       page: 1,
       limit: 10,
       fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,donationDate,slipNo,categoryId,gaushalaId,kathaId'
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,donationDate,slipNo,categoryId,gaushalaId,kathaId,notes'
     }
   });
 

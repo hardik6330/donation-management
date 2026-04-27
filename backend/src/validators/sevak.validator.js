@@ -4,8 +4,8 @@ export const sevakSchema = Joi.object({
   name: Joi.string().required().messages({
     'any.required': 'Sevak name is required'
   }),
-  mobileNumber: Joi.string().length(10).pattern(/^[0-9]+$/).required().messages({
-    'string.length': 'Mobile number must be 10 digits',
+  mobileNumber: Joi.string().pattern(/^[0-9]+$/).required().messages({
+    'string.pattern.base': 'Mobile number must contain only digits',
     'any.required': 'Mobile number is required'
   }),
   email: Joi.string().email().optional().allow(''),

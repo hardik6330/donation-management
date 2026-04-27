@@ -127,9 +127,7 @@ const AddBapuScheduleModal = ({
 
   const validateField = (name, value) => {
     let error = '';
-    if (name === 'mobileNumber') {
-      if (value && value.length !== 10) error = 'Enter exactly 10 digits';
-    } else if (name === 'amount') {
+    if (name === 'amount') {
       if (value && isNaN(value)) error = 'Invalid amount';
     }
     setErrors(prev => ({ ...prev, [name]: error }));
@@ -182,7 +180,7 @@ const AddBapuScheduleModal = ({
     }
 
     if (name === 'mobileNumber') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 10);
+      const cleaned = value.replace(/\D/g, '');
       setAddForm(prev => ({ ...prev, [name]: cleaned }));
       validateField(name, cleaned);
       return;

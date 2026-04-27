@@ -62,7 +62,8 @@ if (redis && !VERCEL) {
           gaushala,
           katha,
           locationAddress,
-          slipNo
+          slipNo,
+          category?.name || ''
         );
         logger.info(`[Queue] ✅ PDF generated successfully for Donation: ${donationId}`);
 

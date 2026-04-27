@@ -78,6 +78,10 @@ export const Donation = sequelize.define('Donation', {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  notes: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
 }, {
   timestamps: true,
   scopes: {

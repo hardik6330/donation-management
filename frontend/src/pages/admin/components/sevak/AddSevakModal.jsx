@@ -40,7 +40,6 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
     let error = '';
     if (name === 'mobileNumber') {
       if (!value) error = 'Mobile number is required';
-      else if (value.length !== 10) error = 'Enter exactly 10 digits';
     } else if (name === 'name') {
       if (!value) error = 'Name is required';
     }
@@ -109,7 +108,7 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     if (name === 'mobileNumber') {
-      const cleaned = value.replace(/\D/g, '').slice(0, 10);
+      const cleaned = value.replace(/\D/g, '');
       setForm(prev => ({ ...prev, [name]: cleaned }));
       validateField(name, cleaned);
       return;

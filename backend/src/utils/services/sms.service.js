@@ -15,7 +15,7 @@ export const sendSMS = async (mobileNumber, message) => {
     return { success: false, skipped: true };
   }
 
-  if (!mobileNumber || mobileNumber.length !== 10) {
+  if (!mobileNumber) {
     return { success: false, skipped: true };
   }
 

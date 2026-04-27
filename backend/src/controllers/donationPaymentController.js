@@ -39,7 +39,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     paidAmount,
     slipNo,
     paymentDate,
-    donationDate
+    donationDate,
+    notes
   } = req.body;
 
   let finalSlipNo = slipNo;
@@ -142,6 +143,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     paidAmount: isPartialPay ? partialPaidAmount : isDirectPay ? amount : null,
     remainingAmount: isPartialPay ? (amount - partialPaidAmount) : null,
     slipNo: finalSlipNo,
+    notes: notes || null,
   };
 
   const donation = await Donation.create(donationData);
@@ -192,7 +194,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
             gaushala,
             katha,
             locationAddress,
-            finalSlipNo
+            finalSlipNo,
+            categoryName
           );
 
           const tasks = [];
