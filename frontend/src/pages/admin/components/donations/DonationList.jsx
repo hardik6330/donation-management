@@ -219,15 +219,6 @@ const DonationList = ({
                       </svg>
                     </button>
                   )}
-                  {donation.status === 'pay_later' && hasPermission('donations', 'entry') && (
-                    <button
-                      onClick={() => onEditPayLater(donation)}
-                      className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Edit Pay Later"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                  )}
                   {donation.status === 'partially_paid' && hasPermission('donations', 'entry') && (
                     <button
                       onClick={() => onAddPartialPayment(donation)}
@@ -237,11 +228,11 @@ const DonationList = ({
                       <PlusCircle className="w-4 h-4" />
                     </button>
                   )}
-                  {donation.status === 'partially_paid' && hasPermission('donations', 'entry') && (
+                  {hasPermission('donations', 'entry') && (
                     <button
-                      onClick={() => onEditPartialPayment(donation)}
+                      onClick={() => (donation.status === 'partially_paid' ? onEditPartialPayment(donation) : onEditPayLater(donation))}
                       className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      title="Edit Partial Payment"
+                      title="Edit Donation"
                     >
                       <Edit className="w-4 h-4" />
                     </button>
