@@ -3,6 +3,7 @@ import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
 import { sequelize } from '../config/db.js';
+import { VERCEL } from '../config/env.js';
 import { Op } from 'sequelize';
 import { sendEmail, getDonationEmailTemplate, isValidEmail } from '../utils/services/email.service.js';
 import { sendDetailedDonationSuccessWhatsAppPDF } from '../utils/services/whatsapp.service.js';
@@ -300,7 +301,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
   }
 
   if (updateData.status === 'completed' && wasNotCompleted) {
-    (async () => {
+    const processSlip = async () => {
       try {
         const donor = await User.findByPk(donation.donorId);
         if (donor) {
@@ -362,7 +363,12 @@ export const updateDonation = asyncHandler(async (req, res) => {
       } catch (slipError) {
         logger.error(`[Donation ${donation.id}] Post-update background tasks failed:`, slipError);
       }
-    })();
+    };
+    if (VERCEL) {
+      await processSlip();
+    } else {
+      processSlip();
+    }
   }
 
   return sendSuccess(res, donation, 'Donation updated successfully');
