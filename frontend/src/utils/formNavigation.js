@@ -17,7 +17,7 @@ export const handleFormNavigation = (e) => {
   // Get all focusable elements in the form
   const elements = Array.from(form.elements).filter(el => 
     (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT' || el.tagName === 'BUTTON') &&
-    !el.disabled && el.type !== 'hidden'
+    !el.disabled && el.type !== 'hidden' && el.tabIndex !== -1
   );
 
   const index = elements.indexOf(target);
