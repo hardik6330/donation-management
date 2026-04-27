@@ -237,15 +237,31 @@ export const updateDonation = asyncHandler(async (req, res) => {
   if (donation.donorId) {
     const donor = await User.findByPk(donation.donorId);
     if (donor) {
+      const normalizeOptionalField = (value) => {
+        if (value === undefined) return undefined;
+        if (typeof value !== 'string') return value;
+        const trimmed = value.trim();
+        return trimmed === '' ? null : trimmed;
+      };
+
       const donorUpdateData = {};
-      if (mobileNumber !== undefined) donorUpdateData.mobileNumber = mobileNumber;
-      if (name !== undefined) donorUpdateData.name = name;
-      if (email !== undefined) donorUpdateData.email = email;
-      if (address !== undefined) donorUpdateData.address = address;
-      if (city !== undefined) donorUpdateData.city = city?.toUpperCase();
-      if (state !== undefined) donorUpdateData.state = state?.toUpperCase();
-      if (country !== undefined) donorUpdateData.country = country?.toUpperCase();
-      if (companyName !== undefined) donorUpdateData.companyName = companyName;
+      if (mobileNumber !== undefined) donorUpdateData.mobileNumber = normalizeOptionalField(mobileNumber);
+      if (name !== undefined) donorUpdateData.name = normalizeOptionalField(name);
+      if (email !== undefined) donorUpdateData.email = normalizeOptionalField(email);
+      if (address !== undefined) donorUpdateData.address = normalizeOptionalField(address);
+      if (city !== undefined) {
+        const normalizedCity = normalizeOptionalField(city);
+        donorUpdateData.city = typeof normalizedCity === 'string' ? normalizedCity.toUpperCase() : normalizedCity;
+      }
+      if (state !== undefined) {
+        const normalizedState = normalizeOptionalField(state);
+        donorUpdateData.state = typeof normalizedState === 'string' ? normalizedState.toUpperCase() : normalizedState;
+      }
+      if (country !== undefined) {
+        const normalizedCountry = normalizeOptionalField(country);
+        donorUpdateData.country = typeof normalizedCountry === 'string' ? normalizedCountry.toUpperCase() : normalizedCountry;
+      }
+      if (companyName !== undefined) donorUpdateData.companyName = normalizeOptionalField(companyName);
       if (birthDate !== undefined) donorUpdateData.birthDate = birthDate || null;
 
       if (Object.keys(donorUpdateData).length > 0) {
