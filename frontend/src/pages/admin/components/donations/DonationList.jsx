@@ -41,7 +41,9 @@ const DonationList = ({
     { label: 'Mode', className: 'text-center' },
     { label: 'Amount', className: 'text-right' },
     { label: 'Status', className: 'text-center' },
+    { label: 'Donation Date' },
     { label: 'Payment Date' },
+    
     { label: 'Actions' },
   ];
 
@@ -168,7 +170,12 @@ const DonationList = ({
                 </span>
               </td>
               <td className="p-4 px-6 text-sm text-gray-500">
-                {new Date(donation.paymentDate || donation.createdAt).toLocaleDateString('en-IN')}
+                {new Date(donation.donationDate).toLocaleDateString('en-IN')}
+              </td> 
+              <td className="p-4 px-6 text-sm text-gray-500">
+                {donation.paymentDate 
+                  ? new Date(donation.paymentDate).toLocaleDateString('en-IN')
+                  : "No Payment Yet"}
               </td>
               <td className="p-4 px-6">
                 <div className="flex items-center gap-2">

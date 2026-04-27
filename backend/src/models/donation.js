@@ -34,23 +34,6 @@ export const Donation = sequelize.define('Donation', {
     allowNull: true,
     defaultValue: null,
   },
-  razorpay_order_id: {
-    type: DataTypes.STRING,
-  },
-  razorpay_payment_id: {
-    type: DataTypes.STRING,
-  },
-  razorpay_signature: {
-    type: DataTypes.STRING,
-  },
-  locationId: {
-    type: DataTypes.UUID,
-    allowNull: true,
-    references: {
-      model: 'Locations',
-      key: 'id',
-    },
-  },
   categoryId: {
     type: DataTypes.UUID,
     allowNull: true,
@@ -76,6 +59,10 @@ export const Donation = sequelize.define('Donation', {
     },
   },
   paymentDate: {
+    type: DataTypes.DATE,
+    allowNull: true,
+  },
+  donationDate: {
     type: DataTypes.DATE,
     allowNull: true,
   },
@@ -155,12 +142,10 @@ export const Donation = sequelize.define('Donation', {
   indexes: [
     { fields: ['status'] },
     { fields: ['donorId'] },
-    { fields: ['locationId'] },
     { fields: ['categoryId'] },
     { fields: ['gaushalaId'] },
     { fields: ['kathaId'] },
     { fields: ['createdAt'] },
     { fields: ['paymentDate'] },
-    { fields: ['razorpay_order_id'] },
   ]
 });

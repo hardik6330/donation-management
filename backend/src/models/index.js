@@ -50,9 +50,6 @@ Location.belongsTo(Location, { as: 'parent', foreignKey: 'parentId' });
 User.hasMany(Donation, { foreignKey: 'donorId' });
 Donation.belongsTo(User, { as: 'donor', foreignKey: 'donorId' });
 
-Location.hasMany(Donation, { foreignKey: 'locationId' });
-Donation.belongsTo(Location, { as: 'location', foreignKey: 'locationId' });
-
 Category.hasMany(Donation, { foreignKey: 'categoryId' });
 Donation.belongsTo(Category, { as: 'category', foreignKey: 'categoryId' });
 

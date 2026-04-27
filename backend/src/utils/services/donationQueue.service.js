@@ -58,7 +58,7 @@ if (redis && !VERCEL) {
           causeString,
           donation.id,
           donation.paymentMode,
-          donation.paymentDate,
+          donation.donationDate || donation.paymentDate,
           gaushala,
           katha,
           locationAddress,

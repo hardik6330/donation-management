@@ -3,9 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import DonationList from './DonationList';
 import AddDonationModal from './AddDonationModal';
-import EditPartialPaymentModal from './EditPartialPaymentModal';
 import AddPartialPaymentModal from './AddPartialPaymentModal';
-import EditPayLaterModal from './EditPayLaterModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import { useGetAllDonationsQuery, useGetDonationStatusQuery, useResendWhatsAppMutation } from '../../../../services/donationApi';
@@ -19,9 +17,8 @@ import { toast } from 'react-toastify';
 const Donation = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPartialDonation, setEditingPartialDonation] = useState(null);
   const [addingPartialDonation, setAddingPartialDonation] = useState(null);
-  const [editingPayLaterDonation, setEditingPayLaterDonation] = useState(null);
+  const [editingDonation, setEditingDonation] = useState(null);
   const [searchParams] = useSearchParams();
 
   const [resendWhatsApp, { isLoading: isResending }] = useResendWhatsAppMutation();
@@ -47,7 +44,7 @@ const Donation = () => {
       page: 1,
       limit: 10,
       fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,'
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,donationDate,slipNo,categoryId,gaushalaId,kathaId'
     }
   });
 
@@ -168,7 +165,8 @@ const Donation = () => {
   };
 
   const handleEditPartialPayment = (donation) => {
-    setEditingPartialDonation(donation);
+    setEditingDonation(donation);
+    setIsModalOpen(true);
   };
 
   const handleAddPartialPayment = (donation) => {
@@ -176,7 +174,8 @@ const Donation = () => {
   };
 
   const handleEditPayLater = (donation) => {
-    setEditingPayLaterDonation(donation);
+    setEditingDonation(donation);
+    setIsModalOpen(true);
   };
 
   const handleResendWhatsApp = async (donation) => {
@@ -221,20 +220,16 @@ const Donation = () => {
       {isModalOpen && (
         <AddDonationModal
           isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          onClose={() => {
+            setIsModalOpen(false);
+            setEditingDonation(null);
+          }}
           gaushalaPagination={activeGaushalaPagination}
           kathaPagination={kathaPagination}
           categoryPagination={activeCategoryPagination}
           onCreated={handleDonationCreated}
-        />
-      )}
-
-      {editingPartialDonation && (
-        <EditPartialPaymentModal
-          isOpen={!!editingPartialDonation}
-          donation={editingPartialDonation}
-          onClose={() => setEditingPartialDonation(null)}
           onUpdated={handleDonationUpdated}
+          editingDonation={editingDonation}
         />
       )}
 
@@ -247,14 +242,6 @@ const Donation = () => {
         />
       )}
 
-      {editingPayLaterDonation && (
-        <EditPayLaterModal
-          isOpen={!!editingPayLaterDonation}
-          donation={editingPayLaterDonation}
-          onClose={() => setEditingPayLaterDonation(null)}
-          onUpdated={handleDonationUpdated}
-        />
-      )}
     </div>
   );
 };

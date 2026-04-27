@@ -1,8 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
-import { IndianRupee, Loader2, PlusCircle, MessageSquare, CreditCard } from 'lucide-react';
+import { IndianRupee, Loader2, PlusCircle, MessageSquare, CreditCard, Calendar } from 'lucide-react';
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
 import { toast } from 'react-toastify';
 import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
+import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
 import { useUpdateDonationMutation } from '../../../../services/donationApi';
 import { donationPaymentModes as paymentModes } from '../../../../utils/tableUtils';
@@ -13,12 +16,18 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const [notes, setNotes] = useState('');
   const [paymentMode, setPaymentMode] = useState('cash');
   const [paymentModeName, setPaymentModeName] = useState('Cash');
+  const [paymentDate, setPaymentDate] = useState(todayISO());
   const [activeDropdown, setActiveDropdown] = useState(null);
 
   const paymentModeRef = useRef(null);
   const addAmountRef = useRef(null);
+  const paymentDateRef = useRef(null);
   const notesRef = useRef(null);
   const submitRef = useRef(null);
+
+  const donationDateISO = donation?.donationDate
+    ? new Date(donation.donationDate).toISOString().slice(0, 10)
+    : '';
 
   useEffect(() => {
     if (!isOpen) {
@@ -26,10 +35,13 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
       setNotes('');
       setPaymentMode('cash');
       setPaymentModeName('Cash');
+      const today = todayISO();
+      const baseDate = donationDateISO || today;
+      setPaymentDate(today > baseDate ? today : baseDate);
     } else {
       setTimeout(() => paymentModeRef.current?.focus(), 100);
     }
-  }, [isOpen]);
+  }, [isOpen, donationDateISO]);
 
   const handleKeyDown = (e, nextRef, prevRef) => {
     if (e.key === 'Enter') {
@@ -86,6 +98,7 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
         id: donation.id,
         paymentMode: paymentMode,
         remainingAmount: updatedRemainingAmount,
+        paymentDate: paymentDate,
         notes: notes
       }).unwrap();
 
@@ -162,10 +175,21 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
               required
               placeholder="0"
               ref={addAmountRef}
-              onKeyDown={(e) => handleKeyDown(e, notesRef, paymentModeRef)}
+              onKeyDown={(e) => handleKeyDown(e, paymentDateRef, paymentModeRef)}
               className="w-full px-4 py-3 text-lg font-bold border border-emerald-300 bg-emerald-50 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none transition"
             />
           </div>
+
+          <CustomDatePicker
+            label="Payment Date"
+            name="paymentDate"
+            value={paymentDate}
+            minDate={donationDateISO}
+            onChange={(e) => setPaymentDate(e.target.value)}
+            icon={Calendar}
+            inputRef={paymentDateRef}
+            onKeyDown={(e) => handleKeyDown(e, notesRef, addAmountRef)}
+          />
         </div>
 
         <div className="space-y-2">
@@ -177,7 +201,7 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
             onChange={(e) => setNotes(e.target.value)}
             icon={MessageSquare}
             inputRef={notesRef}
-            onKeyDown={(e) => handleKeyDown(e, submitRef, addAmountRef)}
+            onKeyDown={(e) => handleKeyDown(e, submitRef, paymentDateRef)}
           />
         </div>
 

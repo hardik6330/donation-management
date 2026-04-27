@@ -20,7 +20,8 @@ const FormInput = ({
   error,
   rows = 1,
   className = "",
-  allowTransliteration = true
+  allowTransliteration = true,
+  disabled = false
 }) => {
   const isTextarea = type === 'textarea';
   const Component = isTextarea ? 'textarea' : 'input';
@@ -92,7 +93,8 @@ const FormInput = ({
           value={value}
           onChange={onChange}
           onKeyDown={handleKeyDownInternal}
-          className={`w-full ${Icon && !isTextarea ? 'pl-10' : 'px-4'} py-2.5 bg-gray-50 border rounded-xl text-sm outline-none transition ${isTextarea ? 'resize-none' : ''}
+          disabled={disabled}
+          className={`w-full ${Icon && !isTextarea ? 'pl-10' : 'px-4'} py-2.5 bg-gray-50 border rounded-xl text-sm outline-none transition ${isTextarea ? 'resize-none' : ''} ${disabled ? 'opacity-60 cursor-not-allowed' : ''}
             ${error
               ? 'border-red-200 focus:ring-2 focus:ring-red-500 bg-red-50/30'
               : 'border-gray-100 focus:ring-2 focus:ring-blue-500'
