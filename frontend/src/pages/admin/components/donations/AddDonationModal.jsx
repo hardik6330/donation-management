@@ -352,7 +352,7 @@ const AddDonationModal = ({
     if (field === 'categoryId') {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
-      nextRef = gaushalaRef;
+      nextRef = kathaRef;
     } else if (field === 'gaushalaId') {
       setAddForm(prev => ({ ...prev, gaushalaId: id, kathaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, gaushalaName: name, kathaName: '' }));
@@ -687,7 +687,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('categoryId', id, name)}
                   onClear={() => handleAddDropdownSelect('categoryId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, addForm.kathaId ? kathaRef : gaushalaRef, countryRef)}
+                  onKeyDown={(e) => handleKeyDown(e, kathaRef, countryRef)}
                   isActive={activeAddDropdown === 'categoryName'}
                   setActive={handleSetActiveAddDropdown}
                   inputRef={categoryRef}
@@ -704,7 +704,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('kathaId', id, name)}
                   onClear={() => handleAddDropdownSelect('kathaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, addForm.kathaId ? paymentModeRef : gaushalaRef, categoryRef)}
+                  onKeyDown={(e) => handleKeyDown(e, gaushalaRef, categoryRef)}
                   isActive={activeAddDropdown === 'kathaName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!!addForm.gaushalaId}
@@ -725,7 +725,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('gaushalaId', id, name)}
                   onClear={() => handleAddDropdownSelect('gaushalaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, addForm.gaushalaId ? categoryRef : kathaRef)}
+                  onKeyDown={(e) => handleKeyDown(e, paymentModeRef, kathaRef)}
                   isActive={activeAddDropdown === 'gaushalaName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!!addForm.kathaId}
