@@ -42,6 +42,10 @@ const CustomDatePicker = ({
   }, [value]);
 
   useEffect(() => {
+    if (isOpen && value) setViewDate(new Date(value + 'T00:00:00'));
+  }, [isOpen]);
+
+  useEffect(() => {
     const handleClickOutside = (e) => {
       if (ref.current && !ref.current.contains(e.target)) setIsOpen(false);
     };
@@ -97,13 +101,17 @@ const CustomDatePicker = ({
     days.push({ day: i, current: false });
   }
 
-  const selectedHighlightDate = viewDate;
+  const selectedDate = value ? new Date(value + 'T00:00:00') : null;
   const today = new Date();
 
   const isSelected = (day) => {
-    if (!day.current) return false;
-    // Use viewDate for arrow key highlighting
-    return selectedHighlightDate.getFullYear() === year && selectedHighlightDate.getMonth() === month && selectedHighlightDate.getDate() === day.day;
+    if (!day.current || !selectedDate) return false;
+    return selectedDate.getFullYear() === year && selectedDate.getMonth() === month && selectedDate.getDate() === day.day;
+  };
+
+  const isCursor = (day) => {
+    if (!day.current || !isOpen) return false;
+    return viewDate.getFullYear() === year && viewDate.getMonth() === month && viewDate.getDate() === day.day;
   };
 
   const isToday = (day) => {
@@ -111,10 +119,22 @@ const CustomDatePicker = ({
     return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day.day;
   };
 
-  const handleSelect = (day) => {
-    if (!day.current) return;
-    if (isBeforeMin(year, month, day.day)) return;
-    const selected = `${year}-${String(month + 1).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
+  const handleSelect = (day, idx) => {
+    let targetYear = year;
+    let targetMonth = month;
+    if (!day.current) {
+      // Trailing days of previous month appear before firstDay; rest are next month
+      if (idx < firstDay) {
+        targetMonth = month - 1;
+      } else {
+        targetMonth = month + 1;
+      }
+      const d = new Date(targetYear, targetMonth, day.day);
+      targetYear = d.getFullYear();
+      targetMonth = d.getMonth();
+    }
+    if (isBeforeMin(targetYear, targetMonth, day.day)) return;
+    const selected = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(day.day).padStart(2, '0')}`;
     onChange({ target: { name, value: selected } });
     setIsOpen(false);
     // After selection, trigger onKeyDown to move to next field
@@ -244,24 +264,31 @@ const CustomDatePicker = ({
 
           {/* Days grid */}
           <div className="grid grid-cols-7">
-            {days.map((day, i) => (
+            {days.map((day, i) => {
+              const cellMonth = !day.current ? (i < firstDay ? month - 1 : month + 1) : month;
+              const cellDate = new Date(year, cellMonth, day.day);
+              const blocked = isBeforeMin(cellDate.getFullYear(), cellDate.getMonth(), day.day);
+              return (
               <button
                 key={i}
                 type="button"
-                onClick={() => handleSelect(day)}
-                disabled={!day.current || isBeforeMin(year, month, day.day)}
+                onClick={() => handleSelect(day, i)}
+                disabled={blocked}
                 className={`w-9 h-9 flex items-center justify-center text-xs font-medium rounded-lg transition-all
-                  ${!day.current || isBeforeMin(year, month, day.day)
+                  ${blocked
                     ? 'text-gray-300 cursor-not-allowed line-through'
                     : `cursor-pointer hover:bg-blue-50 hover:text-blue-600
+                       ${!day.current ? 'text-gray-400' : ''}
                        ${isSelected(day) ? 'bg-blue-600 text-white hover:bg-blue-700 hover:text-white font-bold' : ''}
-                       ${isToday(day) && !isSelected(day) ? 'bg-blue-50 text-blue-600 font-bold ring-1 ring-blue-200' : ''}
-                       ${!isSelected(day) && !isToday(day) ? 'text-gray-700' : ''}`}
+                       ${isCursor(day) && !isSelected(day) ? 'ring-2 ring-blue-400' : ''}
+                       ${isToday(day) && !isSelected(day) && !isCursor(day) ? 'bg-blue-50 text-blue-600 font-bold ring-1 ring-blue-200' : ''}
+                       ${day.current && !isSelected(day) && !isToday(day) && !isCursor(day) ? 'text-gray-700' : ''}`}
                 `}
               >
                 {day.day}
               </button>
-            ))}
+              );
+            })}
           </div>
 
           {/* Today button */}

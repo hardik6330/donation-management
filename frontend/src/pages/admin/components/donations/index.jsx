@@ -3,7 +3,6 @@ import { useSearchParams } from 'react-router-dom';
 import { useDebounce } from '../../../../hooks/useDebounce';
 import DonationList from './DonationList';
 import AddDonationModal from './AddDonationModal';
-import EditPartialPaymentModal from './EditPartialPaymentModal';
 import AddPartialPaymentModal from './AddPartialPaymentModal';
 import usePermissions from '../../../../hooks/usePermissions';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
@@ -18,9 +17,8 @@ import { toast } from 'react-toastify';
 const Donation = () => {
   const { hasPermission } = usePermissions();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPartialDonation, setEditingPartialDonation] = useState(null);
   const [addingPartialDonation, setAddingPartialDonation] = useState(null);
-  const [editingPayLaterDonation, setEditingPayLaterDonation] = useState(null);
+  const [editingDonation, setEditingDonation] = useState(null);
   const [searchParams] = useSearchParams();
 
   const [resendWhatsApp, { isLoading: isResending }] = useResendWhatsAppMutation();
@@ -167,7 +165,8 @@ const Donation = () => {
   };
 
   const handleEditPartialPayment = (donation) => {
-    setEditingPartialDonation(donation);
+    setEditingDonation(donation);
+    setIsModalOpen(true);
   };
 
   const handleAddPartialPayment = (donation) => {
@@ -175,7 +174,7 @@ const Donation = () => {
   };
 
   const handleEditPayLater = (donation) => {
-    setEditingPayLaterDonation(donation);
+    setEditingDonation(donation);
     setIsModalOpen(true);
   };
 
@@ -223,23 +222,14 @@ const Donation = () => {
           isOpen={isModalOpen}
           onClose={() => {
             setIsModalOpen(false);
-            setEditingPayLaterDonation(null);
+            setEditingDonation(null);
           }}
           gaushalaPagination={activeGaushalaPagination}
           kathaPagination={kathaPagination}
           categoryPagination={activeCategoryPagination}
           onCreated={handleDonationCreated}
           onUpdated={handleDonationUpdated}
-          editingDonation={editingPayLaterDonation}
-        />
-      )}
-
-      {editingPartialDonation && (
-        <EditPartialPaymentModal
-          isOpen={!!editingPartialDonation}
-          donation={editingPartialDonation}
-          onClose={() => setEditingPartialDonation(null)}
-          onUpdated={handleDonationUpdated}
+          editingDonation={editingDonation}
         />
       )}
 

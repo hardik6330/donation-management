@@ -25,6 +25,10 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const notesRef = useRef(null);
   const submitRef = useRef(null);
 
+  const donationDateISO = donation?.donationDate
+    ? new Date(donation.donationDate).toISOString().slice(0, 10)
+    : '';
+
   useEffect(() => {
     if (!isOpen) {
       setAddAmount('');
@@ -32,12 +36,12 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
       setPaymentMode('cash');
       setPaymentModeName('Cash');
       const today = todayISO();
-      const donationDate = donation?.donationDate || today;
-      setPaymentDate(today > donationDate ? today : donationDate);
+      const baseDate = donationDateISO || today;
+      setPaymentDate(today > baseDate ? today : baseDate);
     } else {
       setTimeout(() => paymentModeRef.current?.focus(), 100);
     }
-  }, [isOpen, donation]);
+  }, [isOpen, donationDateISO]);
 
   const handleKeyDown = (e, nextRef, prevRef) => {
     if (e.key === 'Enter') {
@@ -180,7 +184,7 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
             label="Payment Date"
             name="paymentDate"
             value={paymentDate}
-            minDate={donation?.donationDate}
+            minDate={donationDateISO}
             onChange={(e) => setPaymentDate(e.target.value)}
             icon={Calendar}
             inputRef={paymentDateRef}
