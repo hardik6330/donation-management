@@ -352,7 +352,7 @@ const AddDonationModal = ({
     if (field === 'categoryId') {
       setAddForm(prev => ({ ...prev, categoryId: id }));
       setAddDropdownLabels(prev => ({ ...prev, categoryName: name }));
-      nextRef = kathaRef;
+      nextRef = addForm.gaushalaId ? gaushalaRef : kathaRef;
     } else if (field === 'gaushalaId') {
       setAddForm(prev => ({ ...prev, gaushalaId: id, kathaId: '' }));
       setAddDropdownLabels(prev => ({ ...prev, gaushalaName: name, kathaName: '' }));
@@ -687,7 +687,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('categoryId', id, name)}
                   onClear={() => handleAddDropdownSelect('categoryId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, kathaRef, countryRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.gaushalaId ? gaushalaRef : kathaRef, countryRef)}
                   isActive={activeAddDropdown === 'categoryName'}
                   setActive={handleSetActiveAddDropdown}
                   inputRef={categoryRef}
@@ -704,7 +704,7 @@ const AddDonationModal = ({
                   onChange={handleAddInputChange}
                   onSelect={(id, name) => handleAddDropdownSelect('kathaId', id, name)}
                   onClear={() => handleAddDropdownSelect('kathaId', '', '')}
-                  onKeyDown={(e) => handleKeyDown(e, gaushalaRef, categoryRef)}
+                  onKeyDown={(e) => handleKeyDown(e, addForm.kathaId ? paymentModeRef : gaushalaRef, categoryRef)}
                   isActive={activeAddDropdown === 'kathaName'}
                   setActive={handleSetActiveAddDropdown}
                   disabled={!!addForm.gaushalaId}
