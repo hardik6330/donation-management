@@ -24,8 +24,8 @@ DROP TABLE IF EXISTS `Announcements`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Announcements` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  `userId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `id` char(36) NOT NULL,
+  `userId` char(36) DEFAULT NULL,
   `mobileNumber` varchar(255) NOT NULL,
   `message` text,
   `templateName` varchar(255) DEFAULT NULL,
@@ -40,7 +40,7 @@ CREATE TABLE `Announcements` (
   KEY `announcements_mobile_number` (`mobileNumber`),
   KEY `announcements_status` (`status`),
   KEY `announcements_sent_at` (`sentAt`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -60,10 +60,10 @@ DROP TABLE IF EXISTS `BapuSchedules`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `BapuSchedules` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `date` date NOT NULL,
   `time` varchar(255) DEFAULT NULL,
-  `locationId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `locationId` char(36) DEFAULT NULL,
   `eventType` enum('Padhramani','Katha','Event','Personal') DEFAULT 'Event',
   `contactPerson` varchar(255) DEFAULT NULL,
   `mobileNumber` varchar(255) DEFAULT NULL,
@@ -75,7 +75,7 @@ CREATE TABLE `BapuSchedules` (
   PRIMARY KEY (`id`),
   KEY `locationId` (`locationId`),
   CONSTRAINT `BapuSchedules_ibfk_1` FOREIGN KEY (`locationId`) REFERENCES `Locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -95,7 +95,7 @@ DROP TABLE IF EXISTS `Categories`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Categories` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `description` varchar(255) DEFAULT NULL,
   `isActive` tinyint(1) DEFAULT '1',
@@ -103,7 +103,7 @@ CREATE TABLE `Categories` (
   `updatedAt` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_category_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -133,8 +133,8 @@ DROP TABLE IF EXISTS `DonationInstallments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `DonationInstallments` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  `donationId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
+  `donationId` char(36) NOT NULL,
   `amount` float NOT NULL,
   `paymentMode` enum('online','cash','cheque') NOT NULL,
   `paymentDate` datetime DEFAULT NULL,
@@ -144,7 +144,7 @@ CREATE TABLE `DonationInstallments` (
   PRIMARY KEY (`id`),
   KEY `donationId` (`donationId`),
   CONSTRAINT `DonationInstallments_ibfk_1` FOREIGN KEY (`donationId`) REFERENCES `Donations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -164,7 +164,7 @@ DROP TABLE IF EXISTS `Donations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Donations` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `amount` float NOT NULL,
   `cause` varchar(255) NOT NULL,
   `status` enum('pending','completed','failed','partially_paid','pay_later') DEFAULT 'pending',
@@ -174,17 +174,17 @@ CREATE TABLE `Donations` (
   `razorpay_order_id` varchar(255) DEFAULT NULL,
   `razorpay_payment_id` varchar(255) DEFAULT NULL,
   `razorpay_signature` varchar(255) DEFAULT NULL,
-  `locationId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  `categoryId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  `gaushalaId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  `kathaId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `locationId` char(36) DEFAULT NULL,
+  `categoryId` char(36) DEFAULT NULL,
+  `gaushalaId` char(36) DEFAULT NULL,
+  `kathaId` char(36) DEFAULT NULL,
   `paymentDate` datetime DEFAULT NULL,
   `referenceName` varchar(255) DEFAULT NULL,
   `slipUrl` varchar(255) DEFAULT NULL,
   `slipNo` varchar(255) DEFAULT NULL,
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
-  `donorId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `donorId` char(36) DEFAULT NULL,
   PRIMARY KEY (`id`),
   KEY `locationId` (`locationId`),
   KEY `categoryId` (`categoryId`),
@@ -196,7 +196,7 @@ CREATE TABLE `Donations` (
   CONSTRAINT `Donations_ibfk_3` FOREIGN KEY (`gaushalaId`) REFERENCES `Gaushalas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `Donations_ibfk_4` FOREIGN KEY (`kathaId`) REFERENCES `Kathas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `Donations_ibfk_5` FOREIGN KEY (`donorId`) REFERENCES `Users` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -216,13 +216,13 @@ DROP TABLE IF EXISTS `Expenses`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Expenses` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `date` date NOT NULL,
   `amount` decimal(10,2) NOT NULL,
   `category` enum('Food','Medicine','Maintenance','Salary','Utility','Other') NOT NULL DEFAULT 'Other',
   `description` text,
-  `gaushalaId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
-  `kathaId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `gaushalaId` char(36) DEFAULT NULL,
+  `kathaId` char(36) DEFAULT NULL,
   `paymentMode` enum('cash','online','check') DEFAULT 'cash',
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
@@ -231,7 +231,7 @@ CREATE TABLE `Expenses` (
   KEY `kathaId` (`kathaId`),
   CONSTRAINT `Expenses_ibfk_1` FOREIGN KEY (`gaushalaId`) REFERENCES `Gaushalas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
   CONSTRAINT `Expenses_ibfk_2` FOREIGN KEY (`kathaId`) REFERENCES `Kathas` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -251,9 +251,9 @@ DROP TABLE IF EXISTS `Gaushalas`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Gaushalas` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `locationId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `locationId` char(36) DEFAULT NULL,
   `isActive` tinyint(1) DEFAULT '1',
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
@@ -261,7 +261,7 @@ CREATE TABLE `Gaushalas` (
   UNIQUE KEY `unique_gaushala_name` (`name`),
   KEY `locationId` (`locationId`),
   CONSTRAINT `Gaushalas_ibfk_1` FOREIGN KEY (`locationId`) REFERENCES `Locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -284,7 +284,7 @@ DROP TABLE IF EXISTS `Incomes`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Incomes` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `title` varchar(255) NOT NULL,
   `date` date NOT NULL,
   `amount` decimal(10,2) NOT NULL,
@@ -292,7 +292,7 @@ CREATE TABLE `Incomes` (
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -312,18 +312,18 @@ DROP TABLE IF EXISTS `KartalDhuns`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `KartalDhuns` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `date` date NOT NULL,
   `amount` decimal(10,2) NOT NULL,
-  `locationId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `locationId` char(36) DEFAULT NULL,
   `description` text,
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `locationId` (`locationId`),
   CONSTRAINT `KartalDhuns_ibfk_1` FOREIGN KEY (`locationId`) REFERENCES `Locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -343,9 +343,9 @@ DROP TABLE IF EXISTS `Kathas`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Kathas` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
-  `locationId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `locationId` char(36) DEFAULT NULL,
   `startDate` date DEFAULT NULL,
   `endDate` date DEFAULT NULL,
   `status` enum('upcoming','active','completed') DEFAULT 'upcoming',
@@ -355,7 +355,7 @@ CREATE TABLE `Kathas` (
   PRIMARY KEY (`id`),
   KEY `locationId` (`locationId`),
   CONSTRAINT `Kathas_ibfk_1` FOREIGN KEY (`locationId`) REFERENCES `Locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -377,17 +377,17 @@ DROP TABLE IF EXISTS `Locations`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Locations` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `type` enum('country','state','city') NOT NULL,
-  `parentId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `parentId` char(36) DEFAULT NULL,
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_location_per_parent` (`name`,`type`,`parentId`),
   KEY `parentId` (`parentId`),
   CONSTRAINT `Locations_ibfk_1` FOREIGN KEY (`parentId`) REFERENCES `Locations` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -418,11 +418,11 @@ DROP TABLE IF EXISTS `MandalMembers`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `MandalMembers` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `mobileNumber` varchar(255) NOT NULL,
   `city` varchar(255) DEFAULT NULL,
-  `mandalId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `mandalId` char(36) NOT NULL,
   `isActive` tinyint(1) DEFAULT '1',
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
@@ -430,7 +430,7 @@ CREATE TABLE `MandalMembers` (
   UNIQUE KEY `unique_mandal_member_mobile` (`mobileNumber`),
   KEY `mandalId` (`mandalId`),
   CONSTRAINT `MandalMembers_ibfk_1` FOREIGN KEY (`mandalId`) REFERENCES `Mandals` (`id`) ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -450,8 +450,8 @@ DROP TABLE IF EXISTS `MandalPayments`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `MandalPayments` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  `memberId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
+  `memberId` char(36) NOT NULL,
   `month` varchar(7) NOT NULL,
   `amount` int DEFAULT '100',
   `status` enum('paid','unpaid') DEFAULT 'unpaid',
@@ -462,7 +462,7 @@ CREATE TABLE `MandalPayments` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `mandal_payments_member_id_month` (`memberId`,`month`),
   CONSTRAINT `MandalPayments_ibfk_1` FOREIGN KEY (`memberId`) REFERENCES `MandalMembers` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -482,7 +482,7 @@ DROP TABLE IF EXISTS `Mandals`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Mandals` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `price` int NOT NULL DEFAULT '100',
   `mandalType` varchar(255) DEFAULT NULL,
@@ -490,7 +490,7 @@ CREATE TABLE `Mandals` (
   `createdAt` datetime NOT NULL,
   `updatedAt` datetime NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -510,9 +510,9 @@ DROP TABLE IF EXISTS `Notifications`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Notifications` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  `userId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
-  `donationId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
+  `userId` char(36) NOT NULL,
+  `donationId` char(36) NOT NULL,
   `type` varchar(255) DEFAULT 'partial_payment_reminder',
   `status` enum('pending','sent','failed','cancelled') DEFAULT 'pending',
   `attempts` int DEFAULT '0',
@@ -528,7 +528,7 @@ CREATE TABLE `Notifications` (
   KEY `notifications_donation_id` (`donationId`),
   CONSTRAINT `Notifications_ibfk_1` FOREIGN KEY (`userId`) REFERENCES `Users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `Notifications_ibfk_2` FOREIGN KEY (`donationId`) REFERENCES `Donations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -548,7 +548,7 @@ DROP TABLE IF EXISTS `Roles`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Roles` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `permissions` text NOT NULL,
   `description` varchar(255) DEFAULT NULL,
@@ -556,7 +556,7 @@ CREATE TABLE `Roles` (
   `updatedAt` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_role_name` (`name`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -580,7 +580,7 @@ DROP TABLE IF EXISTS `Sevaks`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Sevaks` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `mobileNumber` varchar(255) NOT NULL,
   `email` varchar(255) DEFAULT NULL,
@@ -593,7 +593,7 @@ CREATE TABLE `Sevaks` (
   `updatedAt` datetime NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_sevak_mobile` (`mobileNumber`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -613,7 +613,7 @@ DROP TABLE IF EXISTS `Users`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8mb4 */;
 CREATE TABLE `Users` (
-  `id` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL,
+  `id` char(36) NOT NULL,
   `name` varchar(255) NOT NULL,
   `email` varchar(255) DEFAULT NULL,
   `mobileNumber` varchar(255) NOT NULL,
@@ -623,7 +623,7 @@ CREATE TABLE `Users` (
   `state` varchar(255) DEFAULT NULL,
   `country` varchar(255) DEFAULT NULL,
   `companyName` varchar(255) DEFAULT NULL,
-  `roleId` char(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
+  `roleId` char(36) DEFAULT NULL,
   `isAdmin` tinyint(1) DEFAULT '0',
   `created_by` varchar(255) DEFAULT 'System',
   `createdAt` datetime NOT NULL,
@@ -633,7 +633,7 @@ CREATE TABLE `Users` (
   UNIQUE KEY `users_email_unique` (`email`),
   KEY `roleId` (`roleId`),
   CONSTRAINT `Users_ibfk_1` FOREIGN KEY (`roleId`) REFERENCES `Roles` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
