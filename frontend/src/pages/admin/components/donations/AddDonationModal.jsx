@@ -92,6 +92,7 @@ const AddDonationModal = ({
   const validateField = (name, value) => {
     let error = '';
     if (name === 'mobileNumber') {
+      // Mobile validation logic if needed
     } else if (name === 'name') {
       if (!value) error = 'Donor name is required';
     } else if (name === 'amount') {
@@ -437,6 +438,16 @@ const AddDonationModal = ({
           paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
           paymentDate: addForm.status === 'pay_later' ? null : (addForm.paymentDate || null),
           notes: addForm.notes || null,
+          referenceName: addForm.referenceName || null,
+          // Donor fields
+          mobileNumber: addForm.mobileNumber,
+          name: addForm.name,
+          email: addForm.email,
+          address: addForm.address,
+          city: addForm.city,
+          state: addForm.state,
+          country: addForm.country,
+          companyName: addForm.companyName,
           birthDate: addForm.birthDate || null,
         }).unwrap();
 

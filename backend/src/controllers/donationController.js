@@ -221,16 +221,37 @@ export const getDonors = asyncHandler(async (req, res) => {
 
 export const updateDonation = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { amount, cause, status, paymentMode, paymentDate, categoryId, gaushalaId, kathaId, paidAmount, remainingAmount, notes, slipNo, birthDate } = req.body;
+  const {
+    amount, cause, status, paymentMode, paymentDate, categoryId, gaushalaId, kathaId,
+    paidAmount, remainingAmount, notes, slipNo, referenceName,
+    // Donor fields
+    mobileNumber, name, email, address, city, state, country, companyName, birthDate
+  } = req.body;
 
   const donation = await Donation.findByPk(id);
   if (!donation) {
     throw notFound('Donation');
   }
 
-  if (birthDate !== undefined && donation.donorId) {
+  // Update donor details if any donor field is provided
+  if (donation.donorId) {
     const donor = await User.findByPk(donation.donorId);
-    if (donor) await donor.update({ birthDate: birthDate || null });
+    if (donor) {
+      const donorUpdateData = {};
+      if (mobileNumber !== undefined) donorUpdateData.mobileNumber = mobileNumber;
+      if (name !== undefined) donorUpdateData.name = name;
+      if (email !== undefined) donorUpdateData.email = email;
+      if (address !== undefined) donorUpdateData.address = address;
+      if (city !== undefined) donorUpdateData.city = city?.toUpperCase();
+      if (state !== undefined) donorUpdateData.state = state?.toUpperCase();
+      if (country !== undefined) donorUpdateData.country = country?.toUpperCase();
+      if (companyName !== undefined) donorUpdateData.companyName = companyName;
+      if (birthDate !== undefined) donorUpdateData.birthDate = birthDate || null;
+
+      if (Object.keys(donorUpdateData).length > 0) {
+        await donor.update(donorUpdateData);
+      }
+    }
   }
 
   const oldSlipUrl = donation.slipUrl;
@@ -251,6 +272,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
     gaushalaId: gaushalaId || donation.gaushalaId,
     kathaId: kathaId || donation.kathaId,
     slipNo: slipNo || donation.slipNo,
+    referenceName: referenceName !== undefined ? referenceName : donation.referenceName,
     notes: notes !== undefined ? notes : donation.notes,
   };
 
@@ -322,7 +344,13 @@ export const updateDonation = asyncHandler(async (req, res) => {
     gaushalaId !== undefined ||
     kathaId !== undefined ||
     notes !== undefined ||
-    slipNo !== undefined
+    slipNo !== undefined ||
+    // Donor fields that affect the PDF
+    name !== undefined ||
+    city !== undefined ||
+    state !== undefined ||
+    country !== undefined ||
+    address !== undefined
   );
 
   if (isCompleted && (wasNotCompleted || slipFieldsChanged)) {
