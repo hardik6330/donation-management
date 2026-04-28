@@ -161,10 +161,11 @@
     }, [isOpen]);
 
     const handleKeyDown = (e, nextRef, prevRef) => {
-      const selectionStart = typeof e.target.selectionStart === 'number'
-        ? e.target.selectionStart
+      const target = e.target || {};
+      const selectionStart = typeof target.selectionStart === 'number'
+        ? target.selectionStart
         : null;
-      const valueLength = typeof e.target.value === 'string' ? e.target.value.length : 0;
+      const valueLength = typeof target.value === 'string' ? target.value.length : 0;
       const cannotTrackCaret = selectionStart === null;
 
       if (e.key === 'Enter') {
@@ -731,7 +732,7 @@
                     onChange={handleAddInputChange}
                     onSelect={(id, name) => handleAddDropdownSelect('gaushalaId', id, name)}
                     onClear={() => handleAddDropdownSelect('gaushalaId', '', '')}
-                    onKeyDown={(e) => handleKeyDown(e, paymentModeRef, kathaRef)}
+                    onKeyDown={(e) => handleKeyDown(e, paymentModeRef, addForm.gaushalaId ? categoryRef : kathaRef)}
                     isActive={activeAddDropdown === 'gaushalaName'}
                     setActive={handleSetActiveAddDropdown}
                     disabled={!!addForm.kathaId}
@@ -751,7 +752,7 @@
                     items={donationPaymentModes}
                     onChange={handleAddInputChange}
                     onSelect={(id, name) => handleAddDropdownSelect('paymentMode', id, name)}
-                    onKeyDown={(e) => handleKeyDown(e, statusRef, addForm.gaushalaId ? gaushalaRef : addForm.kathaId ? kathaRef : categoryRef)}
+                    onKeyDown={(e) => handleKeyDown(e, statusRef, addForm.kathaId ? kathaRef : gaushalaRef)}
                     isActive={activeAddDropdown === 'paymentModeName'}
                     setActive={handleSetActiveAddDropdown}
                     inputRef={paymentModeRef}
