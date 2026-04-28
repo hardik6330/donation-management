@@ -33,6 +33,7 @@ const DonationList = ({
   };
 
   const tableHeaders = [
+    { label: 'Slip No' },
     { label: 'Donor Name' },
     { label: 'Cause / Purpose' },
     { label: 'Gaushala / Katha' },
@@ -49,6 +50,7 @@ const DonationList = ({
 
   const filterFields = [
     { name: 'search', label: 'Search Donor', icon: Search, placeholder: 'Name, Email or Mobile...' },
+    { name: 'slipNo', label: 'Slip Number', icon: Tag, placeholder: 'Search by slip no...' },
     { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     {
       name: 'gaushalaId',
@@ -120,6 +122,9 @@ const DonationList = ({
         {donations.map((donation) => (
           <React.Fragment key={donation.id}>
             <tr className={`hover:bg-gray-50 transition ${expandedRowId === donation.id ? 'bg-blue-50/30' : ''}`}>
+              <td className="p-4 px-6 text-sm font-semibold text-gray-700">
+                {donation.slipNo || '-'}
+              </td>
               <td className="p-4 px-6">
                 <div className="text-sm font-bold text-gray-800">{donation.donor?.name || 'Anonymous'}</div>
                 <div className="text-[10px] text-gray-400">{donation.donor?.email || ''}</div>
@@ -242,7 +247,7 @@ const DonationList = ({
             </tr>
             {expandedRowId === donation.id && (
               <tr className="bg-gray-50/30">
-                <td colSpan={10} className="p-6 pt-0">
+                <td colSpan={11} className="p-6 pt-0">
                   <div className="animate-in slide-in-from-top-2 duration-300">
                     <InstallmentTable donationId={donation.id} />
                   </div>

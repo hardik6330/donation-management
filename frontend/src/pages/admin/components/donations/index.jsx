@@ -38,6 +38,7 @@ const Donation = () => {
       maxAmount: '',
       categoryId: '',
       city: '',
+      slipNo: '',
       gaushalaId: searchParams.get('gaushalaId') || '',
       kathaId: searchParams.get('kathaId') || '',
       status: '',
