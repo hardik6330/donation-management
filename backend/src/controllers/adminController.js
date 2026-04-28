@@ -218,7 +218,7 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
       {
         model: User,
         as: 'donor',
-        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'city', 'state', 'country']
+        attributes: includeAttributes || ['name', 'email', 'mobileNumber', 'city', 'state', 'country', 'address', 'companyName', 'birthDate']
       },
       {
         model: Gaushala,
