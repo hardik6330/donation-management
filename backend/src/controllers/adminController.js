@@ -198,7 +198,7 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
   const {
     gaushalaId, kathaId, categoryId, status, 
     startDate, endDate, minAmount, maxAmount, search,
-    city, state, country
+    city, state, country, slipNo
   } = req.query;
 
   const activeScopes = [
@@ -209,7 +209,8 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
     { method: ['byDateRange', startDate, endDate] },
     { method: ['byAmountRange', minAmount, maxAmount] },
     { method: ['searchDonor', search] },
-    { method: ['byDonorLocation', city, state, country] }
+    { method: ['byDonorLocation', city, state, country] },
+    { method: ['bySlipNo', slipNo] }
   ].filter(s => s !== null && s !== undefined);
 
   const { count, rows: donations } = await Donation.scope(activeScopes).findAndCountAll({

@@ -135,6 +135,10 @@ export const Donation = sequelize.define('Donation', {
         }
       };
     },
+    bySlipNo(slipNo) {
+      if (!slipNo) return {};
+      return { where: { slipNo: { [Op.like]: `%${slipNo}%` } } };
+    },
     byDonorLocation(city, state, country) {
       if (!city && !state && !country) return {};
       const where = {};

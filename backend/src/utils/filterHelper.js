@@ -25,7 +25,7 @@ export const buildSearchFilter = (fields, term) => {
 export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
   const { 
     search, startDate, endDate, minAmount, maxAmount, 
-    categoryId, status, city, state, country, gaushalaId, kathaId
+    categoryId, status, city, state, country, gaushalaId, kathaId, slipNo
   } = query;
 
   let whereClause = {};
@@ -113,6 +113,11 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
   // 6. Category Filter
   if (categoryId) {
     whereClause.categoryId = categoryId;
+  }
+
+  // 7. Slip Number Filter
+  if (slipNo) {
+    whereClause.slipNo = { [Op.like]: `%${slipNo}%` };
   }
 
   return { whereClause, donorWhere };
