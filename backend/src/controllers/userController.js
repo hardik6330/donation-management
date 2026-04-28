@@ -1,4 +1,4 @@
-import { User, Role } from '../models/index.js';
+import { User, Role, Donation } from '../models/index.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { sendSuccess } from '../utils/apiResponse.js';
@@ -182,7 +182,15 @@ export const getUserByMobile = asyncHandler(async (req, res) => {
   if (!user) {
     throw notFound('User');
   }
-  return sendSuccess(res, user, 'User found successfully');
+  const lastDonation = await Donation.findOne({
+    where: { donorId: user.id },
+    attributes: ['donationDate', 'paymentDate'],
+    order: [['createdAt', 'DESC']],
+  });
+  const userData = user.toJSON();
+  userData.lastDonationDate = lastDonation?.donationDate || null;
+  userData.lastPaymentDate = lastDonation?.paymentDate || null;
+  return sendSuccess(res, userData, 'User found successfully');
 });
 
 export const getUserById = asyncHandler(async (req, res) => {
