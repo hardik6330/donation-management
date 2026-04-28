@@ -77,6 +77,7 @@ export const Donation = sequelize.define('Donation', {
   slipNo: {
     type: DataTypes.STRING,
     allowNull: true,
+    unique: 'donations_slipno_unique',
   },
   notes: {
     type: DataTypes.STRING,

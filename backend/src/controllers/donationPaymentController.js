@@ -28,25 +28,19 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
     slipNo, paymentDate, donationDate, notes, birthDate
   } = req.body;
 
-  // Use a transaction to ensure slip number generation is atomic and safe for multiple devices.
-  const result = await sequelize.transaction(async (t) => {
+  // Run the create inside a transaction; retry on slipNo unique-constraint collision
+  // (multiple devices can race on MAX(slipNo)+1 — the DB unique index is the final
+  // guarantee, this loop just regenerates a fresh number and retries).
+  const runCreate = async () => sequelize.transaction(async (t) => {
     let finalSlipNo = slipNo;
     if (!finalSlipNo) {
-      // Find the last donation and lock it so no other request can generate a slip number 
-      // until this transaction finishes.
-      const lastDonation = await Donation.findOne({
-        where: { slipNo: { [Op.ne]: null } },
-        order: [['createdAt', 'DESC']],
-        attributes: ['slipNo'],
-        lock: true, // SELECT ... FOR UPDATE
-        transaction: t
-      });
-
-      if (lastDonation && !isNaN(lastDonation.slipNo)) {
-        finalSlipNo = (parseInt(lastDonation.slipNo) + 1).toString();
-      } else {
-        finalSlipNo = "1";
-      }
+      // Atomic max-based numbering: works across the whole table, not just the
+      // most recent row by createdAt (which can tie to the second).
+      const [[row]] = await sequelize.query(
+        'SELECT COALESCE(MAX(CAST(slipNo AS UNSIGNED)), 0) AS maxSlip FROM donations WHERE slipNo REGEXP \'^[0-9]+$\' FOR UPDATE',
+        { transaction: t }
+      );
+      finalSlipNo = (Number(row.maxSlip || 0) + 1).toString();
     }
 
     let causeString = '';
@@ -93,18 +87,30 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
       }, { transaction: t });
     } else {
       const tempPassword = crypto.randomBytes(8).toString('hex');
-      user = await User.create({
-        name,
-        email: email || null,
-        address,
-        city: city?.toUpperCase() || null,
-        state: state?.toUpperCase() || null,
-        country: country?.toUpperCase() || null,
-        companyName,
-        birthDate: birthDate || null,
-        mobileNumber: mobileNumber || null,
-        password: tempPassword
-      }, { transaction: t });
+      try {
+        user = await User.create({
+          name,
+          email: email || null,
+          address,
+          city: city?.toUpperCase() || null,
+          state: state?.toUpperCase() || null,
+          country: country?.toUpperCase() || null,
+          companyName,
+          birthDate: birthDate || null,
+          mobileNumber: mobileNumber || null,
+          password: tempPassword
+        }, { transaction: t });
+      } catch (err) {
+        // Two devices created the same donor at once — re-fetch the winner.
+        if (err?.name === 'SequelizeUniqueConstraintError') {
+          user = mobileNumber
+            ? await User.findOne({ where: { mobileNumber }, transaction: t })
+            : await User.findOne({ where: { email }, transaction: t });
+          if (!user) throw err;
+        } else {
+          throw err;
+        }
+      }
     }
 
     const isDirectPay = status === 'completed';
@@ -153,6 +159,23 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
     return { donation, user, categoryName, causeString, finalSlipNo };
   });
+
+  let result;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    try {
+      result = await runCreate();
+      break;
+    } catch (err) {
+      const isSlipCollision =
+        err?.name === 'SequelizeUniqueConstraintError' &&
+        (err?.fields?.slipNo || err?.errors?.some(e => e.path === 'slipNo'));
+      if (isSlipCollision && !slipNo && attempt < 4) {
+        logger.warn(`Slip number collision on attempt ${attempt + 1}, retrying...`);
+        continue;
+      }
+      throw err;
+    }
+  }
 
   const { donation, user, categoryName, causeString, finalSlipNo } = result;
 
