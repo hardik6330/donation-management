@@ -453,6 +453,7 @@
             slipNo: addForm.slipNo,
             categoryId: addForm.categoryId || null,
             paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
+            donationDate: addForm.donationDate || null,
             paymentDate: addForm.status === 'pay_later' ? null : (addForm.paymentDate || null),
             notes: addForm.notes || null,
             referenceName: addForm.referenceName || null,

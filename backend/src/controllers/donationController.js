@@ -222,7 +222,7 @@ export const getDonors = asyncHandler(async (req, res) => {
 export const updateDonation = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const {
-    amount, cause, status, paymentMode, paymentDate, categoryId, gaushalaId, kathaId,
+    amount, cause, status, paymentMode, paymentDate, donationDate, categoryId, gaushalaId, kathaId,
     paidAmount, remainingAmount, notes, slipNo, referenceName,
     // Donor fields
     mobileNumber, name, email, address, city, state, country, companyName, birthDate
@@ -284,6 +284,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
     status: nextStatus,
     paymentMode: nextPaymentMode,
     paymentDate: paymentDate || donation.paymentDate,
+    donationDate: donationDate || donation.donationDate,
     categoryId: categoryId || donation.categoryId,
     gaushalaId: gaushalaId || donation.gaushalaId,
     kathaId: kathaId || donation.kathaId,
