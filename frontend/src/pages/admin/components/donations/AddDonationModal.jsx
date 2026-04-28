@@ -376,7 +376,7 @@
         setAddForm(prev => ({
           ...prev,
           status: id,
-          paidAmount: '',
+          paidAmount: prev.status === id ? prev.paidAmount : '',
           paymentDate: id === 'completed' ? prev.donationDate : (id === 'pay_later' ? '' : (prev.paymentDate || prev.donationDate)),
         }));
         setAddDropdownLabels(prev => ({ ...prev, statusName: name }));
