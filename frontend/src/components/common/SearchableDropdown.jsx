@@ -140,9 +140,11 @@ const SearchableDropdown = ({
         setHighlightIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
         return;
       }
-      if (e.key === 'Enter' && highlightIndex >= 0) {
+      if (e.key === 'Enter') {
         e.preventDefault();
-        const item = filtered[highlightIndex];
+        const idx = highlightIndex >= 0 ? highlightIndex : 0;
+        const item = filtered[idx];
+        if (!item) return;
         onSelect(item.id, item.name);
         setActive(null);
         setHighlightIndex(-1);
@@ -160,6 +162,16 @@ const SearchableDropdown = ({
         setHighlightIndex(-1);
         return;
       }
+    }
+
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      setActive(null);
+      setHighlightIndex(-1);
+      if (onKeyDown) {
+        onKeyDown({ key: e.key, preventDefault: () => {} });
+      }
+      return;
     }
 
     // Pass other key events (like Left/Right arrows) to parent if not handled by dropdown list
