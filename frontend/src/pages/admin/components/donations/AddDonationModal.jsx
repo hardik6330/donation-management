@@ -890,7 +890,10 @@
               ref={submitRef}
               type="submit"
               disabled={isAdding || isUpdating}
-              onKeyDown={(e) => handleKeyDown(e, null, notesRef)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') return;
+                handleKeyDown(e, null, notesRef);
+              }}
               className="flex-[2] bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition disabled:opacity-50 shadow-lg shadow-blue-200 flex items-center justify-center gap-2"
             >
               {(isAdding || isUpdating) ? <Loader2 className="animate-spin" /> : <Plus className="w-5 h-5" />}
