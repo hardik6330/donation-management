@@ -453,5 +453,13 @@ export const updateDonation = asyncHandler(async (req, res) => {
     runBackground(processSlip(), `Donation ${donation.id} update slip`);
   }
 
-  return sendSuccess(res, donation, 'Donation updated successfully');
+  const updatedDonation = await Donation.findByPk(donation.id, {
+    include: [{
+      model: User,
+      as: 'donor',
+      attributes: ['name', 'email', 'mobileNumber', 'city', 'state', 'country', 'address', 'companyName', 'birthDate']
+    }]
+  });
+
+  return sendSuccess(res, updatedDonation, 'Donation updated successfully');
 });

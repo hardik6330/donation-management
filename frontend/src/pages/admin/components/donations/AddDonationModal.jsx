@@ -146,11 +146,11 @@
     const categories = categoryPagination.items;
 
     const { data: existingUser } = useGetUserByMobileQuery(addForm.mobileNumber, {
-      skip: addForm.mobileNumber.length < 10 || !isOpen,
+      skip: addForm.mobileNumber.length < 10 || !isOpen || isEditMode,
     });
 
     const { data: existingSevak } = useGetSevakByMobileQuery(addForm.mobileNumber, {
-      skip: addForm.mobileNumber.length < 10 || !isOpen || !!existingUser?.success,
+      skip: addForm.mobileNumber.length < 10 || !isOpen || isEditMode || !!existingUser?.success,
     });
 
     // Fast Entry: Focus first field
@@ -265,7 +265,7 @@
         gaushalaId: d.gaushalaId || '',
         kathaId: d.kathaId || '',
         companyName: donor.companyName || '',
-        birthDate: donor.birthDate ? new Date(donor.birthDate).toISOString().slice(0, 10) : '',
+        birthDate: (donor.birthDate ? String(donor.birthDate).slice(0, 10) : ''),
         referenceName: d.referenceName || '',
         amount: d.amount != null ? Number(d.amount).toLocaleString('en-IN') : '',
         paidAmount: d.paidAmount != null ? Number(d.paidAmount).toLocaleString('en-IN') : '',
