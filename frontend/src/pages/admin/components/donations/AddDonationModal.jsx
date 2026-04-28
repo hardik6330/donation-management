@@ -74,8 +74,8 @@
       paymentMode: storedPrefs.paymentMode || 'cash',
       status: storedPrefs.status || 'completed',
       slipNo: '',
-      donationDate: todayISO(),
-      paymentDate: todayISO(),
+      donationDate: storedPrefs.donationDate || todayISO(),
+      paymentDate: storedPrefs.paymentDate || todayISO(),
       notes: '',
     });
 
@@ -200,6 +200,7 @@
       if (existingUser?.success && existingUser.data) {
         const user = existingUser.data;
         const timer = setTimeout(() => {
+          const isoDate = (v) => v ? new Date(v).toISOString().slice(0, 10) : '';
           setAddForm(prev => ({
             ...prev,
             name: user.name || '',
@@ -210,6 +211,8 @@
             country: user.country || '',
             companyName: user.companyName || '',
             birthDate: user.birthDate ? new Date(user.birthDate).toISOString().slice(0, 10) : '',
+            donationDate: isoDate(user.lastDonationDate) || prev.donationDate,
+            paymentDate: isoDate(user.lastPaymentDate) || prev.paymentDate,
           }));
           toast.info('User found! Details auto-filled.');
         }, 0);
@@ -289,6 +292,13 @@
 
     const handleAddInputChange = (e) => {
       const { name, value } = e.target;
+
+      if (name === 'name' || name === 'referenceName' || name === 'companyName' || name === 'notes') {
+        const capitalized = value.replace(/\b\w/g, (c) => c.toUpperCase());
+        setAddForm(prev => ({ ...prev, [name]: capitalized }));
+        validateField(name, capitalized);
+        return;
+      }
 
       if (name === 'mobileNumber') {
         const cleaned = value.replace(/\D/g, '');
@@ -490,6 +500,8 @@
           status: addForm.status,
           paymentModeName: addDropdownLabels.paymentModeName,
           statusName: addDropdownLabels.statusName,
+          donationDate: addForm.donationDate,
+          paymentDate: addForm.paymentDate,
         }));
 
         toast.success('Donation added successfully');
@@ -524,8 +536,8 @@
         paymentMode: lastPrefs.paymentMode || 'cash',
         status: lastPrefs.status || 'completed',
         slipNo: '',
-        donationDate: todayISO(),
-        paymentDate: todayISO(),
+        donationDate: lastPrefs.donationDate || todayISO(),
+        paymentDate: lastPrefs.paymentDate || todayISO(),
         notes: '',
       });
       setAddDropdownLabels({
