@@ -103,11 +103,11 @@ export const Donation = sequelize.define('Donation', {
       if (!start && !end) return {};
       const where = {};
       if (start && end) {
-        where.createdAt = { [Op.between]: [new Date(start), new Date(new Date(end).setHours(23, 59, 59, 999))] };
+        where.donationDate = { [Op.between]: [new Date(start), new Date(new Date(end).setHours(23, 59, 59, 999))] };
       } else if (start) {
-        where.createdAt = { [Op.gte]: new Date(start) };
+        where.donationDate = { [Op.gte]: new Date(start) };
       } else if (end) {
-        where.createdAt = { [Op.lte]: new Date(new Date(end).setHours(23, 59, 59, 999)) };
+        where.donationDate = { [Op.lte]: new Date(new Date(end).setHours(23, 59, 59, 999)) };
       }
       return { where };
     },
@@ -134,6 +134,22 @@ export const Donation = sequelize.define('Donation', {
           ]
         }
       };
+    },
+    byPaymentDateRange(start, end) {
+      if (!start && !end) return {};
+      const where = {};
+      if (start && end) {
+        where.paymentDate = { [Op.between]: [new Date(start), new Date(new Date(end).setHours(23, 59, 59, 999))] };
+      } else if (start) {
+        where.paymentDate = { [Op.gte]: new Date(start) };
+      } else if (end) {
+        where.paymentDate = { [Op.lte]: new Date(new Date(end).setHours(23, 59, 59, 999)) };
+      }
+      return { where };
+    },
+    byPaymentMode(paymentMode) {
+      if (!paymentMode) return {};
+      return { where: { paymentMode } };
     },
     bySlipNo(slipNo) {
       if (!slipNo) return {};
