@@ -57,7 +57,9 @@ const Expense = () => {
   const gaushalaPagination = useDropdownPagination(triggerGetGaushalas);
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
-  const kathaPagination = useDropdownPagination(triggerGetKathas);
+  const kathaPagination = useDropdownPagination(triggerGetKathas, {
+    additionalParams: { status: 'active,upcoming' }
+  });
 
   const [triggerGetExpenseCategories] = useLazyGetExpenseCategoriesQuery();
   const expenseCategoryPagination = useDropdownPagination(triggerGetExpenseCategories, { fields: 'id,name' });

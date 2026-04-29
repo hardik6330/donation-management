@@ -325,6 +325,7 @@ const AddExpenseModal = ({
               setDropdownLabels(prev => ({ ...prev, gaushalaName: e.target.value }));
               setForm(prev => ({ ...prev, gaushalaId: '' }));
               setActiveDropdown('gaushalaName');
+              gaushalaPagination.handleSearch(e.target.value);
             }}
             onSelect={(id, name) => handleDropdownSelect('gaushalaId', id, name)}
             onKeyDown={(e) => handleKeyDown(e, kathaRef)}
@@ -351,6 +352,7 @@ const AddExpenseModal = ({
               setDropdownLabels(prev => ({ ...prev, kathaName: e.target.value }));
               setForm(prev => ({ ...prev, kathaId: '' }));
               setActiveDropdown('kathaName');
+              kathaPagination.handleSearch(e.target.value);
             }}
             onSelect={(id, name) => handleDropdownSelect('kathaId', id, name)}
             onKeyDown={(e) => handleKeyDown(e, paymentModeRef)}

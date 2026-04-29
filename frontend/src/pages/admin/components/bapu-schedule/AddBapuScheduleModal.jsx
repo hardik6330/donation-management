@@ -119,8 +119,10 @@ const AddBapuScheduleModal = ({
 
   useEffect(() => {
     if (isOpen) {
-      setAddForm(getInitialState());
-      setAddDropdownLabels(getInitialLabels());
+      setTimeout(() => {
+        setAddForm(getInitialState());
+        setAddDropdownLabels(getInitialLabels());
+      }, 0);
       setTimeout(() => contactRef.current?.focus(), 100);
     }
   }, [editingSchedule, isOpen]);
@@ -371,7 +373,7 @@ const AddBapuScheduleModal = ({
             inputRef={countryRef}
             icon={MapPin}
             isServerSearch={true}
-            onLoadMore={countryPagination.handleSearch}
+            onLoadMore={countryPagination.handleLoadMore}
             hasMore={countryPagination.hasMore}
             loading={countryPagination.loading}
             allowTransliteration={false}
@@ -392,7 +394,7 @@ const AddBapuScheduleModal = ({
             inputRef={stateRef}
             icon={MapPin}
             isServerSearch={true}
-            onLoadMore={statePagination.handleSearch}
+            onLoadMore={statePagination.handleLoadMore}
             hasMore={statePagination.hasMore}
             loading={statePagination.loading}
             allowTransliteration={false}
@@ -413,7 +415,7 @@ const AddBapuScheduleModal = ({
             inputRef={cityRef}
             icon={MapPin}
             isServerSearch={true}
-            onLoadMore={cityPagination.handleSearch}
+            onLoadMore={cityPagination.handleLoadMore}
             hasMore={cityPagination.hasMore}
             loading={cityPagination.loading}
             allowTransliteration={false}

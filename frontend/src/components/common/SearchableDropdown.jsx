@@ -44,6 +44,8 @@ const SearchableDropdown = ({
     item.name?.toLowerCase().includes((value || '').toLowerCase())
   );
 
+  const displayItems = value && filtered.length > 0 ? filtered : items;
+
   const showGujaratiIndicator = isGujarati && allowTransliteration;
 
   // Update position coordinates whenever dropdown is opened or window changes
@@ -85,7 +87,7 @@ const SearchableDropdown = ({
   };
 
   const handleInputChange = (e) => {
-    if (isActive && filtered.length > 0) {
+    if (isActive && displayItems.length > 0) {
       setHighlightIndex(0);
     } else {
       setHighlightIndex(-1);
@@ -99,7 +101,7 @@ const SearchableDropdown = ({
   };
 
   const handleInputFocus = () => {
-    if (filtered.length > 0) {
+    if (displayItems.length > 0) {
       setHighlightIndex(0);
     } else {
       setHighlightIndex(-1);
@@ -129,21 +131,21 @@ const SearchableDropdown = ({
   };
 
   const handleKeyDownInternal = (e) => {
-    if (isActive && filtered.length > 0) {
+    if (isActive && displayItems.length > 0) {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setHighlightIndex(prev => (prev < filtered.length - 1 ? prev + 1 : 0));
+        setHighlightIndex(prev => (prev < displayItems.length - 1 ? prev + 1 : 0));
         return;
       }
       if (e.key === 'ArrowUp') {
         e.preventDefault();
-        setHighlightIndex(prev => (prev > 0 ? prev - 1 : filtered.length - 1));
+        setHighlightIndex(prev => (prev > 0 ? prev - 1 : displayItems.length - 1));
         return;
       }
       if (e.key === 'Enter') {
         e.preventDefault();
         const idx = highlightIndex >= 0 ? highlightIndex : 0;
-        const item = filtered[idx];
+        const item = displayItems[idx];
         if (!item) return;
         onSelect(item.id, item.name);
         setActive(null);
@@ -187,7 +189,7 @@ const SearchableDropdown = ({
         rawInputRef.current = newRaw;
         const transliterated = transliterateToGujarati(newRaw);
         onChange({ target: { name, value: transliterated } });
-        if (isActive && filtered.length > 0) setHighlightIndex(0);
+        if (isActive && displayItems.length > 0) setHighlightIndex(0);
         return;
       } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
         e.preventDefault();
@@ -196,7 +198,7 @@ const SearchableDropdown = ({
         const transliterated = transliterateToGujarati(newRaw);
         onChange({ target: { name, value: transliterated } });
         if (!isActive) setActive(name);
-        if (filtered.length > 0) setHighlightIndex(0);
+        if (displayItems.length > 0) setHighlightIndex(0);
         return;
       }
     }
@@ -275,7 +277,7 @@ const SearchableDropdown = ({
           <ChevronDown className={`absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none transition-transform ${isActive ? 'rotate-180' : ''}`} />
         ))}
 
-        {isActive && (filtered.length > 0 || footerAction) && coords.width > 0 && createPortal(
+        {isActive && (displayItems.length > 0 || footerAction) && coords.width > 0 && createPortal(
           <div 
             ref={listRef} 
             onScroll={handleScroll}
@@ -291,7 +293,7 @@ const SearchableDropdown = ({
               openUp ? 'slide-in-from-bottom-2 mb-1' : 'slide-in-from-top-2 mt-1'
             }`}
           >
-            {filtered.map((item, index) => (
+            {displayItems.map((item, index) => (
               <div
                 key={item.id}
                 className={`flex items-center border-b border-gray-50 last:border-0 ${

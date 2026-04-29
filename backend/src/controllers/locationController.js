@@ -145,14 +145,24 @@ export const getSubLocations = asyncHandler(async (req, res) => {
 
 export const updateLocationMaster = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { name, isActive } = req.body;
+  const { name, isActive, stateName, countryName } = req.body;
 
   const location = await Location.findByPk(id);
   if (!location) throw notFound('Location');
 
+  let parentId = location.parentId;
+
+  if (countryName && stateName) {
+    const lastLocation = await findOrCreateLocationStructure(countryName, stateName);
+    if (lastLocation) {
+      parentId = lastLocation.id;
+    }
+  }
+
   await location.update({
     name: name !== undefined ? formatName(name) : location.name,
     isActive: isActive !== undefined ? isActive : location.isActive,
+    parentId
   });
 
   return sendSuccess(res, location, 'Location updated successfully');

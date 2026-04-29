@@ -27,7 +27,8 @@ const AnnouncementPage = () => {
   const sevakPagination = useDropdownPagination(triggerGetSevaks, {
     limit: 20,
     fields: 'id,name,mobileNumber,city,lastMessage,lastMessageTime',
-    skip: userType !== 'sevak'
+    skip: userType !== 'sevak',
+    additionalParams: { isActive: 'true' }
   });
 
   const handleTemplateSend = async (templateData) => {

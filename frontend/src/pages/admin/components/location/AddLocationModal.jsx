@@ -40,13 +40,17 @@ const AddLocationModal = ({
 
   useEffect(() => {
     if (editingData) {
-      setFormData({
-        cityName: editingData.name || '',
-        stateName: editingData.stateName || '',
-        countryName: editingData.countryName || '',
-      });
+      setTimeout(() => {
+        setFormData({
+          cityName: editingData.name || '',
+          stateName: editingData.stateName || '',
+          countryName: editingData.countryName || '',
+        });
+      }, 0);
     } else {
-      setFormData({ cityName: '', stateName: '', countryName: '' });
+      setTimeout(() => {
+        setFormData({ cityName: '', stateName: '', countryName: '' });
+      }, 0);
     }
   }, [editingData]);
 
@@ -101,6 +105,8 @@ const AddLocationModal = ({
         await updateLocation({
           id: editingData.id,
           name: formData.cityName,
+          stateName: formData.stateName,
+          countryName: formData.countryName,
         }).unwrap();
         toast.success('Location updated successfully!');
       } else {
@@ -130,7 +136,7 @@ const AddLocationModal = ({
     >
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="space-y-4">
-          <div className={`grid grid-cols-1 ${editingData ? 'sm:grid-cols-1' : 'sm:grid-cols-3'} gap-4`}>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <SearchableDropdown
               label="City"
               name="cityName"
@@ -139,7 +145,7 @@ const AddLocationModal = ({
               items={cityPagination.items}
               onChange={handleCityInputChange}
               onSelect={(id, name) => handleCitySelect(id, name)}
-              onKeyDown={(e) => handleKeyDown(e, editingData ? submitRef : stateRef)}
+              onKeyDown={(e) => handleKeyDown(e, stateRef)}
               isActive={activeDropdown === 'cityName'}
               setActive={setActiveDropdown}
               inputRef={cityRef}
@@ -152,30 +158,28 @@ const AddLocationModal = ({
               allowTransliteration={false}
             />
 
-            {!editingData && (
-              <>
-                <FormInput
-                  label="State"
-                  name="stateName"
-                  placeholder="Ex: Gujarat"
-                  value={formData.stateName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, stateName: e.target.value }))}
-                  onKeyDown={(e) => handleKeyDown(e, countryRef)}
-                  inputRef={stateRef}
-                  icon={MapPin}
-                />
-                <FormInput
-                  label="Country"
-                  name="countryName"
-                  placeholder="Ex: India"
-                  value={formData.countryName}
-                  onChange={(e) => setFormData(prev => ({ ...prev, countryName: e.target.value }))}
-                  onKeyDown={(e) => handleKeyDown(e, submitRef)}
-                  inputRef={countryRef}
-                  icon={MapPin}
-                />
-              </>
-            )}
+            <FormInput
+              label="State"
+              name="stateName"
+              placeholder="Ex: Gujarat"
+              value={formData.stateName}
+              onChange={(e) => setFormData(prev => ({ ...prev, stateName: e.target.value }))}
+              onKeyDown={(e) => handleKeyDown(e, countryRef)}
+              inputRef={stateRef}
+              icon={MapPin}
+              required
+            />
+            <FormInput
+              label="Country"
+              name="countryName"
+              placeholder="Ex: India"
+              value={formData.countryName}
+              onChange={(e) => setFormData(prev => ({ ...prev, countryName: e.target.value }))}
+              onKeyDown={(e) => handleKeyDown(e, submitRef)}
+              inputRef={countryRef}
+              icon={MapPin}
+              required
+            />
           </div>
         </div>
 

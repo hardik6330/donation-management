@@ -31,7 +31,8 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
     address: '',
     city: '',
     state: '',
-    country: 'India'
+    country: 'India',
+    isActive: true
   });
 
   const [errors, setErrors] = useState({});
@@ -50,26 +51,28 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (editingSevak) {
-        setForm({
-          name: editingSevak.name || '',
-          mobileNumber: editingSevak.mobileNumber || '',
-          email: editingSevak.email || '',
-          address: editingSevak.address || '',
-          city: editingSevak.city || '',
-          state: editingSevak.state || '',
-          country: editingSevak.country || 'India'
-        });
-      } else {
-        setForm({
-          name: '',
-          mobileNumber: '',
-          email: '',
-          address: '',
-          city: '',
-          state: '',
-          country: 'India'
-        });
-      }
+          setForm({
+            name: editingSevak.name || '',
+            mobileNumber: editingSevak.mobileNumber || '',
+            email: editingSevak.email || '',
+            address: editingSevak.address || '',
+            city: editingSevak.city || '',
+            state: editingSevak.state || '',
+            country: editingSevak.country || 'India',
+            isActive: editingSevak.isActive !== undefined ? editingSevak.isActive : true
+          });
+        } else {
+          setForm({
+            name: '',
+            mobileNumber: '',
+            email: '',
+            address: '',
+            city: '',
+            state: '',
+            country: 'India',
+            isActive: true
+          });
+        }
     }, 0);
     return () => clearTimeout(timer);
   }, [editingSevak, isOpen]);
@@ -82,7 +85,8 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
       address: '',
       city: '',
       state: '',
-      country: 'India'
+      country: 'India',
+      isActive: true
     });
     setErrors({});
   };
@@ -106,21 +110,17 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
+    let nextValue = type === 'checkbox' ? checked : value;
+    
     if (name === 'mobileNumber') {
-      const cleaned = value.replace(/\D/g, '');
-      setForm(prev => ({ ...prev, [name]: cleaned }));
-      validateField(name, cleaned);
-      return;
+      nextValue = value.replace(/\D/g, '');
+    } else if (['city', 'state', 'country'].includes(name)) {
+      nextValue = value.toUpperCase();
     }
-    if (['city', 'state', 'country'].includes(name)) {
-      const upperValue = value.toUpperCase();
-      setForm(prev => ({ ...prev, [name]: upperValue }));
-      validateField(name, upperValue);
-      return;
-    }
-    setForm(prev => ({ ...prev, [name]: value }));
-    validateField(name, value);
+
+    setForm(prev => ({ ...prev, [name]: nextValue }));
+    validateField(name, nextValue);
   };
 
   const handleSubmit = async (e) => {
@@ -252,6 +252,24 @@ const AddSevakModal = ({ isOpen, onClose, editingSevak = null }) => {
             className="w-full px-4 py-2.5 bg-gray-50 border border-gray-100 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all duration-200 text-gray-700 resize-none"
           ></textarea>
         </div>
+
+        {editingSevak && (
+          <div className="flex items-center gap-3 px-1 py-2">
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                name="isActive"
+                checked={form.isActive}
+                onChange={handleChange}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+              <span className="ml-3 text-sm font-bold text-gray-700 uppercase">
+                {form.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </label>
+          </div>
+        )}
 
         <div className="pt-4 flex items-center gap-3">
           <button

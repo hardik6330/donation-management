@@ -39,7 +39,11 @@ export const Katha = sequelize.define('Katha', {
   timestamps: true,
   scopes: {
     byStatus(status) {
-      return status ? { where: { status } } : {};
+      if (!status) return {};
+      if (typeof status === 'string' && status.includes(',')) {
+        return { where: { status: { [Op.in]: status.split(',') } } };
+      }
+      return { where: { status } };
     },
     search(query) {
       if (!query) return {};

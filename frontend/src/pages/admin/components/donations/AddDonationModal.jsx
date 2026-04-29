@@ -320,18 +320,21 @@
       if (name === 'categoryName') {
         setAddDropdownLabels(prev => ({ ...prev, categoryName: value }));
         setAddForm(prev => ({ ...prev, categoryId: '' }));
+        categoryPagination.handleSearch(value);
         setActiveAddDropdown('categoryName');
         return;
       }
       if (name === 'gaushalaName') {
         setAddDropdownLabels(prev => ({ ...prev, gaushalaName: value }));
         setAddForm(prev => ({ ...prev, gaushalaId: '' }));
+        gaushalaPagination.handleSearch(value);
         setActiveAddDropdown('gaushalaName');
         return;
       }
       if (name === 'kathaName') {
         setAddDropdownLabels(prev => ({ ...prev, kathaName: value }));
         setAddForm(prev => ({ ...prev, kathaId: '' }));
+        kathaPagination.handleSearch(value);
         setActiveAddDropdown('kathaName');
         return;
       }
@@ -712,6 +715,10 @@
                     setActive={handleSetActiveAddDropdown}
                     inputRef={categoryRef}
                     icon={Tag}
+                    isServerSearch={true}
+                    onLoadMore={categoryPagination.handleLoadMore}
+                    hasMore={categoryPagination.hasMore}
+                    loading={categoryPagination.loading}
                     allowTransliteration={false}
                     required
                   />
@@ -730,6 +737,10 @@
                     disabled={!!addForm.gaushalaId}
                     inputRef={kathaRef}
                     icon={Tag}
+                    isServerSearch={true}
+                    onLoadMore={kathaPagination.handleLoadMore}
+                    hasMore={kathaPagination.hasMore}
+                    loading={kathaPagination.loading}
                     allowTransliteration={false}
                   />
                 </div>
@@ -751,6 +762,10 @@
                     disabled={!!addForm.kathaId}
                     inputRef={gaushalaRef}
                     icon={Building2}
+                    isServerSearch={true}
+                    onLoadMore={gaushalaPagination.handleLoadMore}
+                    hasMore={gaushalaPagination.hasMore}
+                    loading={gaushalaPagination.loading}
                     allowTransliteration={false}
                   />
                 </div>

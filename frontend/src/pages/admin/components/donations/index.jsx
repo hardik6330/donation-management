@@ -134,6 +134,7 @@ const Donation = () => {
 
   const [triggerGetKathas] = useLazyGetKathasQuery();
   const kathaPagination = useDropdownPagination(triggerGetKathas, {
+    additionalParams: { status: 'active,upcoming' }
   });
 
   const [triggerGetCategories] = useLazyGetCategoriesQuery();
