@@ -19,7 +19,7 @@ import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
-import { getStatusColor, donationPaymentModes, donationStatuses } from '../../../../utils/tableUtils';
+import { getStatusColor, getPaymentModeColor, donationPaymentModes, donationStatuses } from '../../../../utils/tableUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -409,6 +409,7 @@ const Reports = () => {
     { label: 'Cause / Purpose' },
     { label: 'Gaushala / Katha' },
     { label: 'Location' },
+    { label: 'Mode', className: 'text-center' },
     { label: 'Amount', className: 'text-right' },
     { label: 'Status' },
     { label: 'Donation Date' },
@@ -486,12 +487,14 @@ const Reports = () => {
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="text-sm text-gray-700">{donation.donor?.city || '-'}, {donation.donor?.state || '-'}</div>
             </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6 text-center">
+              <span className={`text-xs font-bold uppercase ${getPaymentModeColor(donation.paymentMode)}`}>{donation.paymentMode || '-'}</span>
+            </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6 text-right">
               <div className="inline-flex items-center justify-end gap-0.5 text-sm font-bold text-blue-700">
                 <IndianRupee className="w-3.5 h-3.5" />
                 {Number(donation.amount || 0).toLocaleString('en-IN')}
               </div>
-              <div className="text-[10px] text-gray-500 uppercase">{donation.paymentMode}</div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <span className={`text-xs font-bold uppercase ${getStatusColor(donation.status)}`}>
