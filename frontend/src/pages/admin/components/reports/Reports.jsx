@@ -393,11 +393,7 @@ const Reports = () => {
       label: 'Status',
       type: 'select',
       icon: CreditCard,
-      options: [
-        { value: 'pending', label: 'Pending' },
-        ...donationStatuses.map(s => ({ value: s.id, label: s.name })),
-        { value: 'failed', label: 'Failed' }
-      ]
+      options: donationStatuses.map(s => ({ value: s.id, label: s.name }))
     },
     { name: 'startDate', label: 'Donation From Date', type: 'date', icon: Calendar },
     { name: 'endDate', label: 'Donation To Date', type: 'date', icon: Calendar },
