@@ -39,6 +39,9 @@ const Donation = () => {
       categoryId: '',
       city: '',
       slipNo: '',
+      paymentMode: '',
+      paymentStartDate: '',
+      paymentEndDate: '',
       gaushalaId: searchParams.get('gaushalaId') || '',
       kathaId: searchParams.get('kathaId') || '',
       status: '',
@@ -148,12 +151,18 @@ const Donation = () => {
 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    setFilters(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value,
-      page: 1
-    }));
+
+    setFilters(prev => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+        page: 1
+      };
+      if (name === 'minAmount' && value !== '' && !isNaN(Number(value))) {
+        next.maxAmount = String(Number(value) + 1);
+      }
+      return next;
+    });
   };
 
   const handleClearFilters = () => {

@@ -293,7 +293,7 @@
     const handleAddInputChange = (e) => {
       const { name, value } = e.target;
 
-      if (name === 'name' || name === 'referenceName' || name === 'companyName' || name === 'notes') {
+      if (name === 'name' || name === 'referenceName' || name === 'companyName' || name === 'notes' || name === 'address') {
         const capitalized = value.replace(/\b\w/g, (c) => c.toUpperCase());
         setAddForm(prev => ({ ...prev, [name]: capitalized }));
         validateField(name, capitalized);

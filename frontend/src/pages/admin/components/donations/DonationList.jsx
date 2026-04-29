@@ -3,7 +3,7 @@ import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, 
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
-import { getStatusColor, getPaymentModeColor, donationStatuses } from '../../../../utils/tableUtils';
+import { getStatusColor, getPaymentModeColor, donationStatuses, donationPaymentModes } from '../../../../utils/tableUtils';
 import InstallmentTable from './InstallmentTable';
 
 const DonationList = ({
@@ -88,20 +88,18 @@ const DonationList = ({
       hasMore: categoryPagination.hasMore,
       loading: categoryPagination.loading
     },
-    { name: 'startDate', label: 'From Date', type: 'date', icon: Calendar },
-    { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
+    { name: 'startDate', label: 'Donation From Date', type: 'date', icon: Calendar },
+    { name: 'endDate', label: 'Donation To Date', type: 'date', icon: Calendar },
+    { name: 'paymentStartDate', label: 'Payment From Date', type: 'date', icon: Calendar },
+    { name: 'paymentEndDate', label: 'Payment To Date', type: 'date', icon: Calendar },
     { name: 'minAmount', label: 'Min Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 0' },
     { name: 'maxAmount', label: 'Max Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 10000+' },
     {
-      name: 'status',
-      label: 'Status',
+      name: 'paymentMode',
+      label: 'Payment Mode',
       type: 'select',
       icon: CreditCard,
-      options: [
-        { value: 'pending', label: 'Pending' },
-        ...donationStatuses.map(s => ({ value: s.id, label: s.name })),
-        { value: 'failed', label: 'Failed' }
-      ]
+      options: donationPaymentModes.map(m => ({ value: m.id, label: m.name }))
     },
   ];
 

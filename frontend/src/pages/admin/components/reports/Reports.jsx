@@ -19,7 +19,7 @@ import AdminPageHeader from '../../../../components/common/AdminPageHeader';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
-import { getStatusColor } from '../../../../utils/tableUtils';
+import { getStatusColor, donationPaymentModes, donationStatuses } from '../../../../utils/tableUtils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import * as XLSX from 'xlsx';
@@ -72,13 +72,17 @@ const Reports = () => {
       maxAmount: '',
       categoryId: '',
       city: '',
+      slipNo: '',
+      paymentMode: '',
+      paymentStartDate: '',
+      paymentEndDate: '',
       gaushalaId: '',
       kathaId: '',
       status: '',
       page: 1,
       limit: 10,
       fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,donorId,gaushalaId,kathaId'
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,donationDate,referenceName,donorId,gaushalaId,kathaId,slipNo'
     },
     allLimit: 1000,
   });
@@ -154,12 +158,18 @@ const Reports = () => {
 
   const handleFilterChange = (e) => {
     const { name, value, type, checked } = e.target;
-    
-    setFilters(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value,
-      page: 1
-    }));
+
+    setFilters(prev => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value,
+        page: 1
+      };
+      if (name === 'minAmount' && value !== '' && !isNaN(Number(value))) {
+        next.maxAmount = String(Number(value) + 1);
+      }
+      return next;
+    });
   };
 
   const handleClearFilters = () => {
@@ -178,6 +188,7 @@ const Reports = () => {
     }
 
     const exportData = exportDonations.map(d => ({
+      'Slip No': d.slipNo || '-',
       'Donor Name': d.donor?.name || '-',
       'Mobile': d.donor?.mobileNumber || '-',
       'Cause': d.cause || '-',
@@ -187,7 +198,8 @@ const Reports = () => {
       'Mode': d.paymentMode?.toUpperCase() || '-',
       'Amount': d.amount,
       'Status': d.status?.toUpperCase() || '-',
-      'Date': d.paymentDate ? new Date(d.paymentDate).toLocaleDateString() : '-'
+      'Donation Date': d.donationDate ? new Date(d.donationDate).toLocaleDateString() : '-',
+      'Payment Date': d.paymentDate ? new Date(d.paymentDate).toLocaleDateString() : '-'
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -281,15 +293,17 @@ const Reports = () => {
       yPos += 5;
     }
 
-    const tableHeaders = [['Donor Name', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Date']];
+    const tableHeaders = [['Slip No', 'Donor Name', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Donation Date', 'Payment Date']];
 
     const tableData = exportDonations.map(d => [
+      d.slipNo || '-',
       d.donor?.name || '-',
       (d.gaushala?.name || d.katha?.name || '-'),
       `${d.donor?.city || ''}, ${d.donor?.state || ''}`,
       d.paymentMode?.toUpperCase() || '-',
       `Rs. ${Number(d.amount).toLocaleString('en-IN')}`,
       d.status?.toUpperCase() || '-',
+      d.donationDate ? new Date(d.donationDate).toLocaleDateString() : '-',
       d.paymentDate ? new Date(d.paymentDate).toLocaleDateString() : '-'
     ]);
 
@@ -329,6 +343,7 @@ const Reports = () => {
 
   const filterFields = [
     { name: 'search', label: 'Search Donor', icon: Search, placeholder: 'Name, Email or Mobile...' },
+    { name: 'slipNo', label: 'Slip Number', icon: Tag, placeholder: 'Search by slip no...' },
     { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     { 
       name: 'gaushalaId', 
@@ -366,30 +381,41 @@ const Reports = () => {
       hasMore: categoryPagination.hasMore,
       loading: categoryPagination.loading
     },
-    { 
-      name: 'status', 
-      label: 'Payment Status', 
-      type: 'select', 
+    {
+      name: 'paymentMode',
+      label: 'Payment Mode',
+      type: 'select',
+      icon: CreditCard,
+      options: donationPaymentModes.map(m => ({ value: m.id, label: m.name }))
+    },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select',
       icon: CreditCard,
       options: [
-        { value: 'completed', label: 'Completed' },
         { value: 'pending', label: 'Pending' },
+        ...donationStatuses.map(s => ({ value: s.id, label: s.name })),
         { value: 'failed', label: 'Failed' }
       ]
     },
-    { name: 'startDate', label: 'From Date', type: 'date', icon: Calendar },
-    { name: 'endDate', label: 'To Date', type: 'date', icon: Calendar },
+    { name: 'startDate', label: 'Donation From Date', type: 'date', icon: Calendar },
+    { name: 'endDate', label: 'Donation To Date', type: 'date', icon: Calendar },
+    { name: 'paymentStartDate', label: 'Payment From Date', type: 'date', icon: Calendar },
+    { name: 'paymentEndDate', label: 'Payment To Date', type: 'date', icon: Calendar },
     { name: 'minAmount', label: 'Min Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 0' },
     { name: 'maxAmount', label: 'Max Amount', type: 'number', icon: IndianRupee, placeholder: '₹ 10000+' },
   ];
 
   const tableHeaders = [
+    { label: 'Slip No' },
     { label: 'Donor Name' },
     { label: 'Cause / Purpose' },
     { label: 'Gaushala / Katha' },
     { label: 'Location' },
     { label: 'Amount', className: 'text-right' },
     { label: 'Status' },
+    { label: 'Donation Date' },
     { label: 'Payment Date' },
   ];
 
@@ -444,6 +470,9 @@ const Reports = () => {
       >
         {donations.map((donation) => (
           <tr key={donation.id} className="hover:bg-gray-50 transition">
+            <td className="p-3 sm:p-4 px-4 sm:px-6 text-sm font-semibold text-gray-700">
+              {donation.slipNo || '-'}
+            </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="font-medium text-gray-800 text-sm">{donation.donor?.name}</div>
               <div className="text-[10px] text-gray-500">{donation.donor?.mobileNumber}</div>
@@ -472,6 +501,11 @@ const Reports = () => {
               <span className={`text-xs font-bold uppercase ${getStatusColor(donation.status)}`}>
                 {donation.status}
               </span>
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
+              <div className="text-sm text-gray-700">
+                {donation.donationDate ? new Date(donation.donationDate).toLocaleDateString() : '-'}
+              </div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="text-sm text-gray-700">

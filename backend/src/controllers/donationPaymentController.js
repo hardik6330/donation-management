@@ -147,13 +147,13 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
 
     const donation = await Donation.create(donationData, { transaction: t });
 
-    if (isDirectPay || isPartialPay) {
+    if (isPartialPay) {
       await DonationInstallment.create({
         donationId: donation.id,
-        amount: isPartialPay ? partialPaidAmount : amount,
+        amount: partialPaidAmount,
         paymentMode: paymentMode,
         paymentDate: paymentDate ? new Date(paymentDate) : null,
-        notes: isPartialPay ? 'Initial partial payment' : 'Full payment'
+        notes: 'Initial partial payment'
       }, { transaction: t });
     }
 
