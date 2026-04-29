@@ -101,6 +101,13 @@ const DonationList = ({
       icon: CreditCard,
       options: donationPaymentModes.map(m => ({ value: m.id, label: m.name }))
     },
+    {
+      name: 'status',
+      label: 'Status',
+      type: 'select',
+      icon: Tag,
+      options: donationStatuses.map(s => ({ value: s.id, label: s.name }))
+    },
   ];
 
   return (
@@ -182,13 +189,15 @@ const DonationList = ({
               </td>
               <td className="p-4 px-6">
                 <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => toggleExpand(donation.id)}
-                    className={`p-1.5 rounded-lg transition-colors ${expandedRowId === donation.id ? 'bg-blue-100 text-blue-700' : 'text-gray-400 hover:bg-gray-100'}`}
-                    title="View History"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
+                  {Number(donation.installmentCount) > 0 && (
+                    <button
+                      onClick={() => toggleExpand(donation.id)}
+                      className={`p-1.5 rounded-lg transition-colors ${expandedRowId === donation.id ? 'bg-blue-100 text-blue-700' : 'text-gray-400 hover:bg-gray-100'}`}
+                      title="View History"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
                   {donation.status === 'completed' && (
                     <button
                       onClick={() => onDownloadSlip(donation)}
