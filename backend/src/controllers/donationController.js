@@ -20,9 +20,16 @@ export const getDonations = asyncHandler(async (req, res) => {
 
   const { whereClause, donorWhere } = await buildDonationFilter(req.query, '');
 
+  const installmentCountAttr = [
+    sequelize.literal('(SELECT COUNT(*) FROM `DonationInstallments` AS `di` WHERE `di`.`donationId` = `Donation`.`id`)'),
+    'installmentCount'
+  ];
+
   const { count, rows: donations } = await Donation.findAndCountAll({
     where: whereClause,
-    attributes: mainAttributes,
+    attributes: Array.isArray(mainAttributes)
+      ? [...mainAttributes, installmentCountAttr]
+      : { include: [installmentCountAttr] },
     include: [{
       model: User,
       as: 'donor',
