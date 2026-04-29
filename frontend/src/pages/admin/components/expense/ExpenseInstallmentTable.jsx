@@ -41,13 +41,22 @@ const ExpenseInstallmentTable = ({ expenseId }) => {
               <td className="px-6 py-3">
                 <div className="flex items-center gap-2 text-gray-700">
                   <Calendar className="w-3.5 h-3.5 text-gray-400" />
-                  {new Date(inst.paymentDate).toLocaleDateString('en-IN', {
-                    day: '2-digit',
-                    month: 'short',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })}
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {new Date(inst.paymentDate).toLocaleDateString('en-IN', {
+                        day: '2-digit',
+                        month: 'short',
+                        year: 'numeric'
+                      })}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      {new Date(inst.createdAt).toLocaleTimeString('en-IN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: true
+                      })}
+                    </span>
+                  </div>
                 </div>
               </td>
               <td className="px-6 py-3">

@@ -1,4 +1,5 @@
 import { Op } from 'sequelize';
+import { sequelize } from '../config/db.js';
 
 /**
  * Builds a common search filter for multiple fields
@@ -25,7 +26,8 @@ export const buildSearchFilter = (fields, term) => {
 export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
   const { 
     search, startDate, endDate, minAmount, maxAmount, 
-    categoryId, status, city, state, country, gaushalaId, kathaId, slipNo
+    categoryId, status, city, state, country, gaushalaId, kathaId, slipNo,
+    slipNoFrom, slipNoTo
   } = query;
 
   let whereClause = {};
@@ -115,9 +117,26 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
     whereClause.categoryId = categoryId;
   }
 
-  // 7. Slip Number Filter
+  // 7. Slip Number Filter (legacy partial match)
   if (slipNo) {
     whereClause.slipNo = { [Op.like]: `%${slipNo}%` };
+  }
+
+  // 7b. Slip Number Range Filter (numeric)
+  // - slipNoFrom alone: exact match
+  // - slipNoFrom + slipNoTo: between range
+  // - slipNoTo alone: <= slipNoTo
+  if (slipNoFrom || slipNoTo) {
+    const rangeConds = [];
+    const slipCol = sequelize.cast(sequelize.col('Donation.slipNo'), 'UNSIGNED');
+    if (slipNoFrom && slipNoTo) {
+      rangeConds.push(sequelize.where(slipCol, { [Op.between]: [Number(slipNoFrom), Number(slipNoTo)] }));
+    } else if (slipNoFrom) {
+      rangeConds.push(sequelize.where(slipCol, { [Op.eq]: Number(slipNoFrom) }));
+    } else if (slipNoTo) {
+      rangeConds.push(sequelize.where(slipCol, { [Op.lte]: Number(slipNoTo) }));
+    }
+    whereClause[Op.and] = (whereClause[Op.and] || []).concat(rangeConds);
   }
 
   return { whereClause, donorWhere };

@@ -2,6 +2,7 @@ import { User, Donation, Gaushala, Katha, Announcement, Sevak } from '../models/
 import { sendSuccess } from '../utils/apiResponse.js';
 import { getPaginationParams, getPaginatedResponse, processFields } from '../utils/pagination.js';
 import { buildDonationFilter } from '../utils/filterHelper.js';
+import { sequelize } from '../config/db.js';
 import { Op, fn, col } from 'sequelize';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { processPendingNotifications } from '../utils/services/notification.service.js';
@@ -195,10 +196,20 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
   const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
 
+  const filteredMainAttributes = Array.isArray(mainAttributes)
+    ? mainAttributes.filter(attr => attr !== 'installmentCount')
+    : mainAttributes;
+
+  const installmentCountAttr = [
+    sequelize.literal('(SELECT COUNT(*) FROM `DonationInstallments` AS `di` WHERE `di`.`donationId` = `Donation`.`id`)'),
+    'installmentCount'
+  ];
+
   const {
     gaushalaId, kathaId, categoryId, status, 
     startDate, endDate, minAmount, maxAmount, search,
-    city, state, country, slipNo, paymentMode, paymentStartDate, paymentEndDate
+    city, state, country, slipNo, paymentMode, paymentStartDate, paymentEndDate,
+    slipNoFrom, slipNoTo
   } = req.query;
 
   const activeScopes = [
@@ -211,12 +222,15 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
     { method: ['searchDonor', search] },
     { method: ['byDonorLocation', city, state, country] },
     { method: ['bySlipNo', slipNo] },
+    { method: ['bySlipNoRange', slipNoFrom, slipNoTo] },
     { method: ['byPaymentMode', paymentMode] },
     { method: ['byPaymentDateRange', paymentStartDate, paymentEndDate] }
   ].filter(s => s !== null && s !== undefined);
 
   const { count, rows: donations } = await Donation.scope(activeScopes).findAndCountAll({
-    attributes: mainAttributes,
+    attributes: Array.isArray(filteredMainAttributes)
+      ? [...filteredMainAttributes, installmentCountAttr]
+      : { include: [installmentCountAttr] },
     include: [
       {
         model: User,

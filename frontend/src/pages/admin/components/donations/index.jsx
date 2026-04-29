@@ -39,6 +39,8 @@ const Donation = () => {
       categoryId: '',
       city: '',
       slipNo: '',
+      slipNoFrom: '',
+      slipNoTo: '',
       paymentMode: '',
       paymentStartDate: '',
       paymentEndDate: '',
@@ -48,7 +50,7 @@ const Donation = () => {
       page: 1,
       limit: 10,
       fetchAll: false,
-      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,donationDate,slipNo,categoryId,gaushalaId,kathaId,notes'
+      fields: 'id,amount,cause,status,paymentMode,createdAt,paymentDate,referenceName,slipUrl,paidAmount,remainingAmount,donationDate,slipNo,categoryId,gaushalaId,kathaId,notes,installmentCount'
     }
   });
 
@@ -79,15 +81,19 @@ const Donation = () => {
   // When the worker reports the slip is ready, stop polling and refresh the list.
   // Guarded by a ref so this runs once per donation id and doesn't loop.
   const handledIdRef = useRef(null);
-  if (
-    pendingDonationId &&
-    statusData?.data?.ready &&
-    handledIdRef.current !== pendingDonationId
-  ) {
-    handledIdRef.current = pendingDonationId;
-    setPendingDonationId(null);
-    refetchDonations();
-  }
+  useEffect(() => {
+      if (
+        pendingDonationId &&
+        statusData?.data?.ready &&
+        handledIdRef.current !== pendingDonationId
+      ) {
+        handledIdRef.current = pendingDonationId;
+        setTimeout(() => {
+          setPendingDonationId(null);
+          refetchDonations();
+        }, 0);
+      }
+    }, [pendingDonationId, statusData, refetchDonations]);
 
   // Safety: auto-stop focused polling after 30s regardless of outcome.
   const startSlipPolling = (id) => {

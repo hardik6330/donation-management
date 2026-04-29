@@ -73,6 +73,8 @@ const Reports = () => {
       categoryId: '',
       city: '',
       slipNo: '',
+      slipNoFrom: '',
+      slipNoTo: '',
       paymentMode: '',
       paymentStartDate: '',
       paymentEndDate: '',
@@ -343,7 +345,8 @@ const Reports = () => {
 
   const filterFields = [
     { name: 'search', label: 'Search Donor', icon: Search, placeholder: 'Name, Email or Mobile...' },
-    { name: 'slipNo', label: 'Slip Number', icon: Tag, placeholder: 'Search by slip no...' },
+    { name: 'slipNoFrom', label: 'Slip No From', type: 'number', icon: Tag, placeholder: 'From' },
+    { name: 'slipNoTo', label: 'Slip No To', type: 'number', icon: Tag, placeholder: 'To' },
     { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     { 
       name: 'gaushalaId', 

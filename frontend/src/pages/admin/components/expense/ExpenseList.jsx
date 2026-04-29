@@ -3,7 +3,7 @@ import {
   Calendar, IndianRupee, Edit, Trash2, Tag, Building2, Mic2, CreditCard, Activity, PlusCircle, Eye
 } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
-import { getPaymentModeColor, paymentModes, expenseStatuses } from '../../../../utils/tableUtils';
+import { getStatusColor, getPaymentModeColor, paymentModes, expenseStatuses } from '../../../../utils/tableUtils';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
 import ExpenseInstallmentTable from './ExpenseInstallmentTable';
@@ -43,19 +43,6 @@ const ExpenseList = ({
     { label: 'Description' },
     { label: 'Actions' }
   ];
-
-  const statusBadge = (status) => {
-    if (status === 'completed') return 'bg-green-100 text-green-700';
-    if (status === 'pay_later') return 'bg-gray-200 text-gray-700';
-    if (status === 'partially_paid') return 'bg-orange-100 text-orange-700';
-    return 'bg-gray-100 text-gray-600';
-  };
-  const statusLabel = (status) => {
-    if (status === 'completed') return 'Completed';
-    if (status === 'pay_later') return 'Pay Later';
-    if (status === 'partially_paid') return 'Partially Paid';
-    return status || '-';
-  };
   
   const filterFields = [
     {
@@ -164,8 +151,8 @@ const ExpenseList = ({
               </span>
             </td>
             <td className="p-4 px-6 text-center">
-              <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${statusBadge(expense.status)}`}>
-                {statusLabel(expense.status)}
+              <span className={`text-xs font-bold uppercase ${getStatusColor(expense.status)}`}>
+                {expense.status === 'partially_paid' ? 'Partial' : (expense.status === 'pay_later' ? 'Pay Later' : expense.status)}
               </span>
             </td>
             <td className="p-4 px-6 text-sm text-gray-500 max-w-xs truncate">
@@ -173,7 +160,7 @@ const ExpenseList = ({
             </td>
             <td className="p-4 px-6">
               <div className="flex items-center gap-2">
-                {(expense.status === 'partially_paid' || expense.status === 'completed') && (
+                {(Number(expense.installmentCount) > 0 || expense.status === 'partially_paid') && (
                   <button
                     onClick={() => toggleExpand(expense.id)}
                     className={`p-1.5 rounded-lg transition-colors ${expandedRowId === expense.id ? 'bg-blue-100 text-blue-700' : 'text-gray-400 hover:bg-gray-100'}`}

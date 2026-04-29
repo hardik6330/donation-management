@@ -37,14 +37,14 @@ export const addExpense = asyncHandler(async (req, res) => {
     remainingAmount: payment.remainingAmount,
   });
 
-  // Log initial installment for any paid amount
-  if (Number(payment.paidAmount) > 0) {
+  // Log initial installment only for partial payments
+  if (finalStatus === 'partially_paid' && Number(payment.paidAmount) > 0) {
     await ExpenseInstallment.create({
       expenseId: expense.id,
       amount: Number(payment.paidAmount),
       paymentMode: paymentMode || 'cash',
       paymentDate: date || new Date(),
-      notes: finalStatus === 'completed' ? 'Full payment' : 'Initial partial payment',
+      notes: 'Initial partial payment',
     });
   }
 
@@ -80,6 +80,11 @@ export const getAllExpenses = asyncHandler(async (req, res) => {
     where.status = status;
   }
 
+  const installmentCountAttr = [
+    sequelize.literal('(SELECT COUNT(*) FROM `ExpenseInstallments` AS `ei` WHERE `ei`.`expenseId` = `Expense`.`id`)'),
+    'installmentCount'
+  ];
+
   if (minAmount || maxAmount) {
     where.amount = {};
     if (minAmount) where.amount[Op.gte] = minAmount;
@@ -88,6 +93,9 @@ export const getAllExpenses = asyncHandler(async (req, res) => {
 
   const { count, rows } = await Expense.scope(activeScopes).findAndCountAll({
     where,
+    attributes: {
+      include: [installmentCountAttr]
+    },
     include: [
       { model: Gaushala, as: 'gaushala', attributes: ['id', 'name'] },
       { model: Katha, as: 'katha', attributes: ['id', 'name'] }
@@ -127,8 +135,8 @@ export const updateExpense = asyncHandler(async (req, res) => {
     updateData.remainingAmount = payment.remainingAmount;
   }
 
-  // Log installment for any increase in paidAmount
-  if (updateData.paidAmount !== undefined) {
+  // Log installment only for partial payment updates
+  if (updateData.paidAmount !== undefined && updateData.status === 'partially_paid') {
     const newPaid = Number(updateData.paidAmount);
     if (newPaid > prevPaid) {
       await ExpenseInstallment.create({
@@ -136,7 +144,7 @@ export const updateExpense = asyncHandler(async (req, res) => {
         amount: newPaid - prevPaid,
         paymentMode: updateData.paymentMode || expense.paymentMode || 'cash',
         paymentDate: new Date(),
-        notes: updateData.status === 'completed' ? 'Final payment' : 'Partial payment installment',
+        notes: 'Partial payment installment',
       });
     }
   }

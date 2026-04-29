@@ -18,6 +18,10 @@ export const getDonations = asyncHandler(async (req, res) => {
   const { page, limit, isFetchAll, queryLimit, offset, requestedFields } = getPaginationParams(req.query);
   const { mainAttributes, includeAttributes } = processFields(requestedFields, 'donor');
 
+  const filteredMainAttributes = Array.isArray(mainAttributes)
+    ? mainAttributes.filter(attr => attr !== 'installmentCount')
+    : mainAttributes;
+
   const { whereClause, donorWhere } = await buildDonationFilter(req.query, '');
 
   const installmentCountAttr = [
@@ -27,8 +31,8 @@ export const getDonations = asyncHandler(async (req, res) => {
 
   const { count, rows: donations } = await Donation.findAndCountAll({
     where: whereClause,
-    attributes: Array.isArray(mainAttributes)
-      ? [...mainAttributes, installmentCountAttr]
+    attributes: Array.isArray(filteredMainAttributes)
+      ? [...filteredMainAttributes, installmentCountAttr]
       : { include: [installmentCountAttr] },
     include: [{
       model: User,

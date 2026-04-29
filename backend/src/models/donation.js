@@ -155,6 +155,15 @@ export const Donation = sequelize.define('Donation', {
       if (!slipNo) return {};
       return { where: { slipNo: { [Op.like]: `%${slipNo}%` } } };
     },
+    bySlipNoRange(from, to) {
+      if (!from && !to) return {};
+      const slipCol = sequelize.cast(sequelize.col('Donation.slipNo'), 'UNSIGNED');
+      let cond;
+      if (from && to) cond = sequelize.where(slipCol, { [Op.between]: [Number(from), Number(to)] });
+      else if (from) cond = sequelize.where(slipCol, { [Op.eq]: Number(from) });
+      else cond = sequelize.where(slipCol, { [Op.lte]: Number(to) });
+      return { where: cond };
+    },
     byDonorLocation(city, state, country) {
       if (!city && !state && !country) return {};
       const where = {};

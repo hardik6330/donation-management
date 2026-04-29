@@ -50,7 +50,8 @@ const DonationList = ({
 
   const filterFields = [
     { name: 'search', label: 'Search Donor', icon: Search, placeholder: 'Name, Email or Mobile...' },
-    { name: 'slipNo', label: 'Slip Number', icon: Tag, placeholder: 'Search by slip no...' },
+    { name: 'slipNoFrom', label: 'Slip No From', type: 'number', icon: Tag, placeholder: 'From' },
+    { name: 'slipNoTo', label: 'Slip No To', type: 'number', icon: Tag, placeholder: 'To' },
     { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
     {
       name: 'gaushalaId',
@@ -189,7 +190,7 @@ const DonationList = ({
               </td>
               <td className="p-4 px-6">
                 <div className="flex items-center gap-2">
-                  {Number(donation.installmentCount) > 0 && (
+                  {(Number(donation.installmentCount) > 0 || donation.status === 'partially_paid') && (
                     <button
                       onClick={() => toggleExpand(donation.id)}
                       className={`p-1.5 rounded-lg transition-colors ${expandedRowId === donation.id ? 'bg-blue-100 text-blue-700' : 'text-gray-400 hover:bg-gray-100'}`}
