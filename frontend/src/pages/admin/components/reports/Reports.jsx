@@ -198,8 +198,8 @@ const Reports = () => {
       'Mode': d.paymentMode?.toUpperCase() || '-',
       'Amount': d.amount,
       'Status': d.status?.toUpperCase() || '-',
-      'Donation Date': d.donationDate ? new Date(d.donationDate).toLocaleDateString() : '-',
-      'Payment Date': d.paymentDate ? new Date(d.paymentDate).toLocaleDateString() : '-'
+      'Donation Date': d.donationDate ? new Date(d.donationDate).toLocaleDateString('en-GB') : '-',
+      'Payment Date': d.paymentDate ? new Date(d.paymentDate).toLocaleDateString('en-GB') : '-'
     }));
 
     const ws = XLSX.utils.json_to_sheet(exportData);
@@ -303,8 +303,8 @@ const Reports = () => {
       d.paymentMode?.toUpperCase() || '-',
       `Rs. ${Number(d.amount).toLocaleString('en-IN')}`,
       d.status?.toUpperCase() || '-',
-      d.donationDate ? new Date(d.donationDate).toLocaleDateString() : '-',
-      d.paymentDate ? new Date(d.paymentDate).toLocaleDateString() : '-'
+      d.donationDate ? new Date(d.donationDate).toLocaleDateString('en-GB') : '-',
+      d.paymentDate ? new Date(d.paymentDate).toLocaleDateString('en-GB') : '-'
     ]);
 
     autoTable(doc, {
@@ -500,12 +500,12 @@ const Reports = () => {
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="text-sm text-gray-700">
-                {donation.donationDate ? new Date(donation.donationDate).toLocaleDateString() : '-'}
+                {donation.donationDate ? new Date(donation.donationDate).toLocaleDateString('en-GB') : '-'}
               </div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="text-sm text-gray-700">
-                {donation.paymentDate ? new Date(donation.paymentDate).toLocaleDateString() : '-'}
+                {donation.paymentDate ? new Date(donation.paymentDate).toLocaleDateString('en-GB') : '-'}
               </div>
             </td>
           </tr>
