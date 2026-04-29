@@ -113,6 +113,9 @@ export const getDonors = asyncHandler(async (req, res) => {
   if (mobileNumber) donorWhere.mobileNumber = { [Op.like]: `%${mobileNumber}%` };
   if (city) donorWhere.city = { [Op.like]: `%${city}%` };
   if (state) donorWhere.state = { [Op.like]: `%${state}%` };
+  if (req.query.requireMobile === 'true') {
+    donorWhere.mobileNumber = { [Op.and]: [{ [Op.ne]: null }, { [Op.ne]: '' }] };
+  }
 
   if (cityId || stateId || countryId) {
     const targetId = cityId || stateId || countryId;

@@ -19,7 +19,8 @@ const AnnouncementPage = () => {
   const donorPagination = useDropdownPagination(triggerGetDonors, {
     limit: 20,
     fields: 'id,name,mobileNumber,donationCount,lastMessage,lastMessageTime,city',
-    skip: userType !== 'donor'
+    skip: userType !== 'donor',
+    additionalParams: { requireMobile: 'true' }
   });
 
   const [triggerGetSevaks] = useLazyGetSevaksQuery();
