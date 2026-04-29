@@ -495,7 +495,7 @@ const Reports = () => {
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <span className={`text-xs font-bold uppercase ${getStatusColor(donation.status)}`}>
-                {donation.status}
+                {donation.status?.replace(/_/g, ' ')}
               </span>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
