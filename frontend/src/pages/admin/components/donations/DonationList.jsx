@@ -129,17 +129,17 @@ const DonationList = ({
         {donations.map((donation) => (
           <React.Fragment key={donation.id}>
             <tr className={`hover:bg-gray-50 transition ${expandedRowId === donation.id ? 'bg-blue-50/30' : ''}`}>
-              <td className="p-4 px-6 text-sm font-semibold text-gray-700">
+              <td className="p-3 px-3 text-sm font-semibold text-gray-700">
                 {donation.slipNo || '-'}
               </td>
-              <td className="p-4 px-6">
+              <td className="p-3 px-3">
                 <div className="text-sm font-bold text-gray-800">{donation.donor?.name || 'Anonymous'}</div>
                 <div className="text-[10px] text-gray-400">{donation.donor?.email || ''}</div>
               </td>
-              <td className="p-4 px-6">
+              <td className="p-3 px-3">
                 <div className="text-sm text-gray-700 font-medium line-clamp-2">{donation.cause || 'General Donation'}</div>
               </td>
-              <td className="p-4 px-6">
+              <td className="p-3 px-3">
                 {donation.gaushala?.name ? (
                   <span className="text-xs font-bold text-green-600 uppercase">Gaushala: {donation.gaushala.name}</span>
                 ) : donation.katha?.name ? (
@@ -148,19 +148,19 @@ const DonationList = ({
                   <span className="text-gray-400">-</span>
                 )}
               </td>
-              <td className="p-4 px-6">
+              <td className="p-3 px-3">
                 <div className="text-sm text-gray-700">{donation.donor?.city || '-'}</div>
                 <div className="text-[10px] text-gray-400">{donation.donor?.state || ''}</div>
               </td>
-              <td className="p-4 px-6 text-sm text-gray-600 italic">
+              <td className="p-3 px-3 text-sm text-gray-600 italic">
                 {donation.referenceName || '-'}
               </td>
-              <td className="p-4 px-6 text-center">
+              <td className="p-3 px-3 text-center">
                 <span className={`text-xs font-bold uppercase ${getPaymentModeColor(donation.paymentMode)}`}>
                   {donation.paymentMode}
                 </span>
               </td>
-              <td className="p-4 px-6 text-right font-bold">
+              <td className="p-3 px-3 text-right font-bold">
                 <div className="flex items-center justify-end gap-0.5 text-blue-600">
                   <IndianRupee className="w-3.5 h-3.5" />
                   {Number(donation.amount).toLocaleString('en-IN')}
@@ -176,20 +176,20 @@ const DonationList = ({
                   </div>
                 )}
               </td>
-              <td className="p-4 px-6 text-center">
+              <td className="p-3 px-3 text-center">
                 <span className={`text-xs font-bold uppercase ${getStatusColor(donation.status)}`}>
                   {donation.status === 'partially_paid' ? 'Partial' : (donation.status === 'pay_later' ? 'Pay Later' : donation.status)}
                 </span>
               </td>
-              <td className="p-4 px-6 text-sm text-gray-500">
+              <td className="p-3 px-3 text-sm text-gray-500">
                 {new Date(donation.donationDate).toLocaleDateString('en-IN')}
               </td> 
-              <td className="p-4 px-6 text-sm text-gray-500">
+              <td className="p-3 px-3 text-sm text-gray-500">
                 {donation.paymentDate 
                   ? new Date(donation.paymentDate).toLocaleDateString('en-IN')
                   : "No Payment Yet"}
               </td>
-              <td className="p-4 px-6">
+              <td className="p-3 px-3">
                 <div className="flex items-center gap-2">
                   {(Number(donation.installmentCount) > 0 || donation.status === 'partially_paid') && (
                     <button

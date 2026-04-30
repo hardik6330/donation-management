@@ -15,7 +15,7 @@ const AdminTable = ({ headers, children, isLoading, emptyMessage = "No records f
               {headers.map((header, index) => (
                 <th 
                   key={index} 
-                  className={`p-4 px-6 font-bold ${header.className || ''}`}
+                  className={`p-3 px-3 font-bold ${header.className || ''}`}
                 >
                   {header.label}
                 </th>
