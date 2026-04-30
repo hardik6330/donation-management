@@ -76,17 +76,17 @@ export const getDonationStatus = asyncHandler(async (req, res) => {
 
 export const getLatestSlipNo = asyncHandler(async (req, res) => {
   try {
-    const lastDonation = await Donation.findOne({
-      where: { slipNo: { [Op.ne]: null } },
-      order: [['createdAt', 'DESC']],
-      attributes: ['slipNo']
+    // Pick the numeric MAX across the whole table — ordering by createdAt can
+    // return a stale value when older rows hold higher numbers. Use the model
+    // (not raw SQL) so the table name is resolved correctly regardless of
+    // MySQL's lower_case_table_names setting.
+    const result = await Donation.findOne({
+      attributes: [[sequelize.fn('MAX', sequelize.cast(sequelize.col('slipNo'), 'UNSIGNED')), 'maxSlip']],
+      where: sequelize.where(sequelize.col('slipNo'), { [Op.regexp]: '^[0-9]+$' }),
+      raw: true,
     });
-
-    let nextSlipNo = "1";
-    if (lastDonation && !isNaN(lastDonation.slipNo)) {
-      nextSlipNo = (parseInt(lastDonation.slipNo) + 1).toString();
-    }
-
+    const maxSlip = Number(result?.maxSlip || 0);
+    const nextSlipNo = (maxSlip + 1).toString();
     return sendSuccess(res, { nextSlipNo }, 'Latest slip number fetched successfully');
   } catch (error) {
     logger.error('[Donation] Error fetching latest slipNo:', error);
@@ -340,17 +340,43 @@ export const updateDonation = asyncHandler(async (req, res) => {
     updateData.status = finalPaidAmount === Number(nextAmount) ? 'completed' : 'partially_paid';
   }
 
+  // Auto-assign a slipNo on transition to completed if none exists and the
+  // caller didn't provide one (pay_later/partially_paid donations are stored
+  // without a slip number until they complete).
+  const willBeCompleted = updateData.status === 'completed';
+  const hasExistingSlip = !!(donation.slipNo && String(donation.slipNo).trim());
+  const incomingSlip = slipNo !== undefined && slipNo !== null && String(slipNo).trim() !== '';
+  if (willBeCompleted && !hasExistingSlip && !incomingSlip) {
+    const row = await Donation.findOne({
+      attributes: [[sequelize.fn('MAX', sequelize.cast(sequelize.col('slipNo'), 'UNSIGNED')), 'maxSlip']],
+      where: sequelize.where(sequelize.col('slipNo'), { [Op.regexp]: '^[0-9]+$' }),
+      raw: true,
+    });
+    updateData.slipNo = (Number(row?.maxSlip || 0) + 1).toString();
+  }
+
+  // Reject duplicate slipNo across donations.
+  if (updateData.slipNo && String(updateData.slipNo).trim() !== '' && updateData.slipNo !== donation.slipNo) {
+    const dup = await Donation.findOne({
+      where: { slipNo: String(updateData.slipNo).trim(), id: { [Op.ne]: donation.id } },
+      attributes: ['id']
+    });
+    if (dup) throw badRequest(`Slip number ${updateData.slipNo} is already in use`);
+  }
+
   if (updateData.paidAmount !== undefined) {
     const currentPaid = Number(donation.paidAmount || 0);
     const newPaid = Number(updateData.paidAmount);
     if (newPaid > currentPaid) {
       const installmentDate = paymentDate ? new Date(paymentDate) : null;
+      const existingCount = await DonationInstallment.count({ where: { donationId: donation.id } });
       await DonationInstallment.create({
         donationId: donation.id,
         amount: newPaid - currentPaid,
         paymentMode: nextPaymentMode,
         paymentDate: installmentDate,
-        notes: notes || (updateData.status === 'completed' ? 'Final payment' : 'Partial payment installment')
+        notes: notes || (updateData.status === 'completed' ? 'Final payment' : 'Partial payment installment'),
+        slipNo: `Part ${existingCount + 1}`
       });
       if (installmentDate) updateData.paymentDate = installmentDate;
     }

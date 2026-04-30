@@ -11,7 +11,7 @@ import {
   verifyPayment,
   generateQRCode
 } from '../controllers/donationPaymentController.js';
-import { resendSlipWhatsApp } from '../controllers/donationSlipController.js';
+import { resendSlipWhatsApp, generateInstallmentSlip } from '../controllers/donationSlipController.js';
 import { validate } from '../validators/validate.js';
 import { donationSchema, donationUpdateSchema } from '../validators/donation.validator.js';
 import { protect, adminOnly } from '../middlewares/auth.js';
@@ -27,5 +27,6 @@ router.get('/:id/installments', getDonationInstallments);
 router.get('/:id/status', getDonationStatus);
 router.put('/:id', validate(donationUpdateSchema), updateDonation);
 router.post('/:id/resend-whatsapp', protect, adminOnly, resendSlipWhatsApp);
+router.post('/:id/installments/:installmentId/slip', protect, adminOnly, generateInstallmentSlip);
 
 export default router;

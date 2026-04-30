@@ -209,7 +209,7 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
     gaushalaId, kathaId, categoryId, status, 
     startDate, endDate, minAmount, maxAmount, search,
     city, state, country, slipNo, paymentMode, paymentStartDate, paymentEndDate,
-    slipNoFrom, slipNoTo
+    slipNoFrom, slipNoTo, referenceName
   } = req.query;
 
   const activeScopes = [
@@ -223,6 +223,7 @@ export const getAllDonationsAdmin = asyncHandler(async (req, res) => {
     { method: ['byDonorLocation', city, state, country] },
     { method: ['bySlipNo', slipNo] },
     { method: ['bySlipNoRange', slipNoFrom, slipNoTo] },
+    { method: ['byReference', referenceName] },
     { method: ['byPaymentMode', paymentMode] },
     { method: ['byPaymentDateRange', paymentStartDate, paymentEndDate] }
   ].filter(s => s !== null && s !== undefined);

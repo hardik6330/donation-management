@@ -31,16 +31,29 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
   // Run the create inside a transaction; retry on slipNo unique-constraint collision
   // (multiple devices can race on MAX(slipNo)+1 — the DB unique index is the final
   // guarantee, this loop just regenerates a fresh number and retries).
+  const skipSlip = status === 'pay_later' || status === 'partially_paid';
+
   const runCreate = async () => sequelize.transaction(async (t) => {
-    let finalSlipNo = slipNo;
-    if (!finalSlipNo) {
+    let finalSlipNo = slipNo ? String(slipNo).trim() : null;
+    if (finalSlipNo) {
+      const dup = await Donation.findOne({ where: { slipNo: finalSlipNo }, attributes: ['id'], transaction: t });
+      if (dup) {
+        const err = new Error(`Slip number ${finalSlipNo} is already in use`);
+        err.statusCode = 400;
+        throw err;
+      }
+    }
+    if (!finalSlipNo && !skipSlip) {
       // Atomic max-based numbering: works across the whole table, not just the
       // most recent row by createdAt (which can tie to the second).
-      const [[row]] = await sequelize.query(
-        'SELECT COALESCE(MAX(CAST(slipNo AS UNSIGNED)), 0) AS maxSlip FROM donations WHERE slipNo REGEXP \'^[0-9]+$\' FOR UPDATE',
-        { transaction: t }
-      );
-      finalSlipNo = (Number(row.maxSlip || 0) + 1).toString();
+      const row = await Donation.findOne({
+        attributes: [[sequelize.fn('MAX', sequelize.cast(sequelize.col('slipNo'), 'UNSIGNED')), 'maxSlip']],
+        where: sequelize.where(sequelize.col('slipNo'), { [Op.regexp]: '^[0-9]+$' }),
+        lock: t.LOCK.UPDATE,
+        raw: true,
+        transaction: t,
+      });
+      finalSlipNo = (Number(row?.maxSlip || 0) + 1).toString();
     }
 
     let causeString = '';
@@ -153,7 +166,8 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         amount: partialPaidAmount,
         paymentMode: paymentMode,
         paymentDate: paymentDate ? new Date(paymentDate) : null,
-        notes: 'Initial partial payment'
+        notes: 'Initial partial payment',
+        slipNo: 'Part 1'
       }, { transaction: t });
     }
 

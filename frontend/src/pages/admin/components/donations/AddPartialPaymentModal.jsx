@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { IndianRupee, Loader2, PlusCircle, MessageSquare, CreditCard, Calendar } from 'lucide-react';
+import { IndianRupee, Loader2, PlusCircle, MessageSquare, CreditCard, Calendar, Tag } from 'lucide-react';
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 import { toast } from 'react-toastify';
@@ -7,7 +7,7 @@ import AdminModal from '../../../../components/common/AdminModal';
 import FormInput from '../../../../components/common/FormInput';
 import CustomDatePicker from '../../../../components/common/CustomDatePicker';
 import SearchableDropdown from '../../../../components/common/SearchableDropdown';
-import { useUpdateDonationMutation } from '../../../../services/donationApi';
+import { useUpdateDonationMutation, useGetLatestSlipNoQuery } from '../../../../services/donationApi';
 import { donationPaymentModes as paymentModes } from '../../../../utils/tableUtils';
 
 const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
@@ -18,11 +18,14 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const [paymentModeName, setPaymentModeName] = useState('Cash');
   const [paymentDate, setPaymentDate] = useState(todayISO());
   const [activeDropdown, setActiveDropdown] = useState(null);
+  const [slipNo, setSlipNo] = useState('');
+  const { data: latestSlipData } = useGetLatestSlipNoQuery(undefined, { skip: !isOpen });
 
   const paymentModeRef = useRef(null);
   const addAmountRef = useRef(null);
   const paymentDateRef = useRef(null);
   const notesRef = useRef(null);
+  const slipNoRef = useRef(null);
   const submitRef = useRef(null);
 
   const donationDateISO = donation?.donationDate
@@ -35,6 +38,7 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
       setNotes('');
       setPaymentMode('cash');
       setPaymentModeName('Cash');
+      setSlipNo('');
       const today = todayISO();
       const baseDate = donationDateISO || today;
       setPaymentDate(today > baseDate ? today : baseDate);
@@ -72,6 +76,21 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
   const numericAddAmount = Number((addAmount || '').replace(/,/g, '')) || 0;
   const updatedPaidAmount = currentPaidAmount + numericAddAmount;
   const updatedRemainingAmount = totalAmount - updatedPaidAmount;
+  const willComplete = numericAddAmount > 0 && updatedRemainingAmount === 0;
+
+  const slipAutofilledRef = useRef(false);
+  useEffect(() => {
+    if (!isOpen) { slipAutofilledRef.current = false; return; }
+    if (!willComplete) { slipAutofilledRef.current = false; return; }
+    if (slipAutofilledRef.current) return;
+    if (donation?.slipNo) { slipAutofilledRef.current = true; return; }
+    if (slipNo) { slipAutofilledRef.current = true; return; }
+    const next = latestSlipData?.success ? latestSlipData.data?.nextSlipNo : null;
+    if (next) {
+      slipAutofilledRef.current = true;
+      setSlipNo(next);
+    }
+  }, [isOpen, willComplete, latestSlipData, donation?.slipNo, slipNo]);
 
   const handleAddAmountChange = (e) => {
     const rawValue = e.target.value.replace(/,/g, '');
@@ -93,13 +112,20 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
       return;
     }
 
+    if (willComplete && !donation?.slipNo && !slipNo.trim()) {
+      toast.error('Slip number is required to complete this donation');
+      slipNoRef.current?.focus();
+      return;
+    }
+
     try {
       const result = await updateDonation({
         id: donation.id,
         paymentMode: paymentMode,
         remainingAmount: updatedRemainingAmount,
         paymentDate: paymentDate,
-        notes: notes
+        notes: notes,
+        ...(willComplete && slipNo.trim() ? { slipNo: slipNo.trim() } : {})
       }).unwrap();
 
       if (typeof onUpdated === 'function') onUpdated(result);
@@ -201,9 +227,23 @@ const AddPartialPaymentModal = ({ isOpen, onClose, donation, onUpdated }) => {
             onChange={(e) => setNotes(e.target.value)}
             icon={MessageSquare}
             inputRef={notesRef}
-            onKeyDown={(e) => handleKeyDown(e, submitRef, paymentDateRef)}
+            onKeyDown={(e) => handleKeyDown(e, willComplete && !donation?.slipNo ? slipNoRef : submitRef, paymentDateRef)}
           />
         </div>
+
+        {willComplete && !donation?.slipNo && (
+          <FormInput
+            label="Slip Number"
+            name="slipNo"
+            placeholder="Enter slip number"
+            required
+            value={slipNo}
+            onChange={(e) => setSlipNo(e.target.value)}
+            icon={Tag}
+            inputRef={slipNoRef}
+            onKeyDown={(e) => handleKeyDown(e, submitRef, notesRef)}
+          />
+        )}
 
         <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 space-y-1">
           <p className="text-xs text-blue-700 font-semibold">After Update</p>

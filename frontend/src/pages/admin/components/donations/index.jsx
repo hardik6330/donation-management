@@ -41,6 +41,7 @@ const Donation = () => {
       slipNo: '',
       slipNoFrom: '',
       slipNoTo: '',
+      referenceName: '',
       paymentMode: '',
       paymentStartDate: '',
       paymentEndDate: '',

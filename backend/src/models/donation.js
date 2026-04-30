@@ -164,6 +164,10 @@ export const Donation = sequelize.define('Donation', {
       else cond = sequelize.where(slipCol, { [Op.lte]: Number(to) });
       return { where: cond };
     },
+    byReference(referenceName) {
+      if (!referenceName) return {};
+      return { where: { referenceName: { [Op.like]: `%${referenceName}%` } } };
+    },
     byDonorLocation(city, state, country) {
       if (!city && !state && !country) return {};
       const where = {};

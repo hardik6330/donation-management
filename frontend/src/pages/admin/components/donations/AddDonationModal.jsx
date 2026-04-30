@@ -52,7 +52,7 @@
     const [createDonation, { isLoading: isAdding }] = useCreateOrderMutation();
     const [updateDonation, { isLoading: isUpdating }] = useUpdateDonationMutation();
     const { data: latestSlipData } = useGetLatestSlipNoQuery(undefined, {
-      skip: !isOpen || isEditMode
+      skip: !isOpen
     });
 
     const [addForm, setAddForm] = useState({
@@ -103,7 +103,7 @@
         if (!value || paid <= 0) error = 'Enter paid amount';
         else if (paid >= total) error = 'Paid amount must be less than total';
       } else if (name === 'slipNo') {
-        if (!value) error = 'Slip number is required';
+        if (addForm.status === 'completed' && !value) error = 'Slip number is required';
       }
       
       setErrors(prev => ({ ...prev, [name]: error }));
@@ -240,15 +240,41 @@
       }
     }, [existingSevak]);
 
-    // Auto-fill latest slip number
+    // Auto-fill latest slip number ONCE per modal-open / per transition to
+    // 'completed'. We track via a ref so manually clearing the field doesn't
+    // trigger a re-fill — once the user has touched it, we leave it alone.
+    const slipAutofilledRef = useRef(false);
+
     useEffect(() => {
-      if (isOpen && !isEditMode && latestSlipData?.success && latestSlipData.data?.nextSlipNo) {
-        setAddForm(prev => ({
-          ...prev,
-          slipNo: latestSlipData.data.nextSlipNo
-        }));
+      if (!isOpen) {
+        slipAutofilledRef.current = false;
+        return;
       }
-    }, [isOpen, latestSlipData, isEditMode]);
+      if (addForm.status !== 'completed') {
+        slipAutofilledRef.current = false;
+        return;
+      }
+      if (slipAutofilledRef.current) return;
+      if (addForm.slipNo) {
+        slipAutofilledRef.current = true;
+        return;
+      }
+      const next = latestSlipData?.success ? latestSlipData.data?.nextSlipNo : null;
+      if (next) {
+        slipAutofilledRef.current = true;
+        setAddForm(prev => (prev.slipNo ? prev : { ...prev, slipNo: next }));
+      }
+    }, [isOpen, latestSlipData, addForm.status, addForm.slipNo]);
+
+    // Clear slipNo when status moves away from completed so a stale number
+    // doesn't get sent for pay_later / partially_paid donations.
+    useEffect(() => {
+      if (!isOpen) return;
+      if (addForm.status === 'completed') return;
+      if (!addForm.slipNo) return;
+      setAddForm(prev => ({ ...prev, slipNo: '' }));
+      setErrors(prev => ({ ...prev, slipNo: '' }));
+    }, [isOpen, addForm.status]);
 
     // Prefill when editing an existing donation
     useEffect(() => {
@@ -409,7 +435,7 @@
       // Final Validation check
       const mobileErr = validateField('mobileNumber', addForm.mobileNumber);
       const nameErr = validateField('name', addForm.name);
-      const slipNoErr = validateField('slipNo', addForm.slipNo);
+      const slipNoErr = addForm.status === 'completed' ? validateField('slipNo', addForm.slipNo) : '';
       const amountErr = validateField('amount', addForm.amount);
       const paidAmountErr = addForm.status === 'partially_paid' ? validateField('paidAmount', addForm.paidAmount) : '';
 
@@ -453,7 +479,7 @@
             amount: Number(rawAmount),
             status: addForm.status,
             paymentMode: addForm.paymentMode,
-            slipNo: addForm.slipNo,
+            slipNo: addForm.status === 'completed' ? addForm.slipNo : null,
             categoryId: addForm.categoryId || null,
             paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
             donationDate: addForm.donationDate || null,
@@ -815,7 +841,7 @@
                     placeholder="0"
                     value={addForm.amount}
                     onChange={handleAddInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : slipNoRef, statusRef)}
+                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : (addForm.status === 'completed' ? slipNoRef : donationDateRef), statusRef)}
                     inputRef={amountRef}
                     icon={IndianRupee}
                     error={errors.amount}
@@ -828,7 +854,7 @@
                       placeholder="0"
                       value={addForm.paidAmount}
                       onChange={handleAddInputChange}
-                      onKeyDown={(e) => handleKeyDown(e, slipNoRef, amountRef)}
+                      onKeyDown={(e) => handleKeyDown(e, addForm.status === 'completed' ? slipNoRef : donationDateRef, amountRef)}
                       inputRef={paidAmountRef}
                       icon={IndianRupee}
                       error={errors.paidAmount}
@@ -836,18 +862,20 @@
                   )}
                 </div>
 
-                <FormInput
-                  label="Slip Number"
-                  name="slipNo"
-                  placeholder="Enter slip number"
-                  required
-                  value={addForm.slipNo}
-                  onChange={handleAddInputChange}
-                  onKeyDown={(e) => handleKeyDown(e, donationDateRef, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
-                  inputRef={slipNoRef}
-                  icon={Tag}
-                  error={errors.slipNo}
-                />
+                {addForm.status === 'completed' && (
+                  <FormInput
+                    label="Slip Number"
+                    name="slipNo"
+                    placeholder="Enter slip number"
+                    required
+                    value={addForm.slipNo}
+                    onChange={handleAddInputChange}
+                    onKeyDown={(e) => handleKeyDown(e, donationDateRef, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
+                    inputRef={slipNoRef}
+                    icon={Tag}
+                    error={errors.slipNo}
+                  />
+                )}
 
                 <div className="grid grid-cols-2 gap-4">
                   <CustomDatePicker
@@ -855,7 +883,7 @@
                     name="donationDate"
                     value={addForm.donationDate}
                     onChange={handleAddInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'pay_later' ? notesRef : paymentDateRef, slipNoRef)}
+                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'pay_later' ? notesRef : paymentDateRef, addForm.status === 'completed' ? slipNoRef : (addForm.status === 'partially_paid' ? paidAmountRef : amountRef))}
                     inputRef={donationDateRef}
                     icon={Calendar}
                   />

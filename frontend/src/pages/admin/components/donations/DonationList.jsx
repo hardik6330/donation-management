@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard, Trash2, Edit, PlusCircle, Eye, ChevronDown, ChevronUp, MessageCircle, MessageSquare, Loader2 } from 'lucide-react';
+import { Search, Calendar, IndianRupee, FileDown, MapPin, Building2, Mic2, Tag, CreditCard, Trash2, Edit, PlusCircle, Eye, ChevronDown, ChevronUp, MessageCircle, MessageSquare, Loader2, UserCheck } from 'lucide-react';
 import AdminTable from '../../../../components/common/AdminTable';
 import FilterSection from '../../../../components/common/FilterSection';
 import Pagination from '../../../../components/common/Pagination';
@@ -50,6 +50,7 @@ const DonationList = ({
 
   const filterFields = [
     { name: 'search', label: 'Search Donor', icon: Search, placeholder: 'Name, Email or Mobile...' },
+    { name: 'referenceName', label: 'Reference', icon: UserCheck, placeholder: 'Reference name...' },
     { name: 'slipNoFrom', label: 'Slip No From', type: 'number', icon: Tag, placeholder: 'From' },
     { name: 'slipNoTo', label: 'Slip No To', type: 'number', icon: Tag, placeholder: 'To' },
     { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },

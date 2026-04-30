@@ -27,7 +27,7 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
   const { 
     search, startDate, endDate, minAmount, maxAmount, 
     categoryId, status, city, state, country, gaushalaId, kathaId, slipNo,
-    slipNoFrom, slipNoTo
+    slipNoFrom, slipNoTo, referenceName
   } = query;
 
   let whereClause = {};
@@ -137,6 +137,11 @@ export const buildDonationFilter = async (query, searchPrefix = '$donor.') => {
       rangeConds.push(sequelize.where(slipCol, { [Op.lte]: Number(slipNoTo) }));
     }
     whereClause[Op.and] = (whereClause[Op.and] || []).concat(rangeConds);
+  }
+
+  // 8. Reference Name Filter (partial match)
+  if (referenceName) {
+    whereClause.referenceName = { [Op.like]: `%${referenceName}%` };
   }
 
   return { whereClause, donorWhere };

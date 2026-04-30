@@ -31,6 +31,14 @@ export const DonationInstallment = sequelize.define('DonationInstallment', {
   notes: {
     type: DataTypes.STRING,
     allowNull: true,
+  },
+  slipNo: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  slipUrl: {
+    type: DataTypes.STRING(1024),
+    allowNull: true,
   }
 }, {
   timestamps: true,

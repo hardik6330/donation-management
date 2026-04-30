@@ -10,9 +10,9 @@ import { useLazyGetKathasQuery } from '../../../../services/kathaApi';
 import { useDropdownPagination } from '../../../../hooks/useDropdownPagination';
 import { useTable } from '../../../../hooks/useTable';
 import { 
-  Search, Calendar, Loader2, IndianRupee, FileDown, 
-  MapPin, MapPinHouse, Building2, Mic2, Tag, Filter, 
-  FileSpreadsheet, FileText, ChevronDown, CreditCard 
+  Search, Calendar, Loader2, IndianRupee, FileDown,
+  MapPin, MapPinHouse, Building2, Mic2, Tag, Filter,
+  FileSpreadsheet, FileText, ChevronDown, CreditCard, UserCheck
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import AdminPageHeader from '../../../../components/common/AdminPageHeader';
@@ -75,6 +75,7 @@ const Reports = () => {
       slipNo: '',
       slipNoFrom: '',
       slipNoTo: '',
+      referenceName: '',
       paymentMode: '',
       paymentStartDate: '',
       paymentEndDate: '',
@@ -295,11 +296,12 @@ const Reports = () => {
       yPos += 5;
     }
 
-    const tableHeaders = [['Slip No', 'Donor Name', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Donation Date', 'Payment Date']];
+    const tableHeaders = [['Slip No', 'Donor Name', 'Reference', 'Gaushala/Katha', 'Location', 'Mode', 'Amount', 'Status', 'Donation Date', 'Payment Date']];
 
     const tableData = exportDonations.map(d => [
       d.slipNo || '-',
       d.donor?.name || '-',
+      d.referenceName || '-',
       (d.gaushala?.name || d.katha?.name || '-'),
       `${d.donor?.city || ''}, ${d.donor?.state || ''}`,
       d.paymentMode?.toUpperCase() || '-',
@@ -345,6 +347,7 @@ const Reports = () => {
 
   const filterFields = [
     { name: 'search', label: 'Search Donor', icon: Search, placeholder: 'Name, Email or Mobile...' },
+    { name: 'referenceName', label: 'Reference', icon: UserCheck, placeholder: 'Reference name...' },
     { name: 'slipNoFrom', label: 'Slip No From', type: 'number', icon: Tag, placeholder: 'From' },
     { name: 'slipNoTo', label: 'Slip No To', type: 'number', icon: Tag, placeholder: 'To' },
     { name: 'city', label: 'City', icon: MapPin, placeholder: 'Search by city...' },
@@ -409,6 +412,7 @@ const Reports = () => {
   const tableHeaders = [
     { label: 'Slip No' },
     { label: 'Donor Name' },
+    { label: 'Reference' },
     { label: 'Cause / Purpose' },
     { label: 'Gaushala / Katha' },
     { label: 'Location' },
@@ -476,6 +480,9 @@ const Reports = () => {
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="font-medium text-gray-800 text-sm">{donation.donor?.name}</div>
               <div className="text-[10px] text-gray-500">{donation.donor?.mobileNumber}</div>
+            </td>
+            <td className="p-3 sm:p-4 px-4 sm:px-6">
+              <div className="text-sm text-gray-700 italic">{donation.referenceName || '-'}</div>
             </td>
             <td className="p-3 sm:p-4 px-4 sm:px-6">
               <div className="text-gray-800 text-sm truncate max-w-[150px]" title={donation.cause}>

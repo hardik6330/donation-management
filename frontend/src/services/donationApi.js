@@ -78,6 +78,13 @@ const donationApi = apiSlice.injectEndpoints({
         method: 'POST',
       }),
     }),
+    generateInstallmentSlip: builder.mutation({
+      query: ({ donationId, installmentId }) => ({
+        url: `/donations/${donationId}/installments/${installmentId}/slip`,
+        method: 'POST',
+      }),
+      invalidatesTags: (result, error, { donationId }) => [{ type: 'Donations', id: donationId }],
+    }),
   }),
 });
 
@@ -96,4 +103,5 @@ export const {
   useGetDonationStatusQuery,
   useGetLatestSlipNoQuery,
   useResendWhatsAppMutation,
+  useGenerateInstallmentSlipMutation,
 } = donationApi;
