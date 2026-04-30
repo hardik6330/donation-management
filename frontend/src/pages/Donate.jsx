@@ -386,10 +386,16 @@ const Donate = () => {
     try {
       const { paidAmount: _, ...cleanFormData } = formData;
       const rawPaid = (formData.paidAmount || '').toString().replace(/,/g, '');
+      // Public donate form: stamp paymentDate / donationDate server-relative
+      // (today) so users don't have to pick — pay_later still leaves payment
+      // date null. Always overwrite to ignore any stale form value.
+      const todayISO = new Date().toISOString().slice(0, 10);
       await createOrder({
         ...cleanFormData,
         amount: Number(rawAmount),
         paidAmount: formData.status === 'partially_paid' ? Number(rawPaid) : undefined,
+        donationDate: todayISO,
+        paymentDate: formData.status === 'pay_later' ? null : todayISO,
       }).unwrap();
 
       // Save last donation details for next time
