@@ -389,17 +389,19 @@ export const updateDonation = asyncHandler(async (req, res) => {
     // This ensures the frontend shows a loader icon instead of the old PDF link.
     await donation.update({ slipUrl: null });
 
-    // 2. Delete the old file from Cloudinary immediately so the old URL becomes invalid.
-    if (oldSlipUrl) {
-      runBackground(deleteFileFromCloudinary(oldSlipUrl), `Donation ${donation.id} delete old slip`);
-    }
-
     const processSlip = async () => {
       try {
         // Add a small delay in live environment to simulate "later" processing
         // and allow the frontend to show the update success first.
         if (VERCEL) {
           await new Promise(resolve => setTimeout(resolve, 3000));
+        }
+        // Delete the old Cloudinary slip BEFORE uploading the new one.
+        // Sequencing avoids a race where the delete wipes the just-uploaded
+        // file when the new public_id matches the old (donor name unchanged).
+        if (oldSlipUrl) {
+          try { await deleteFileFromCloudinary(oldSlipUrl); }
+          catch (e) { logger.error(`[Donation ${donation.id}] old slip delete failed:`, e); }
         }
         const donor = await User.findByPk(donation.donorId);
         if (donor) {
