@@ -167,7 +167,7 @@ export const createDonationOrder = asyncHandler(async (req, res) => {
         paymentMode: paymentMode,
         paymentDate: paymentDate ? new Date(paymentDate) : null,
         notes: 'Initial partial payment',
-        slipNo: 'Part 1'
+        slipNo: finalSlipNo ? `${finalSlipNo} - Part 1` : 'Part 1'
       }, { transaction: t });
     }
 

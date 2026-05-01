@@ -79,6 +79,8 @@
       notes: '',
     });
 
+    const [generateSlip, setGenerateSlip] = useState(false);
+
     const [addDropdownLabels, setAddDropdownLabels] = useState({
       categoryName: storedPrefs.categoryName || '',
       gaushalaName: storedPrefs.gaushalaName || '',
@@ -138,6 +140,7 @@
     const birthDateRef = useRef(null);
     const amountRef = useRef(null);
     const paidAmountRef = useRef(null);
+    const generateSlipRef = useRef(null);
     const submitRef = useRef(null);
     const isSubmittingRef = useRef(false);
 
@@ -245,12 +248,15 @@
     // trigger a re-fill — once the user has touched it, we leave it alone.
     const slipAutofilledRef = useRef(false);
 
+    const slipFieldVisible = addForm.status === 'completed'
+      || ((addForm.status === 'pay_later' || addForm.status === 'partially_paid') && generateSlip);
+
     useEffect(() => {
       if (!isOpen) {
         slipAutofilledRef.current = false;
         return;
       }
-      if (addForm.status !== 'completed') {
+      if (!slipFieldVisible) {
         slipAutofilledRef.current = false;
         return;
       }
@@ -264,17 +270,24 @@
         slipAutofilledRef.current = true;
         setAddForm(prev => (prev.slipNo ? prev : { ...prev, slipNo: next }));
       }
-    }, [isOpen, latestSlipData, addForm.status, addForm.slipNo]);
+    }, [isOpen, latestSlipData, slipFieldVisible, addForm.slipNo]);
 
-    // Clear slipNo when status moves away from completed so a stale number
+    // Reset generateSlip when status moves to/from completed
+    useEffect(() => {
+      if (addForm.status === 'completed') {
+        setGenerateSlip(false);
+      }
+    }, [addForm.status]);
+
+    // Clear slipNo when slip field becomes hidden so a stale number
     // doesn't get sent for pay_later / partially_paid donations.
     useEffect(() => {
       if (!isOpen) return;
-      if (addForm.status === 'completed') return;
+      if (slipFieldVisible) return;
       if (!addForm.slipNo) return;
       setAddForm(prev => ({ ...prev, slipNo: '' }));
       setErrors(prev => ({ ...prev, slipNo: '' }));
-    }, [isOpen, addForm.status]);
+    }, [isOpen, slipFieldVisible]);
 
     // Prefill when editing an existing donation
     useEffect(() => {
@@ -305,6 +318,7 @@
         paymentDate: isoDate(d.paymentDate) || '',
         notes: d.notes || '',
       });
+      setGenerateSlip(!!d.slipNo && d.status !== 'completed');
       const lookupName = (list, id) => list.find(item => item.id === id)?.name || '';
       setAddDropdownLabels({
         categoryName: d.category?.name || lookupName(categoryPagination.items, d.categoryId),
@@ -479,7 +493,7 @@
             amount: Number(rawAmount),
             status: addForm.status,
             paymentMode: addForm.paymentMode,
-            slipNo: addForm.status === 'completed' ? addForm.slipNo : null,
+            slipNo: slipFieldVisible ? (addForm.slipNo || null) : null,
             categoryId: addForm.categoryId || null,
             paidAmount: addForm.status === 'partially_paid' ? Number(rawPaid) : undefined,
             donationDate: addForm.donationDate || null,
@@ -841,7 +855,7 @@
                     placeholder="0"
                     value={addForm.amount}
                     onChange={handleAddInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : (addForm.status === 'completed' ? slipNoRef : donationDateRef), statusRef)}
+                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'partially_paid' ? paidAmountRef : (addForm.status === 'pay_later' ? generateSlipRef : (slipFieldVisible ? slipNoRef : donationDateRef)), statusRef)}
                     inputRef={amountRef}
                     icon={IndianRupee}
                     error={errors.amount}
@@ -854,7 +868,7 @@
                       placeholder="0"
                       value={addForm.paidAmount}
                       onChange={handleAddInputChange}
-                      onKeyDown={(e) => handleKeyDown(e, addForm.status === 'completed' ? slipNoRef : donationDateRef, amountRef)}
+                      onKeyDown={(e) => handleKeyDown(e, generateSlipRef, amountRef)}
                       inputRef={paidAmountRef}
                       icon={IndianRupee}
                       error={errors.paidAmount}
@@ -862,7 +876,33 @@
                   )}
                 </div>
 
-                {addForm.status === 'completed' && (
+                {(addForm.status === 'pay_later' || addForm.status === 'partially_paid') && (
+                  <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 cursor-pointer select-none">
+                    <input
+                      ref={generateSlipRef}
+                      type="checkbox"
+                      checked={generateSlip}
+                      onChange={(e) => setGenerateSlip(e.target.checked)}
+                      onKeyDown={(e) => {
+                        const prevRef = addForm.status === 'partially_paid' ? paidAmountRef : amountRef;
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          setGenerateSlip(v => !v);
+                        } else if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                          e.preventDefault();
+                          (slipFieldVisible ? slipNoRef : donationDateRef).current?.focus();
+                        } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                          e.preventDefault();
+                          prevRef.current?.focus();
+                        }
+                      }}
+                      className="w-4 h-4 accent-blue-600"
+                    />
+                    Generate Slip Number
+                  </label>
+                )}
+
+                {slipFieldVisible && (
                   <FormInput
                     label="Slip Number"
                     name="slipNo"
@@ -870,7 +910,7 @@
                     required
                     value={addForm.slipNo}
                     onChange={handleAddInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, donationDateRef, addForm.status === 'partially_paid' ? paidAmountRef : amountRef)}
+                    onKeyDown={(e) => handleKeyDown(e, donationDateRef, (addForm.status === 'pay_later' || addForm.status === 'partially_paid') ? generateSlipRef : (addForm.status === 'partially_paid' ? paidAmountRef : amountRef))}
                     inputRef={slipNoRef}
                     icon={Tag}
                     error={errors.slipNo}
@@ -883,7 +923,7 @@
                     name="donationDate"
                     value={addForm.donationDate}
                     onChange={handleAddInputChange}
-                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'pay_later' ? notesRef : paymentDateRef, addForm.status === 'completed' ? slipNoRef : (addForm.status === 'partially_paid' ? paidAmountRef : amountRef))}
+                    onKeyDown={(e) => handleKeyDown(e, addForm.status === 'pay_later' ? notesRef : paymentDateRef, slipFieldVisible ? slipNoRef : ((addForm.status === 'pay_later' || addForm.status === 'partially_paid') ? generateSlipRef : (addForm.status === 'partially_paid' ? paidAmountRef : amountRef)))}
                     inputRef={donationDateRef}
                     icon={Calendar}
                   />

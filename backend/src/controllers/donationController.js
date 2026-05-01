@@ -376,7 +376,7 @@ export const updateDonation = asyncHandler(async (req, res) => {
         paymentMode: nextPaymentMode,
         paymentDate: installmentDate,
         notes: notes || (updateData.status === 'completed' ? 'Final payment' : 'Partial payment installment'),
-        slipNo: `Part ${existingCount + 1}`
+        slipNo: donation.slipNo ? `${donation.slipNo} - Part ${existingCount + 1}` : `Part ${existingCount + 1}`
       });
       if (installmentDate) updateData.paymentDate = installmentDate;
     }
